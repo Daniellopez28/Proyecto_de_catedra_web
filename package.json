@@ -1,0 +1,17 @@
+{
+  "name": "proyecto-de-catedra-web",
+  "version": "1.0.0",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "prisma": "^7.10.1"
+  },
+  "dependencies": {
+    "@prisma/adapter-mssql": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "dotenv": "^18.0.9"
+  },
+  "scripts": {
+    "postinstall": "prisma skills sync || exit 0"
+  }
+}

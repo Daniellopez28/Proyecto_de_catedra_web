@@ -1,0 +1,18 @@
+:root {
+    background-color: #FDFCF9;
+}
+
+body {
+    margin: 0;
+    background-color: #FDFCF9;
+}
+
+.loginSection {
+    background-color: #FDFCF9;
+    width: 100%;
+    min-height: 100vh;
+    margin-top: 80px;
+    margin-bottom: 80px;
+    display: flex;
+    justify-content: center;
+}

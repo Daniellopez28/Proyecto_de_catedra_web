@@ -54,7 +54,7 @@ app.post('/api/ventas', async (req, res) => {
         /*1. Recibimos los datos del Frontend (cajero)
         tipoDocumento: "Factura o CCF"
         productos: arreglo con {id_producto, cantidad}*/
-        const {tipoDocumento, id_usuario, productos} = req.body;
+        const {tipoDocumento, id_usuario, productos, metodoPago, referenciaPago} = req.body;
 
         /*2. Validamos que manden datos (ni modo que aceptemos a si vacio)*/
         if(!productos || productos.length === 0){
@@ -63,6 +63,8 @@ app.post('/api/ventas', async (req, res) => {
 
         /*3. Calculamos el total bruto (sumando precio * cantidad)*/
         let totalBruto = 0;
+        const detallesParaGuardar = [];
+        //arreglo para guardar los detalles calculados
         for(const item of productos){
             const productoDB = await prisma.productos.findUnique({
                 where: {id_producto: item.id_producto}
@@ -74,11 +76,20 @@ app.post('/api/ventas', async (req, res) => {
 
             /*Convertimos el Decimal de SQL Server a Número para operar*/
             const precio = Number(productoDB.precio_venta);
-            totalBruto += precio * item.cantidad;
+            const subtotalLinea = precio * item.cantidad;
+            totalBruto += subtotalLinea;
+
+            /*Guardamos temporalmente el detalle con su precio real y subtotal*/
+            detallesParaGuardar.push({
+                id_producto: item.id_producto,
+                cantidad: item.cantidad,
+                precio_unitario: precio,
+                subtotal_linea: subtotalLinea
+            });
         }
       
         /*4. calculamos el desglose del IVA*/
-        const {subtottal, iva} = calcularIVA(totalBruto);
+        const {subtotal, iva} = calcularIVA(totalBruto);
 
         /*5. Generamos el correlativo (Factura o CCF)*/
         const correlativo = await generarCorrelativo(tipoDocumento);
@@ -89,21 +100,47 @@ app.post('/api/ventas', async (req, res) => {
                 id_usuario: id_usuario,
                 tipo_documento: tipoDocumento,
                 correlativo: correlativo,
-                subtotal: subtottal,
+                subtotal: subtotal,
                 iva: iva,
-            total: totalBruto,
-            estado: 'Pagada',
-            venta_detalle: {
-                create: productos.map((item) => ({
-                    id_producto: item.id_producto,
-                    cantidad: p.cantidad,
-                    precio_unitario: 0, 
-                    subtotal_linea: 0
-                }))
+                total: totalBruto,
+                estado: 'Pagada',
+                venta_detalle: {
+                    create: detallesParaGuardar
+                }
             }
+        });
+    /*Guardamos el pago asociado a esta venta*/
+    await prisma.pagos.create({
+        data: {
+            id_venta: nuevaVenta.id_venta, /*Lo vinculamos a la venta que acabamos de crear*/
+
+            metodo_pago: metodoPago || 'Efectivo', /*Si no mandan método, por defecto
+            es Efectivo*/
+
+            monto: totalBruto,
+            referencia_transaccion: referenciaPago || null /*Para el número de voucher
+            o Chivo*/
         }
     });
     
+    /*Desconectamis inventario (El código)*/
+for(const item of productos){
+const receta = await prisma.recetas_detalle.findMany({
+    where: {id_producto: item.id_producto}
+});
+
+if(receta.length > 0){
+for(const ingrediente of receta){
+const cantidadUsada = Number(ingrediente.cantidad_requerida)* item.cantidad;
+
+await prisma.insumos.update({
+where: {id_insumo: ingrediente.id_insumo},
+data: {stock_actual: {decrement: cantidadUsada}}
+});
+}
+}
+}
+
 /*7. Respondemos al Frontend*/
 res.status(201).json({
     mensaje: "Venta registrada exitosamente",

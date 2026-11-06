@@ -7,7 +7,7 @@ datasource db {
 }
 
 model cajas {
-  id_caja              Int       @id(map: "PK__cajas__C71E2476C6FF7921") @default(autoincrement())
+  id_caja              Int       @id(map: "PK__cajas__C71E247695454B9C") @default(autoincrement())
   id_usuario           Int
   fecha_apertura       DateTime? @default(now(), map: "DF__cajas__fecha_ape__778AC167") @db.DateTime
   fecha_cierre         DateTime? @db.DateTime
@@ -20,10 +20,10 @@ model cajas {
 }
 
 model clientes {
-  id_cliente Int       @id(map: "PK__clientes__677F38F52B96C6F9") @default(autoincrement())
+  id_cliente Int       @id(map: "PK__clientes__677F38F54C69074B") @default(autoincrement())
   nombre     String    @db.VarChar(150)
-  dui        String?   @unique(map: "UQ__clientes__D876F1BF688C1C6B") @db.VarChar(10)
-  nit        String?   @unique(map: "UQ__clientes__DF97D0E40FD79CE3") @db.VarChar(17)
+  dui        String?   @unique(map: "UQ__clientes__D876F1BFCEE32370") @db.VarChar(10)
+  nit        String?   @unique(map: "UQ__clientes__DF97D0E49BD43563") @db.VarChar(17)
   nrc        String?   @db.VarChar(15)
   telefono   String?   @db.VarChar(20)
   correo     String?   @db.VarChar(150)
@@ -41,11 +41,11 @@ model compra_detalle {
   compras        compras @relation(fields: [id_compra], references: [id_compra], onDelete: Cascade, onUpdate: NoAction, map: "fk_compradet_compra")
   insumos        insumos @relation(fields: [id_insumo], references: [id_insumo], onUpdate: NoAction, map: "fk_compradet_insumo")
 
-  @@id([id_compra, id_insumo], map: "PK__compra_d__C9F5862F90092A7B")
+  @@id([id_compra, id_insumo], map: "PK__compra_d__C9F5862F6E49AF84")
 }
 
 model compras {
-  id_compra                Int              @id(map: "PK__compras__C4BAA6041D8C3B4A") @default(autoincrement())
+  id_compra                Int              @id(map: "PK__compras__C4BAA60490E3A507") @default(autoincrement())
   id_proveedor             Int
   fecha_compra             DateTime?        @default(now(), map: "DF__compras__fecha_c__7C4F7684") @db.DateTime
   numero_factura_proveedor String           @db.VarChar(50)
@@ -56,9 +56,9 @@ model compras {
 }
 
 model empleados {
-  id_empleado      Int                @id(map: "PK__empleado__88B5139434CF346A") @default(autoincrement())
+  id_empleado      Int                @id(map: "PK__empleado__88B51394DE71023B") @default(autoincrement())
   nombre_completo  String             @db.VarChar(150)
-  dui              String             @unique(map: "UQ__empleado__D876F1BFFFA57E26") @db.VarChar(10)
+  dui              String             @unique(map: "UQ__empleado__D876F1BF9E7412AD") @db.VarChar(10)
   isss_numero      String?            @db.VarChar(15)
   afp_numero       String?            @db.VarChar(20)
   cargo            String             @db.VarChar(50)
@@ -70,8 +70,8 @@ model empleados {
 }
 
 model insumos {
-  id_insumo       Int               @id(map: "PK__insumos__D4F202B18B07F707") @default(autoincrement())
-  nombre          String            @unique(map: "UQ__insumos__72AFBCC62216A8AA") @db.VarChar(100)
+  id_insumo       Int               @id(map: "PK__insumos__D4F202B1B03E3CCC") @default(autoincrement())
+  nombre          String            @unique(map: "UQ__insumos__72AFBCC618312415") @db.VarChar(100)
   unidad_medida   String            @db.VarChar(20)
   stock_actual    Decimal?          @default(0.00, map: "DF__insumos__stock_a__5BE2A6F2") @db.Decimal(10, 2)
   stock_minimo    Decimal?          @default(0.00, map: "DF__insumos__stock_m__5CD6CB2B") @db.Decimal(10, 2)
@@ -82,7 +82,7 @@ model insumos {
 }
 
 model pagos {
-  id_pago                Int       @id(map: "PK__pagos__0941B0747AF5F61E") @default(autoincrement())
+  id_pago                Int       @id(map: "PK__pagos__0941B074F3F2B288") @default(autoincrement())
   id_venta               Int
   metodo_pago            String    @db.VarChar(50)
   monto                  Decimal   @db.Decimal(10, 2)
@@ -102,11 +102,11 @@ model planilla_detalle {
   empleados       empleados @relation(fields: [id_empleado], references: [id_empleado], onUpdate: NoAction, map: "fk_plandet_empleado")
   planillas       planillas @relation(fields: [id_planilla], references: [id_planilla], onDelete: Cascade, onUpdate: NoAction, map: "fk_plandet_planilla")
 
-  @@id([id_planilla, id_empleado], map: "PK__planilla__505991070A13EC54")
+  @@id([id_planilla, id_empleado], map: "PK__planilla__5059910774914025")
 }
 
 model planillas {
-  id_planilla      Int                @id(map: "PK__planilla__08D2C03E2716A58C") @default(autoincrement())
+  id_planilla      Int                @id(map: "PK__planilla__08D2C03E864FFEC3") @default(autoincrement())
   periodo_inicio   DateTime           @db.Date
   periodo_fin      DateTime           @db.Date
   tipo_planilla    String             @db.VarChar(20)
@@ -116,7 +116,7 @@ model planillas {
 }
 
 model productos {
-  id_producto     Int               @id(map: "PK__producto__FF341C0DF0A120C1") @default(autoincrement())
+  id_producto     Int               @id(map: "PK__producto__FF341C0D8E5FFC21") @default(autoincrement())
   nombre          String            @db.VarChar(150)
   descripcion     String?           @db.VarChar(Max)
   precio_venta    Decimal           @db.Decimal(10, 2)
@@ -128,7 +128,7 @@ model productos {
 }
 
 model proveedores {
-  id_proveedor    Int       @id(map: "PK__proveedo__8D3DFE28B07043CF") @default(autoincrement())
+  id_proveedor    Int       @id(map: "PK__proveedo__8D3DFE284D94984D") @default(autoincrement())
   nombre_empresa  String    @db.VarChar(150)
   contacto_nombre String?   @db.VarChar(100)
   telefono        String?   @db.VarChar(20)
@@ -145,21 +145,21 @@ model recetas_detalle {
   insumos            insumos   @relation(fields: [id_insumo], references: [id_insumo], onUpdate: NoAction, map: "fk_receta_insumo")
   productos          productos @relation(fields: [id_producto], references: [id_producto], onDelete: Cascade, onUpdate: NoAction, map: "fk_receta_producto")
 
-  @@id([id_producto, id_insumo], map: "PK__recetas___F27B3C26A56D5F12")
+  @@id([id_producto, id_insumo], map: "PK__recetas___F27B3C264A862021")
 }
 
 model roles {
-  id_rol      Int        @id(map: "PK__roles__6ABCB5E0DF2FD60D") @default(autoincrement())
-  nombre_rol  String     @unique(map: "UQ__roles__673CB4357FD79EA2") @db.VarChar(50)
+  id_rol      Int        @id(map: "PK__roles__6ABCB5E0B92B59BB") @default(autoincrement())
+  nombre_rol  String     @unique(map: "UQ__roles__673CB4357264C1F5") @db.VarChar(50)
   descripcion String?    @db.VarChar(Max)
   usuarios    usuarios[]
 }
 
 model usuarios {
-  id_usuario      Int       @id(map: "PK__usuarios__4E3E04AD04AAF13A") @default(autoincrement())
+  id_usuario      Int       @id(map: "PK__usuarios__4E3E04ADFD57BA40") @default(autoincrement())
   id_rol          Int
   nombre_completo String    @db.VarChar(150)
-  correo          String    @unique(map: "UQ__usuarios__2A586E0B24CFC9EA") @db.VarChar(150)
+  correo          String    @unique(map: "UQ__usuarios__2A586E0BE52F25B2") @db.VarChar(150)
   password_hash   String    @db.VarChar(255)
   activo          Boolean?  @default(true, map: "DF__usuarios__activo__4E88ABD4")
   creado_en       DateTime? @default(now(), map: "DF__usuarios__creado__4F7CD00D") @db.DateTime
@@ -177,16 +177,16 @@ model venta_detalle {
   productos       productos @relation(fields: [id_producto], references: [id_producto], onUpdate: NoAction, map: "fk_detalle_producto")
   ventas          ventas    @relation(fields: [id_venta], references: [id_venta], onDelete: Cascade, onUpdate: NoAction, map: "fk_detalle_venta")
 
-  @@id([id_venta, id_producto], map: "PK__venta_de__8A66727F01E5C95C")
+  @@id([id_venta, id_producto], map: "PK__venta_de__8A66727F96A55C8A")
 }
 
 model ventas {
-  id_venta       Int             @id(map: "PK__ventas__459533BF5BB28952") @default(autoincrement())
+  id_venta       Int             @id(map: "PK__ventas__459533BF56DFE1E0") @default(autoincrement())
   id_cliente     Int?
   id_usuario     Int
   fecha_hora     DateTime?       @default(now(), map: "DF__ventas__fecha_ho__6A30C649") @db.DateTime
   tipo_documento String          @db.VarChar(30)
-  correlativo    String          @unique(map: "UQ__ventas__61D30E0E08BE3890") @db.VarChar(50)
+  correlativo    String          @unique(map: "UQ__ventas__61D30E0E1032FDEF") @db.VarChar(50)
   subtotal       Decimal         @db.Decimal(10, 2)
   iva            Decimal         @db.Decimal(10, 2)
   total          Decimal         @db.Decimal(10, 2)
@@ -195,4 +195,14 @@ model ventas {
   venta_detalle  venta_detalle[]
   clientes       clientes?       @relation(fields: [id_cliente], references: [id_cliente], onUpdate: NoAction, map: "fk_venta_cliente")
   usuarios       usuarios        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "fk_venta_usuario")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B6138590D60") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
 }

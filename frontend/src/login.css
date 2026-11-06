@@ -16,3 +16,24 @@ body {
     display: flex;
     justify-content: center;
 }
+
+.radio-options{
+    background-color: #FDFCF9;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #e7e6e4;
+}
+
+input[type="radio"] {
+    appearance: none;
+    padding: 1px;
+    border: 2px solid #e7e6e4;  
+}
+
+input[type="radio"]:checked {
+    background-image: radial-gradient(#B95136 0%, #B95136 40%, transparent 50%, transparent);
+    color: #B95136;
+    background-color: white;
+    border-color: #B95136;
+
+}

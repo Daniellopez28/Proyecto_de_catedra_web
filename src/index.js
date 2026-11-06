@@ -1,10 +1,41 @@
 import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
+import bcrypt from 'bcryptjs';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+//Ruta login
+app.post('/api/login', async (req, res) => {
+    try {
+        const { correo, password } = req.body;
+
+        if (typeof correo !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ mensaje: 'Correo y contraseña son requeridos' });
+        }
+
+        const usuario = await prisma.usuarios.findUnique({
+            where: { correo }
+        });
+
+        if (!usuario || !usuario.activo ||
+            !(await bcrypt.compare(password, usuario.password_hash))) {
+            return res.status(401).json({ mensaje: 'Credenciales incorrectas' });
+        }
+
+        res.json({
+            usuario: {
+                id: usuario.id_usuario,
+                nombre: usuario.nombre_completo
+            }
+        });
+    } catch (error) {
+        console.error('Error al iniciar sesión:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
+    }
+});
 
 //Rutas de ventas
 app.get('/', (req, res) =>{

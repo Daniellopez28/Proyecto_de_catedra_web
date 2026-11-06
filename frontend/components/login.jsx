@@ -1,8 +1,47 @@
 import '../src/login.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState } from 'react';
+
+
+
 
 //creacion de diseño para el inicio de sesion, hace falta la logica.
 function Login() {
+    const [mensaje, setMensaje] = useState('');
+git 
+
+        async function handleSubmit(event) {
+        event.preventDefault();
+        setMensaje('');
+
+        const formData = new FormData(event.currentTarget);
+
+        try {
+            const respuesta = await fetch('http://localhost:3000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    correo: formData.get('correo'),
+                    password: formData.get('password')
+                })
+            });
+
+            
+            const datos = await respuesta.json();
+
+            if (!respuesta.ok) {
+                setMensaje(datos.mensaje);
+                return;
+            }
+
+            // Aquí se considera exitoso el login.
+            // La navegación a /menu requiere que esa ruta exista en la app.
+            setMensaje(`Bienvenido, ${datos.usuario.nombre}`);
+        } catch {
+            setMensaje('No se pudo conectar con el servidor.');
+        }
+    }
+
     return (
         <section className='loginSection'>
             <div className='mainContainer'>
@@ -25,17 +64,17 @@ function Login() {
                                     <div className="card-body py-5 px-md-5">
                                         <h3 className="fw-bold ls-tight">Iniciar sesión</h3>
                                         <span style={{ color: '#7A7D75', fontSize: '16px' }}>Usa las credenciales de tu cuenta para iniciar sesión.</span>
-                                        <form>
+                                        <form onSubmit={handleSubmit}>
                                             <div data-mdb-input-init className="form-outline mb-4" style={{ marginTop: '20px' }}>
                                                 <label className="form-label fw-bold" htmlFor="form3Example3" style={{ fontSize: '16px' }}>Usuario</label>
-                                                <input type="email" id="form3Example3" className="form-control" />
+                                                <input type="email" name="correo" id="form3Example3" className="form-control" />
                                             </div>
 
                                             <div data-mdb-input-init className="form-outline mb-4">
                                                 <label className="form-label fw-bold" htmlFor="form3Example4" style={{ fontSize: '16px' }}>Contraseña</label>
-                                                <input type="password" id="form3Example4" className="form-control" />
+                                                <input type="password" name="password" id="form3Example4" className="form-control" />
                                             </div>
-
+                                            {mensaje && <p role="status">{mensaje}</p>}
                                             <button type="submit" data-mdb-button-init data-mdb-ripple-init className="button-custom btn btn-block mb-4 p">
                                                 
                                                 {/*flecha para acceder*/}
@@ -87,6 +126,8 @@ function Login() {
                 </div>
             </div>
         </section>
+
+        
 
     );
 }

@@ -9,7 +9,7 @@ function Login() {
                 <div className="px-4 py-5 px-md-5 text-center text-lg-start" >
                     <div className="container" >
                         <div className="row gx-lg-5 align-items-center" >
-                            <div className="col-lg-6 mb-5 mb-lg-5 container-text">
+                            <div className="col-lg-6 mb-5 mb-lg-5">
                                 <h1 className="my-5 display-3 fw-bold ls-tight">
                                     Todo listo <br />
                                     <span className=" " style={{ color: '#B95136' }}>para un buen servicio</span>

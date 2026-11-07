@@ -70,3 +70,6 @@ input[type='radio']:checked{
 
 }
 
+.container-text{
+    display: sticky !important;
+}

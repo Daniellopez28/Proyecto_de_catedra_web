@@ -1,4 +1,4 @@
-import './side-navbar.css'
+import '../src/side-navbar.css'
 {/*icons svg*/}
 import forkKnifeIcon from '../src/assets/fork-knife.svg'
 import receiptIcon from '../src/assets/receipt.svg'

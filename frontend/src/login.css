@@ -1,10 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+
 :root {
     background-color: #FDFCF9;
+    --font-family: 'Inter', sans-serif;
+
 }
 
 body {
     margin: 0;
     background-color: #FDFCF9;
+    font-family: var(--font-family);
+    background-color: #f8fafc;
+    color: #0f172a;
+    margin: 0;
+    padding: 0;
 }
 
 .loginSection {
@@ -15,14 +25,14 @@ body {
     justify-content: center;
 }
 
-.radio-options{
+.radio-options {
     background-color: #FDFCF9;
     padding: 14px;
     border-radius: 8px;
     border: 1px solid #e7e6e4;
 }
 
-.radio-options:hover{
+.radio-options:hover {
     background-color: #f7f6f3;
     border-color: #d7d6d4;
 }
@@ -30,22 +40,22 @@ body {
 .radio-input {
     appearance: none;
     padding: 1px;
-    border: 2px solid #e7e6e4;  
+    border: 2px solid #e7e6e4;
 }
 
-.radio-options:has(input[type='radio']:checked){
+.radio-options:has(input[type='radio']:checked) {
     border-color: #B95136;
     background-color: #F7EAE3;
     font-weight: 500;
 }
 
-.button-custom{
+.button-custom {
     background-color: #B95136 !important;
     color: #F7EAE3 !important;
     font-weight: 500 !important;
 }
 
-.button-custom:hover{
+.button-custom:hover {
     background-color: #99422d !important;
 }
 
@@ -53,18 +63,19 @@ body {
 input[type="radio"]:focus,
 input[type="radio"]:active,
 input[type="radio"]:focus-visible {
-  outline: none !important; /* Elimina la línea azul nativa */
-  box-shadow: none !important; /* Elimina sombras de frameworks como Bootstrap */
+    outline: none !important;
+    /* Elimina la línea azul nativa */
+    box-shadow: none !important;
+    /* Elimina sombras de frameworks como Bootstrap */
 }
 
 
 
-input[type='radio']:checked{
+input[type='radio']:checked {
     background-image: radial-gradient(#B95136 0%, #B95136 40%, transparent 50%, transparent);
     color: #B95136;
     background-color: #F7EAE3;
-     accent-color: #B95136;
+    accent-color: #B95136;
     border-color: #B95136;
 
 }
-

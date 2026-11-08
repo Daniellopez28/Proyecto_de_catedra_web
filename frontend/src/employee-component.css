@@ -1,0 +1,57 @@
+.employee-summary {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  width: 100%;
+  padding: 8px;
+  font-family: Inter, system-ui, 'Segoe UI', sans-serif;
+}
+
+.employee-summary-card {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 14px 18px;
+  border: 1px solid #e7e6e4;
+  border-radius: 10px;
+  background-color: #fff;
+}
+
+.employee-summary-label {
+  margin: 0 0 6px;
+  color: #7a7d75;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.employee-summary-value {
+  margin: 0 0 4px;
+  color: #333;
+  font-size: 21px;
+  line-height: 1.3;
+}
+
+.employee-summary-detail {
+  margin: 0;
+  color: #47704e;
+  font-size: 9px;
+}
+
+@media (max-width: 700px) {
+  .employee-summary {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+.employee-list {
+  grid-column: 1 / -1;
+  padding: 14px 18px;
+  background-color: #fff;
+  border-radius: 12px;
+  border: 1px solid #e7e6e4;
+}
+
+.employee-list-title {
+  margin: 0 0 6px;
+}

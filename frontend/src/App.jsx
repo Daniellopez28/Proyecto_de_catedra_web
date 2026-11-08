@@ -1,5 +1,5 @@
 import './App.css'
-import SideNavbar from '../components/side-navbar.jsx'
+import SideNavbar from '../components/employee-component.jsx'
 
 function App() {
   return <SideNavbar />

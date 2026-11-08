@@ -55,3 +55,37 @@
 .employee-list-title {
   margin: 0 0 6px;
 }
+
+.employee-list table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #7a7d75;
+  font-size: 10px;
+}
+
+.employee-list thead {
+  background-color: #f2f1ed;
+}
+
+.employee-list th {
+  padding: 8px 12px;
+  font-weight: 400;
+  text-align: left;
+}
+
+.employee-list th:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.employee-list th:last-child {
+  border-radius: 0 6px 6px 0;
+}
+
+.employee-list td {
+  padding: 12px;
+  color: #292d29;
+  background-color: #fff;
+  border-bottom: 1px solid #e7e6e4;
+}

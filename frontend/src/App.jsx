@@ -1,8 +1,8 @@
 import './App.css'
-import Login from '../components/login.jsx'
+import SideNavbar from '../components/side-navbar.jsx'
 
 function App() {
-  return <Login />
+  return <SideNavbar />
 }
 
 export default App

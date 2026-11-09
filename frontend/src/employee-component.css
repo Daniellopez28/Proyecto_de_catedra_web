@@ -159,3 +159,26 @@
   background-color: #fff;
   border-bottom: 1px solid #e7e6e4;
 }
+
+
+.branch-filters {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.branch-filters button {
+    padding: 10px 16px;
+    color: #777;
+    background-color: #fff;
+    border: 1px solid #e8e5e2;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.branch-filters button.selected {
+    color: #bd4d3b;
+    background-color: #f8ebe7;
+    border-color: #f8ebe7;
+}

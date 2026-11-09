@@ -1,8 +1,10 @@
 import '../src/employee-component.css'
+import { useState } from 'react'
 
 function EmployeeComponent() {
     // Valores de muestra luego se usaran resultados de consultas SQL.
     //Falta ver la logica para sql
+
     const employeeTest = [
         {
             name: 'Sergio Perez',
@@ -61,6 +63,14 @@ function EmployeeComponent() {
             monthlySalary: 575,
         }
     ]
+    //esta variable sirve para guardar el boton seleccionado
+    const [selectedBranch, setSelectedBranch] = useState('Todos')
+    //con esta variable se filtran las ramas
+    const branches = ['Todos', ...new Set(employeeTest.map((employee) => employee.branch))]
+    const filteredEmployees = selectedBranch === 'Todos'
+        ? employeeTest
+        : employeeTest.filter((employee) => employee.branch === selectedBranch)
+
     //Empleados por sucursal Escalon
     const employeeEscalon = employeeTest.filter(
         function (employee) {
@@ -140,11 +150,19 @@ function EmployeeComponent() {
             </article>
 
             {/*Apartado para botones de filtrado y busqueda*/}
-            <section>
-                <button type='button'>Todos - {activeCount}</button>
-                <button type='button'>Escalon -{employeeEscalon} </button>
-                <button type='button'>Santa Tecla - {employeeSantaTecla}</button>
-                <button type='button'>Mejicanos - {employeeMejicanos}</button>
+            <section className="branch-filters">
+                {branches.map((branch) => (
+                    <button
+                        key={branch}
+                        type="button"
+                        className={selectedBranch === branch ? 'selected' : ''}
+                        onClick={() => setSelectedBranch(branch)}
+                    >
+                        {branch} · {branch === 'Todos'
+                            ? employeeTest.length
+                            : employeeTest.filter((employee) => employee.branch === branch).length}
+                    </button>
+                ))}
             </section>
 
             {/*Tabla de empleados */}
@@ -166,8 +184,8 @@ function EmployeeComponent() {
 
                     <tbody>
                         {/*Recorre el arreglo com los datos y los agrega automaticamente*/}
-                        {employeeTest.map((employee) => (
-                            <tr key={employee.id}>
+                        {filteredEmployees.map((employee) => (
+                            <tr key={employee.name}>
                                 <td>{employee.name}</td>
                                 <td>{employee.position}</td>
                                 <td>{employee.branch}</td>

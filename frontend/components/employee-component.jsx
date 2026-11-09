@@ -6,16 +6,41 @@ function EmployeeComponent() {
     const activePeople = 7
     const monthlyBaseSalaries = 4800
     const sampleSalaryCount = 8
-    const employeeTest = {
+    //Falta ver la logica para sql
+    const employeeTest = [
+        {
         name: 'Sergio Perez',
         position: 'Cocinero',
         branch: 'Mejicanos',
         status: 'Activo',
         monthlySalary: 600,
-    }
+        },
+        {
+        name: 'Daniel Ricciardo',
+        position: 'Mesero',
+        branch: 'Santa Elena',
+        status: 'Activo',
+        monthlySalary: 600,
+        }
+    ]
 
     return (
+
+        
         <main className="employee-summary" aria-label="Resumen del personal">
+            <header className="employee-head">
+                <div>
+                    <h1 className="employee-page-title">Empleados</h1>
+                    <p className="employee-page-description">
+                        Equipo Orígenes · Expedientes, puestos y condiciones de contratación
+                    </p>
+                </div>
+                <button className="employee-add-button" type="button">
+                    <span aria-hidden="true">+</span>
+                    Nuevo empleado
+                </button>
+            </header>
+
             <article className="employee-summary-card">
                 <h2 className="employee-summary-label">Personal registrado</h2>
                 <p className="employee-summary-value">{registeredPeople} personas</p>
@@ -55,20 +80,22 @@ function EmployeeComponent() {
                             <th scope="col">Base mensual</th>
                         </tr>
                     </thead>
-                    
+
                     <tbody>
-                        <tr>
-                            <td>{employeeTest.name}</td>
-                            <td>{employeeTest.position}</td>
-                            <td>{employeeTest.branch}</td>
-                            <td>{employeeTest.status}</td>
-                            <td>
-                                {employeeTest.monthlySalary.toLocaleString('en-US', {
-                                    style: 'currency',
-                                    currency: 'USD',
-                                })}
-                            </td>
-                        </tr>
+                        {employeeTest.map((employee) => (
+                            <tr key={employee.id}>
+                                <td>{employee.name}</td>
+                                <td>{employee.position}</td>
+                                <td>{employee.branch}</td>
+                                <td>{employee.status}</td>
+                                <td>
+                                    {Number(employee.monthlySalary).toLocaleString('en-US', {
+                                        style: 'currency',
+                                        currency: 'USD',
+                                    })}
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </section>

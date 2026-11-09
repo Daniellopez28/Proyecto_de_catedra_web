@@ -1,3 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+
+:root {
+    background-color: #FDFCF9;
+    --font-family: 'Inter', sans-serif;
+
+}
+
+.employee-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 0;
+}
+
+.employee-page-title {
+  margin: 0 0 4px;
+  color: #292d29;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.employee-page-description {
+  margin: 0;
+  color: #7a7d75;
+  font-size: 10px;
+}
+
+.employee-add-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 7px;
+  background-color: #b95136;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.employee-add-button:hover {
+  background-color: #99422d;
+}
+
+.employee-add-button:focus-visible {
+  outline: 2px solid #99422d;
+  outline-offset: 2px;
+}
+
 .employee-summary {
   box-sizing: border-box;
   display: grid;
@@ -5,7 +63,6 @@
   gap: 20px;
   width: 100%;
   padding: 8px;
-  font-family: Inter, system-ui, 'Segoe UI', sans-serif;
 }
 
 .employee-summary-card {
@@ -41,6 +98,19 @@
   .employee-summary {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .employee-head {
+    align-items: flex-start;
+  }
+
+  .employee-page-title {
+    font-size: 20px;
+  }
+
+  .employee-add-button {
+    padding: 8px;
+    font-size: 10px;
   }
 }
 

@@ -5,7 +5,7 @@
 create database Restaurante_Orígenes_SV;
 go
 
-use Restaurante_Orígenes_SV;
+use Restaurante_Origenes_SV;
 go
 
 CREATE TABLE roles (

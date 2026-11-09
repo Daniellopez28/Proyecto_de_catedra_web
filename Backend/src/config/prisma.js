@@ -1,13 +1,21 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/index.js'; // <-- 
 import { PrismaMssql } from '@prisma/adapter-mssql';
-import 'dotenv/config'; // Asegura que lea el archivo .env
+import 'dotenv/config';
 
-// Creamos el adaptador de SQL Server con la URL del .env
-const adapter = new PrismaMssql({
-  connectionString: process.env.DATABASE_URL,
-});
+// Configuramos los parámetros de conexión manualmente
+const config = {
+  server: 'localhost',
+  port: 1434, // Puerto
+  database: 'Restaurante_Origenes_SV',
+  user: 'sa',
+  password: 'Admin123!', // O usa process.env.DB_PASSWORD
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+  },
+};
 
-// Inicializamos Prisma pasándole el adaptador
+const adapter = new PrismaMssql(config);
 const prisma = new PrismaClient({ adapter });
 
 export default prisma;

@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-family: 'Inter', sans-serif;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: #f8fafc;
+  color: #0f172a;
+  margin: 0;
+  padding: 0;
+}
+
+.side-navbar {
+    box-sizing: border-box;
+    width: 112px;
+    min-height: 100vh;
+    padding: 16px 6px;
+    background-color: #fff;
+    border-right: 1px solid #e7e6e4;
+    color: #333;
+    text-align: left;
+}
+
+.side-navbar-brand {
+    margin: 0 0 18px;
+    color: #b95136;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.side-navbar-menu {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.side-navbar-item {
+    margin: 0;
+}
+
+.side-navbar-button {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 3px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #555;
+    font: inherit;
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.side-navbar-button:hover {
+    background-color: #f7eae3;
+    color: #99422d;
+}
+
+.side-navbar-button:hover .side-navbar-icon {
+    filter: none;
+}
+
+.side-navbar-button:focus-visible {
+    outline: 2px solid #bdbbb7;
+    outline-offset: 2px;
+}
+
+.side-navbar-icon {
+    width: 24px;
+    height: 24px;
+    filter: grayscale(1) brightness(0.65);
+    transition: filter 0.2s ease;
+}

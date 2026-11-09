@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+}
+
+model cajas {
+  id_caja              Int       @id(map: "PK__cajas__C71E247695454B9C") @default(autoincrement())
+  id_usuario           Int
+  fecha_apertura       DateTime? @default(now(), map: "DF__cajas__fecha_ape__778AC167") @db.DateTime
+  fecha_cierre         DateTime? @db.DateTime
+  monto_apertura       Decimal   @db.Decimal(10, 2)
+  monto_cierre_sistema Decimal?  @db.Decimal(10, 2)
+  monto_cierre_fisico  Decimal?  @db.Decimal(10, 2)
+  diferencia           Decimal?  @db.Decimal(10, 2)
+  estado               String?   @default("Abierta", map: "DF__cajas__estado__787EE5A0") @db.VarChar(20)
+  usuarios             usuarios  @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "fk_caja_usuario")
+}
+
+model clientes {
+  id_cliente Int       @id(map: "PK__clientes__677F38F54C69074B") @default(autoincrement())
+  nombre     String    @db.VarChar(150)
+  dui        String?   @unique(map: "UQ__clientes__D876F1BFCEE32370") @db.VarChar(10)
+  nit        String?   @unique(map: "UQ__clientes__DF97D0E49BD43563") @db.VarChar(17)
+  nrc        String?   @db.VarChar(15)
+  telefono   String?   @db.VarChar(20)
+  correo     String?   @db.VarChar(150)
+  direccion  String?   @db.VarChar(Max)
+  creado_en  DateTime? @default(now(), map: "DF__clientes__creado__5535A963") @db.DateTime
+  ventas     ventas[]
+}
+
+model compra_detalle {
+  id_compra      Int
+  id_insumo      Int
+  cantidad       Decimal @db.Decimal(10, 2)
+  costo_unitario Decimal @db.Decimal(10, 4)
+  subtotal       Decimal @db.Decimal(10, 2)
+  compras        compras @relation(fields: [id_compra], references: [id_compra], onDelete: Cascade, onUpdate: NoAction, map: "fk_compradet_compra")
+  insumos        insumos @relation(fields: [id_insumo], references: [id_insumo], onUpdate: NoAction, map: "fk_compradet_insumo")
+
+  @@id([id_compra, id_insumo], map: "PK__compra_d__C9F5862F6E49AF84")
+}
+
+model compras {
+  id_compra                Int              @id(map: "PK__compras__C4BAA60490E3A507") @default(autoincrement())
+  id_proveedor             Int
+  fecha_compra             DateTime?        @default(now(), map: "DF__compras__fecha_c__7C4F7684") @db.DateTime
+  numero_factura_proveedor String           @db.VarChar(50)
+  total_compra             Decimal          @db.Decimal(10, 2)
+  estado_pago              String?          @default("Pagado", map: "DF__compras__estado___7D439ABD") @db.VarChar(20)
+  compra_detalle           compra_detalle[]
+  proveedores              proveedores      @relation(fields: [id_proveedor], references: [id_proveedor], onUpdate: NoAction, map: "fk_compra_proveedor")
+}
+
+model empleados {
+  id_empleado      Int                @id(map: "PK__empleado__88B51394DE71023B") @default(autoincrement())
+  nombre_completo  String             @db.VarChar(150)
+  dui              String             @unique(map: "UQ__empleado__D876F1BF9E7412AD") @db.VarChar(10)
+  isss_numero      String?            @db.VarChar(15)
+  afp_numero       String?            @db.VarChar(20)
+  cargo            String             @db.VarChar(50)
+  tipo_planilla    String             @db.VarChar(20)
+  salario_base     Decimal            @db.Decimal(10, 2)
+  activo           Boolean?           @default(true, map: "DF__empleados__activ__05D8E0BE")
+  fecha_ingreso    DateTime           @db.Date
+  planilla_detalle planilla_detalle[]
+}
+
+model insumos {
+  id_insumo       Int               @id(map: "PK__insumos__D4F202B1B03E3CCC") @default(autoincrement())
+  nombre          String            @unique(map: "UQ__insumos__72AFBCC618312415") @db.VarChar(100)
+  unidad_medida   String            @db.VarChar(20)
+  stock_actual    Decimal?          @default(0.00, map: "DF__insumos__stock_a__5BE2A6F2") @db.Decimal(10, 2)
+  stock_minimo    Decimal?          @default(0.00, map: "DF__insumos__stock_m__5CD6CB2B") @db.Decimal(10, 2)
+  costo_promedio  Decimal?          @default(0.0000, map: "DF__insumos__costo_p__5DCAEF64") @db.Decimal(10, 4)
+  activo          Boolean?          @default(true, map: "DF__insumos__activo__5EBF139D")
+  compra_detalle  compra_detalle[]
+  recetas_detalle recetas_detalle[]
+}
+
+model pagos {
+  id_pago                Int       @id(map: "PK__pagos__0941B074F3F2B288") @default(autoincrement())
+  id_venta               Int
+  metodo_pago            String    @db.VarChar(50)
+  monto                  Decimal   @db.Decimal(10, 2)
+  referencia_transaccion String?   @db.VarChar(100)
+  fecha_pago             DateTime? @default(now(), map: "DF__pagos__fecha_pag__73BA3083") @db.DateTime
+  ventas                 ventas    @relation(fields: [id_venta], references: [id_venta], onDelete: Cascade, onUpdate: NoAction, map: "fk_pago_venta")
+}
+
+model planilla_detalle {
+  id_planilla     Int
+  id_empleado     Int
+  salario_bruto   Decimal   @db.Decimal(10, 2)
+  descuento_isss  Decimal   @db.Decimal(10, 2)
+  descuento_afp   Decimal   @db.Decimal(10, 2)
+  descuento_renta Decimal   @db.Decimal(10, 2)
+  salario_neto    Decimal   @db.Decimal(10, 2)
+  empleados       empleados @relation(fields: [id_empleado], references: [id_empleado], onUpdate: NoAction, map: "fk_plandet_empleado")
+  planillas       planillas @relation(fields: [id_planilla], references: [id_planilla], onDelete: Cascade, onUpdate: NoAction, map: "fk_plandet_planilla")
+
+  @@id([id_planilla, id_empleado], map: "PK__planilla__5059910774914025")
+}
+
+model planillas {
+  id_planilla      Int                @id(map: "PK__planilla__08D2C03E864FFEC3") @default(autoincrement())
+  periodo_inicio   DateTime           @db.Date
+  periodo_fin      DateTime           @db.Date
+  tipo_planilla    String             @db.VarChar(20)
+  total_pagar      Decimal            @db.Decimal(10, 2)
+  estado           String?            @default("Generada", map: "DF__planillas__estad__08B54D69") @db.VarChar(20)
+  planilla_detalle planilla_detalle[]
+}
+
+model productos {
+  id_producto     Int               @id(map: "PK__producto__FF341C0D8E5FFC21") @default(autoincrement())
+  nombre          String            @db.VarChar(150)
+  descripcion     String?           @db.VarChar(Max)
+  precio_venta    Decimal           @db.Decimal(10, 2)
+  categoria       String?           @db.VarChar(50)
+  es_reventa      Boolean?          @default(false, map: "DF__productos__es_re__619B8048")
+  activo          Boolean?          @default(true, map: "DF__productos__activ__628FA481")
+  recetas_detalle recetas_detalle[]
+  venta_detalle   venta_detalle[]
+}
+
+model proveedores {
+  id_proveedor    Int       @id(map: "PK__proveedo__8D3DFE284D94984D") @default(autoincrement())
+  nombre_empresa  String    @db.VarChar(150)
+  contacto_nombre String?   @db.VarChar(100)
+  telefono        String?   @db.VarChar(20)
+  correo          String?   @db.VarChar(150)
+  direccion       String?   @db.VarChar(Max)
+  activo          Boolean?  @default(true, map: "DF__proveedor__activ__5812160E")
+  compras         compras[]
+}
+
+model recetas_detalle {
+  id_producto        Int
+  id_insumo          Int
+  cantidad_requerida Decimal   @db.Decimal(10, 2)
+  insumos            insumos   @relation(fields: [id_insumo], references: [id_insumo], onUpdate: NoAction, map: "fk_receta_insumo")
+  productos          productos @relation(fields: [id_producto], references: [id_producto], onDelete: Cascade, onUpdate: NoAction, map: "fk_receta_producto")
+
+  @@id([id_producto, id_insumo], map: "PK__recetas___F27B3C264A862021")
+}
+
+model roles {
+  id_rol      Int        @id(map: "PK__roles__6ABCB5E0B92B59BB") @default(autoincrement())
+  nombre_rol  String     @unique(map: "UQ__roles__673CB4357264C1F5") @db.VarChar(50)
+  descripcion String?    @db.VarChar(Max)
+  usuarios    usuarios[]
+}
+
+model usuarios {
+  id_usuario      Int       @id(map: "PK__usuarios__4E3E04ADFD57BA40") @default(autoincrement())
+  id_rol          Int
+  nombre_completo String    @db.VarChar(150)
+  correo          String    @unique(map: "UQ__usuarios__2A586E0BE52F25B2") @db.VarChar(150)
+  password_hash   String    @db.VarChar(255)
+  activo          Boolean?  @default(true, map: "DF__usuarios__activo__4E88ABD4")
+  creado_en       DateTime? @default(now(), map: "DF__usuarios__creado__4F7CD00D") @db.DateTime
+  cajas           cajas[]
+  roles           roles     @relation(fields: [id_rol], references: [id_rol], map: "fk_usuario_rol")
+  ventas          ventas[]
+}
+
+model venta_detalle {
+  id_venta        Int
+  id_producto     Int
+  cantidad        Int
+  precio_unitario Decimal   @db.Decimal(10, 2)
+  subtotal_linea  Decimal   @db.Decimal(10, 2)
+  productos       productos @relation(fields: [id_producto], references: [id_producto], onUpdate: NoAction, map: "fk_detalle_producto")
+  ventas          ventas    @relation(fields: [id_venta], references: [id_venta], onDelete: Cascade, onUpdate: NoAction, map: "fk_detalle_venta")
+
+  @@id([id_venta, id_producto], map: "PK__venta_de__8A66727F96A55C8A")
+}
+
+model ventas {
+  id_venta       Int             @id(map: "PK__ventas__459533BF56DFE1E0") @default(autoincrement())
+  id_cliente     Int?
+  id_usuario     Int
+  fecha_hora     DateTime?       @default(now(), map: "DF__ventas__fecha_ho__6A30C649") @db.DateTime
+  tipo_documento String          @db.VarChar(30)
+  correlativo    String          @unique(map: "UQ__ventas__61D30E0E1032FDEF") @db.VarChar(50)
+  subtotal       Decimal         @db.Decimal(10, 2)
+  iva            Decimal         @db.Decimal(10, 2)
+  total          Decimal         @db.Decimal(10, 2)
+  estado         String?         @default("Pagada", map: "DF__ventas__estado__6B24EA82") @db.VarChar(20)
+  pagos          pagos[]
+  venta_detalle  venta_detalle[]
+  clientes       clientes?       @relation(fields: [id_cliente], references: [id_cliente], onUpdate: NoAction, map: "fk_venta_cliente")
+  usuarios       usuarios        @relation(fields: [id_usuario], references: [id_usuario], onUpdate: NoAction, map: "fk_venta_usuario")
+}
+
+model sysdiagrams {
+  name         String @db.NVarChar(128)
+  principal_id Int
+  diagram_id   Int    @id(map: "PK__sysdiagr__C2B05B6138590D60") @default(autoincrement())
+  version      Int?
+  definition   Bytes?
+
+  @@unique([principal_id, name], map: "UK_principal_name")
+}

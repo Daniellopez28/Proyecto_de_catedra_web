@@ -2,31 +2,106 @@ import '../src/employee-component.css'
 
 function EmployeeComponent() {
     // Valores de muestra luego se usaran resultados de consultas SQL.
-    const registeredPeople = 8
-    const activePeople = 7
-    const monthlyBaseSalaries = 4800
-    const sampleSalaryCount = 8
     //Falta ver la logica para sql
     const employeeTest = [
         {
-        name: 'Sergio Perez',
-        position: 'Cocinero',
-        branch: 'Mejicanos',
-        status: 'Activo',
-        monthlySalary: 600,
+            name: 'Sergio Perez',
+            position: 'Cocinero',
+            branch: 'Mejicanos',
+            status: 'Activo',
+            monthlySalary: 600,
         },
         {
-        name: 'Daniel Ricciardo',
-        position: 'Mesero',
-        branch: 'Santa Elena',
-        status: 'Activo',
-        monthlySalary: 600,
+            name: 'Daniel Ricciardo',
+            position: 'Mesero',
+            branch: 'Santa Elena',
+            status: 'Activo',
+            monthlySalary: 600,
+        },
+        {
+            name: 'Lewis Hamilton',
+            position: 'Gerente',
+            branch: 'Escalon',
+            status: 'Activo',
+            monthlySalary: 1200,
+        },
+        {
+            name: 'Fernando Alonso',
+            position: 'Supervisor',
+            branch: 'Santa Tecla',
+            status: 'Inactivo',
+            monthlySalary: 950,
+        },
+        {
+            name: 'Charles Leclerc',
+            position: 'Cajero',
+            branch: 'Mejicanos',
+            status: 'Activo',
+            monthlySalary: 550,
+        },
+        {
+            name: 'Lando Norris',
+            position: 'Barista',
+            branch: 'Escalon',
+            status: 'Inactivo',
+            monthlySalary: 625,
+        },
+        {
+            name: 'Oscar Piastri',
+            position: 'Ayudante de cocina',
+            branch: 'Santa Tecla',
+            status: 'Activo',
+            monthlySalary: 500,
+        },
+        {
+            name: 'Max Verstappen',
+            position: 'Mesero',
+            branch: 'Mejicanos',
+            status: 'Activo',
+            monthlySalary: 575,
         }
     ]
+    //Empleados por sucursal Escalon
+    const employeeEscalon = employeeTest.filter(
+        function (employee) {
+            return employee.branch === 'Escalon';
+        }
+    ).length;
+    //Empleados por sucursal Santa Tecla
+    const employeeSantaTecla = employeeTest.filter(
+        function (employee) {
+            return employee.branch === 'Santa Tecla';
+        }
+    ).length;
+    //Empleados por sucursal mejicanos
+    const employeeMejicanos = employeeTest.filter(
+        function (employee) {
+            return employee.branch === 'Mejicanos';
+        }
+    ).length;
+    // Cantidad de empleados cuyo estado es "Activo"
+
+    const activeCount = employeeTest.filter(
+        function (employee) {
+            return employee.status === 'Activo';
+        }
+    ).length;
+
+    // suma el salrio de los empleados, con reduce se recorre el arreglo y se acumula un unico
+    //resultado, total empieza en 0 y guarda la suma y number convierte el salario a numero por si 
+    //viene en string o un formato que no sea numerico
+    const monthlyBaseSalaries = employeeTest.reduce(
+        (total, employee) => total + Number(employee.monthlySalary || 0),
+        0
+    )
+    //cuenta los registros con salarios
+    const sampleSalaryCount = employeeTest.filter(
+        (employee) => employee.monthlySalary != null
+    ).length
 
     return (
 
-        
+
         <main className="employee-summary" aria-label="Resumen del personal">
             <header className="employee-head">
                 <div>
@@ -43,13 +118,13 @@ function EmployeeComponent() {
 
             <article className="employee-summary-card">
                 <h2 className="employee-summary-label">Personal registrado</h2>
-                <p className="employee-summary-value">{registeredPeople} personas</p>
-                <p className="employee-summary-detail">3 sucursales · datos ficticios</p>
+                <p className="employee-summary-value">{employeeTest.length} personas</p>
+                <p className="employee-summary-detail">{activeCount} sucursales · datos ficticios</p>
             </article>
 
             <article className="employee-summary-card">
                 <h2 className="employee-summary-label">Personal activo</h2>
-                <p className="employee-summary-value">{activePeople} personas</p>
+                <p className="employee-summary-value">{activeCount} personas</p>
                 <p className="employee-summary-detail">1 persona en vacaciones</p>
             </article>
 
@@ -63,6 +138,14 @@ function EmployeeComponent() {
                 </p>
                 <p className="employee-summary-detail">{sampleSalaryCount} salarios de muestra · USD</p>
             </article>
+
+            {/*Apartado para botones de filtrado y busqueda*/}
+            <section>
+                <button type='button'>Todos - {activeCount}</button>
+                <button type='button'>Escalon -{employeeEscalon} </button>
+                <button type='button'>Santa Tecla - {employeeSantaTecla}</button>
+                <button type='button'>Mejicanos - {employeeMejicanos}</button>
+            </section>
 
             {/*Tabla de empleados */}
             <section className="employee-list" aria-labelledby="employee-list-title">
@@ -82,6 +165,7 @@ function EmployeeComponent() {
                     </thead>
 
                     <tbody>
+                        {/*Recorre el arreglo com los datos y los agrega automaticamente*/}
                         {employeeTest.map((employee) => (
                             <tr key={employee.id}>
                                 <td>{employee.name}</td>
@@ -89,6 +173,7 @@ function EmployeeComponent() {
                                 <td>{employee.branch}</td>
                                 <td>{employee.status}</td>
                                 <td>
+                                    {/*Sirve para poner la moneda local en USD */}
                                     {Number(employee.monthlySalary).toLocaleString('en-US', {
                                         style: 'currency',
                                         currency: 'USD',
@@ -99,6 +184,7 @@ function EmployeeComponent() {
                     </tbody>
                 </table>
             </section>
+            <footer>Origenes S.A de C.V</footer>
         </main>
     )
 }

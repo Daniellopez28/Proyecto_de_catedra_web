@@ -65,11 +65,18 @@ function EmployeeComponent() {
     ]
     //esta variable sirve para guardar el boton seleccionado
     const [selectedBranch, setSelectedBranch] = useState('Todos')
-    //con esta variable se filtran las ramas
+    //estas variables sirven para el input de busqueda
+    const [search, setSearch] = useState('')
     const branches = ['Todos', ...new Set(employeeTest.map((employee) => employee.branch))]
-    const filteredEmployees = selectedBranch === 'Todos'
-        ? employeeTest
-        : employeeTest.filter((employee) => employee.branch === selectedBranch)
+    const filteredEmployees = employeeTest.filter((employee) => {
+        const matchesBranch =
+            selectedBranch === 'Todos' || employee.branch === selectedBranch
+        const matchesName = employee.name
+            .toLowerCase()
+            .includes(search.trim().toLowerCase())
+
+        return matchesBranch && matchesName
+    })
 
     // Cantidad de empleados cuyo estado es "Activo"
 
@@ -145,6 +152,13 @@ function EmployeeComponent() {
                             : employeeTest.filter((employee) => employee.branch === branch).length}
                     </button>
                 ))}
+                <input
+                    placeholder="Buscar empleado"
+                    type="search"
+                    className="employee-input"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                />
             </section>
 
             {/*Tabla de empleados */}
@@ -181,6 +195,11 @@ function EmployeeComponent() {
                                 </td>
                             </tr>
                         ))}
+                        {filteredEmployees.length === 0 && (
+                            <tr>
+                                <td colSpan="5">No se encontraron empleados.</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </section>

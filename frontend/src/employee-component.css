@@ -162,19 +162,23 @@
 
 
 .branch-filters {
+    grid-column: 1 / -1;
+    min-width: 0;
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 8px;
-    overflow-x: auto;
 }
 
 .branch-filters button {
+    box-sizing: border-box;
+    max-width: 100%;
     padding: 10px 16px;
     color: #777;
     background-color: #fff;
     border: 1px solid #e8e5e2;
     border-radius: 9px;
     cursor: pointer;
+    white-space: normal;
 }
 
 .branch-filters button.selected {

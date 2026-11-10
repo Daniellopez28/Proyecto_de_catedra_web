@@ -71,24 +71,6 @@ function EmployeeComponent() {
         ? employeeTest
         : employeeTest.filter((employee) => employee.branch === selectedBranch)
 
-    //Empleados por sucursal Escalon
-    const employeeEscalon = employeeTest.filter(
-        function (employee) {
-            return employee.branch === 'Escalon';
-        }
-    ).length;
-    //Empleados por sucursal Santa Tecla
-    const employeeSantaTecla = employeeTest.filter(
-        function (employee) {
-            return employee.branch === 'Santa Tecla';
-        }
-    ).length;
-    //Empleados por sucursal mejicanos
-    const employeeMejicanos = employeeTest.filter(
-        function (employee) {
-            return employee.branch === 'Mejicanos';
-        }
-    ).length;
     // Cantidad de empleados cuyo estado es "Activo"
 
     const activeCount = employeeTest.filter(

@@ -153,3 +153,37 @@ res.status(201).json({
     }
 
 });
+
+/*Endpoint para iniciar sesión*/
+app.post('/api/login', async (req,res) => {
+    try{
+        /*1. Recibir el correo y la contraseña que manda React*/
+        const {correo, password }= req.body;
+
+        /*2.Validamos que no venga vacío*/
+        if(!correo || !password){
+return res.status(400).json({mensaje: "El correo y la constraseña son obligatorios"});
+        }
+
+        /*3. Buscamos al usuario en la base de datos por su correo*/
+        const usuarioEncontrado = await prisma.usuarios.findUnique({where: {correo: correo}});
+
+        /*4. Si no existe el usuario o la contraseña no coincide,rebotamos*/
+        if(!usuarioEncontrado || usuarioEncontrado.password_hash !== password){
+            return res.status(401).json({mensaje: "Credenciales incorrectas"});
+        }
+
+        /*5. Si todo esta bien, quitamos la contraseña de la respuesta 
+        por seguridad*/
+        const {password_hash, ...usuarioSeguro} = usuarioEncontrado;
+
+        /*6. Respondemos con exito y los datos del usuario*/
+        res.status(200).json({
+          mensaje: "Inicio de sesión exitoso",
+          usuario: usuarioSeguro
+        });
+    }catch(error){
+        console.error(error);
+        res.status(500).json({mensaje: "Error interno del servidor"});
+    }
+});

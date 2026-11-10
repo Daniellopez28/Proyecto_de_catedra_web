@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+
+:root {
+    background-color: #FDFCF9;
+    --font-family: 'Inter', sans-serif;
+
+}
+
+.employee-card {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 16px;
+    border: 1px solid #e7e6e4;
+    border-radius: 11px;
+    background: #fff;
+    color: #292d29;
+    font-family: var(--font-family);
+}
+
+.employee-card-header h2,
+.employee-card-header p,
+.employee-affiliations h3 {
+    margin: 0;
+}
+
+.employee-card-header h2 {
+    color: #292d29;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.employee-card-header > p,
+.employee-affiliations > p {
+    margin-top: 4px;
+    color: #7a7d75;
+    font-size: 11px;
+}
+
+.employee-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0 16px;
+}
+
+
+.employee-identity strong,
+.employee-status {
+    display: block;
+    font-size: 12px;
+}
+
+.employee-status {
+    width: fit-content;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: #edf3ed;
+    color: #47704e;
+    font-size: 10px;
+}
+
+.employee-status.is-inactive {
+    background: #f8ebe7;
+    color: #99422d;
+}
+
+.employee-details,
+.employee-affiliations {
+    padding-top: 12px;
+    border-top: 1px solid #e7e6e4;
+}
+
+.employee-detail-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 12px;
+}
+
+.employee-detail-row span {
+    color: #7a7d75;
+}
+
+.employee-detail-row strong {
+    text-align: right;
+    color: #292d29;
+}
+
+.employee-details .employee-detail-row:nth-child(4) {
+    color: #292d29;
+    font-size: 15px;
+}
+
+.employee-details .employee-detail-row:nth-child(4) strong {
+    font-size: 18px;
+}
+
+.employee-affiliations h3 {
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+
+.employee-card-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.employee-card-actions button {
+    padding: 10px 13px;
+    border: 1px solid #e7e6e4;
+    border-radius: 8px;
+    background: #fff;
+    color: #292d29;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.employee-card-actions button:last-child {
+    border-color: #b95136;
+    background: #b95136;
+    color: #fff;
+}
+
+.employee-card-actions button:hover {
+    border-color: #99422d;
+}
+
+.employee-card-actions button:last-child:hover {
+    background: #99422d;
+}
+
+@media (max-width: 900px) {
+    .employee-card {
+        max-width: none;
+    }
+}

@@ -22,7 +22,7 @@ function EmployeeInfoComponent({ employee }) {
                 <p>Expediente interno {employee.recordCode} · datos de ejemplo</p>
 
                 <div className="employee-identity">
-                    <div className="employee-avatar" aria-hidden="true">{initials}</div>
+
                     <div>
                         <strong>{employee.position} · {employee.branch}</strong>
                         <span className={`employee-status ${employee.status === 'Inactivo' ? 'is-inactive' : ''}`}>

@@ -44,18 +44,6 @@
     margin: 18px 0 16px;
 }
 
-.employee-avatar {
-    display: grid;
-    width: 46px;
-    height: 46px;
-    flex: 0 0 46px;
-    place-items: center;
-    border-radius: 50%;
-    background: #f8ebe7;
-    color: #bd4d3b;
-    font-size: 16px;
-    font-weight: 700;
-}
 
 .employee-identity strong,
 .employee-status {

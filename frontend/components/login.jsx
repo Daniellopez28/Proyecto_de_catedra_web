@@ -1,8 +1,49 @@
 import '../src/login.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState } from 'react';
 
 //creacion de diseño para el inicio de sesion, hace falta la logica.
 function Login() {
+    const [correo, setCorreo] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const [cargando, setCargando] = useState(false);
+
+    //funcion que se ejecuta cuadno se da clic en el boton 'ACCEDER'
+    const manejarLogin = async (e) => {
+        e.preventDefault(); // Evita que la página se recargue
+        setError('');
+        setCargando(true);
+
+        try {
+            // cambio: hacemos la petición a tu Backend
+            const respuesta = await fetch('http://localhost:3000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ correo, password })
+            });
+
+            const datos = await respuesta.json();
+
+            if (respuesta.ok) {
+                // Si el login es correcto, guardamos el usuario en el navegador
+                localStorage.setItem('usuarioLogueado', JSON.stringify(datos.usuario));
+                alert('¡Bienvenido ' + datos.usuario.nombre_completo + '!');
+                // Aquí a futuro él debería redirigir a la pantalla de Ventas
+                // window.location.href = '/ventas'; 
+            } else {
+                // Si la contraseña está mal, mostramos el error
+                setError(datos.mensaje);
+            }
+        } catch (error) {
+            setError('Error al conectar con el servidor');
+        } finally {
+            setCargando(false);
+        }
+    };
+
     return (
         <section className='loginSection'>
             <div className='mainContainer'>

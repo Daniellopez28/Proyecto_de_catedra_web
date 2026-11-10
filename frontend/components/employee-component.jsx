@@ -65,6 +65,7 @@ function EmployeeComponent() {
     ]
     //esta variable sirve para guardar el boton seleccionado
     const [selectedBranch, setSelectedBranch] = useState('Todos')
+    const [selectedEmployee, setSelectedEmployee] = useState('')
     //estas variables sirven para el input de busqueda
     const [search, setSearch] = useState('')
     const branches = ['Todos', ...new Set(employeeTest.map((employee) => employee.branch))]
@@ -166,7 +167,7 @@ function EmployeeComponent() {
                 <p className="employee-list-title" style={{ color: '#292D29' }}>Listado de empleados</p>
                 <p style={{ color: '#7A7D75', fontSize: '10px' }}>Selecciona una persona para consultar o editar su ficha.</p>
 
-                <table>
+                <table className='employee-table'>
                     {/* Encabezados y filas de empleados */}
                     <thead>
                         <tr>
@@ -179,9 +180,26 @@ function EmployeeComponent() {
                     </thead>
 
                     <tbody>
-                        {/*Recorre el arreglo com los datos y los agrega automaticamente*/}
+                        {/*Recorre el arreglo com los datos y los agrega automaticamente
+                        tambien lo que hace es detectar el campo seleccionado*/}
                         {filteredEmployees.map((employee) => (
-                            <tr key={employee.name}>
+                            <tr
+                                key={employee.name}
+                                className={selectedEmployee === employee.name ? 'is-selected' : ''}
+                                onClick={() => setSelectedEmployee(
+                                    selectedEmployee === employee.name ? '' : employee.name
+                                )}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        setSelectedEmployee(
+                                            selectedEmployee === employee.name ? '' : employee.name
+                                        )
+                                    }
+                                }}
+                                tabIndex={0}
+                                aria-selected={selectedEmployee === employee.name}
+                            >
                                 <td>{employee.name}</td>
                                 <td>{employee.position}</td>
                                 <td>{employee.branch}</td>

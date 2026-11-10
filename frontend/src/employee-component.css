@@ -15,7 +15,9 @@
   gap: 16px;
   min-width: 0;
   padding: 0;
+
 }
+
 
 .employee-page-title {
   margin: 0 0 4px;
@@ -119,6 +121,7 @@
   padding: 14px 18px;
   background-color: #fff;
   border-radius: 12px;
+  width: 65%;
   border: 1px solid #e7e6e4;
 }
 
@@ -160,6 +163,19 @@
   border-bottom: 1px solid #e7e6e4;
 }
 
+.employee-table tbody tr.is-selected td {
+  background-color: #f8ebe7;
+}
+
+.employee-table tbody tr {
+  cursor: pointer;
+}
+
+.employee-table tbody tr:focus-visible {
+  outline: 2px solid #bd4d3b;
+  outline-offset: -2px;
+}
+
 
 .branch-filters {
     grid-column: 1 / -1;
@@ -192,7 +208,7 @@
     flex: 1 1 280px;
     min-width: 0;
     width: 100%;
-    max-width: 25%;
+    max-width: 28%;
     padding: 10px 16px;
     color: #777;
     background-color: #fff;

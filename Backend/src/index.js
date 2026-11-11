@@ -1,10 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
+import planilla_routes from './routes/planilla.routes.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use('/api/planillas', planilla_routes);
 
 //Rutas de ventas
 app.get('/', (req, res) =>{

@@ -11,6 +11,9 @@ app.get('/', (req, res) =>{
     res.send('API del Restaurante Orígenes SV - Módulo de Ventas funcionando');
 });
 
+// Módulo Inventario y Recetas (Carlos)
+app.use('/api/inventario', enrutadorInventario);
+
 const PORT = 3000;
 app.listen(PORT,() => {
     console.log(`Servidor POS corriendo en http://localhost:${PORT}`);

@@ -75,4 +75,47 @@ router.post('/generar', async (req, res) => {
   }
 });
 
+// get /api/planillas
+router.get('/', async (req, res) => {
+  try {
+    const planillas = await prisma.planillas.findMany({
+      orderBy: { periodo_inicio: 'desc' },
+    });
+    res.json(planillas);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'error interno al listar las planillas' });
+  }
+});
+
+// get /api/planillas/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const id_planilla = Number.parseInt(req.params.id, 10);
+    if (Number.isNaN(id_planilla)) {
+      return res.status(400).json({ mensaje: 'id de planilla invalido' });
+    }
+
+    const planilla = await prisma.planillas.findUnique({
+      where: { id_planilla },
+      include: {
+        planilla_detalle: {
+          include: {
+            empleados: { select: { nombre_completo: true, dui: true, cargo: true } },
+          },
+        },
+      },
+    });
+
+    if (!planilla) {
+      return res.status(404).json({ mensaje: 'planilla no encontrada' });
+    }
+
+    res.json(planilla);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'error interno al consultar la planilla' });
+  }
+});
+
 export default router;

@@ -118,4 +118,32 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// put /api/planillas/:id/pagar
+router.put('/:id/pagar', async (req, res) => {
+  try {
+    const id_planilla = Number.parseInt(req.params.id, 10);
+    if (Number.isNaN(id_planilla)) {
+      return res.status(400).json({ mensaje: 'id de planilla invalido' });
+    }
+
+    const planilla = await prisma.planillas.findUnique({ where: { id_planilla } });
+    if (!planilla) {
+      return res.status(404).json({ mensaje: 'planilla no encontrada' });
+    }
+    if (planilla.estado === 'Pagada') {
+      return res.status(409).json({ mensaje: 'la planilla ya fue marcada como pagada' });
+    }
+
+    const actualizada = await prisma.planillas.update({
+      where: { id_planilla },
+      data: { estado: 'Pagada' },
+    });
+
+    res.json({ mensaje: 'planilla marcada como pagada', planilla: actualizada });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ mensaje: 'error interno al actualizar la planilla' });
+  }
+});
+
 export default router;

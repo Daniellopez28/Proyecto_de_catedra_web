@@ -1,3 +1,4 @@
+import enrutadorInventario from './rutas/inventarioRutas.js';
 import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';

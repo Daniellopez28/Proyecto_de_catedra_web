@@ -27,3 +27,22 @@ export function calcular_renta_quincenal(base_gravada) {
   const exceso = base_gravada - tramo.exceso_sobre;
   return redondear(tramo.cuota_fija + exceso * tramo.porcentaje);
 }
+
+// calcula todos los descuentos de un empleado para una quincena
+export function calcular_planilla_empleado(salario_base_mensual) {
+  const salario_bruto = redondear(Number(salario_base_mensual) / 2);
+  const descuento_isss = redondear(
+    Math.min(salario_bruto, techo_isss_quincenal) * tasa_isss
+  );
+  const descuento_afp = redondear(salario_bruto * tasa_afp);
+
+  // la renta se calcula despues de restar isss y afp
+  const base_gravada = redondear(salario_bruto - descuento_isss - descuento_afp);
+  const descuento_renta = calcular_renta_quincenal(base_gravada);
+
+  const salario_neto = redondear(
+    salario_bruto - descuento_isss - descuento_afp - descuento_renta
+  );
+
+  return { salario_bruto, descuento_isss, descuento_afp, descuento_renta, salario_neto };
+}

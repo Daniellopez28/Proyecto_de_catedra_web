@@ -1,3 +1,4 @@
+import enrutadorInventario from './rutas/inventarioRutas.js';
 import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
@@ -10,6 +11,9 @@ app.use(express.json());
 app.get('/', (req, res) =>{
     res.send('API del Restaurante Orígenes SV - Módulo de Ventas funcionando');
 });
+
+// Módulo Inventario y Recetas (Carlos)
+app.use('/api/inventario', enrutadorInventario);
 
 const PORT = 3000;
 app.listen(PORT,() => {

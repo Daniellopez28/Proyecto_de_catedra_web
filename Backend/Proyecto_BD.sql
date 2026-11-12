@@ -2,10 +2,10 @@
 --Base de datos en SQL server
 --Identity(1,1) significa que el campo es autoincrementable y empieza en 1 y se incrementa de 1 en 1
 
-create database Restaurante_Orígenes_SV;
+create database Restaurante_Origenes_SV;
 go
 
-use Restaurante_Orígenes_SV;
+use Restaurante_Origenes_SV;
 go
 
 CREATE TABLE roles (

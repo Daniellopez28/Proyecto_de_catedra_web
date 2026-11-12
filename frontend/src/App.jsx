@@ -1,8 +1,8 @@
 import './App.css'
-import POSComponent from '../components/pos/pos-component.jsx'
+import SideNavbar from '../components/login.jsx'
 
 function App() {
-  return <POSComponent />
+  return <SideNavbar />
 }
 
 export default App

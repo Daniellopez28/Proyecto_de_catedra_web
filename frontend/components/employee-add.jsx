@@ -44,7 +44,7 @@ function EmployeeAdd() {
                         <div className='employee-personal-information employee-personal-information--personal'>
                             <div className='employee-field employee-field--personal-full'>
                                 <label htmlFor='employee-name'>Nombre completo</label>
-                                <input id='employee-name' type="text" placeholder='Ej. Ricardo Iglesias' />
+                                <input id='employee-name' type="text" placeholder='Ej. Ricardo Ernesto Iglesias Flores' />
                             </div>
                             <div className='employee-field employee-field--personal-full'>
                                 <label htmlFor='employee-document'>Documento de identidad (DUI/Pasaporte)</label>

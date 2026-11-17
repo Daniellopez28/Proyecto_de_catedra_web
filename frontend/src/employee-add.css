@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+
+:root {
+    background-color: #f7f6f2;
+    --font-family: 'Inter', sans-serif;
+
+}
+
+.employee-add-container{
+    box-sizing: border-box;
+    width: min(80%, 900px);
+    margin: 48px auto;
+    padding: 24px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.employee-image{
+    width: 24px;
+    height: 24px;
+}
+
+.employee-title{
+    font-size: 20px;
+}
+
+.employee-personal-information-title{
+    color: black;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.employee-section-divider{
+    border: 0;
+    border-top: 1px solid #e5e5e5;
+    margin: 24px 0 0;
+}
+
+.employee-personal-information{
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px 14px;
+}
+
+.employee-field{
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.employee-field--full{
+    grid-column: 1 / -1;
+}
+
+.employee-field--date{
+    grid-column: span 3;
+}
+
+.employee-field--email{
+    grid-column: span 2;
+}
+
+.employee-field--phone{
+    grid-column: span 1;
+}
+
+.employee-field label{
+    color: #222;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.employee-field input{
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    padding: 8px 10px;
+    border: 1px solid #b8b8b8;
+    border-radius: 9px;
+    background-color: #fff;
+    color: #222;
+    font: inherit;
+}
+
+@media (max-width: 600px){
+    .employee-add-container{
+        width: calc(100% - 32px);
+        margin: 24px auto;
+        padding: 18px;
+    }
+
+    .employee-field--date,
+    .employee-field--email,
+    .employee-field--phone{
+        grid-column: 1 / -1;
+    }
+}

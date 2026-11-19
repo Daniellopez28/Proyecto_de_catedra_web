@@ -6,7 +6,12 @@ import cardTextIcon from '../src/assets/card-text.svg'
 import Success from './success.jsx'
 import { useState } from 'react'
 
-function EmployeeAdd() {
+function EmployeeAdd(Open, closed) {
+
+    if (!open){
+        return null;
+    }
+
     const [showSuccess, setShowSuccess] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -186,9 +191,9 @@ function EmployeeAdd() {
                     </section>
                     <hr className='employee-section-divider' />
                     <div className='employee-form-actions'>
-                        <button className='employee-cancel-button' type='button'>Cancelar</button>
+                        <button className='employee-cancel-button' type='button' onClick={closed}>Cancelar</button>
                         <button className='employee-submit-button' type='submit' disabled={isSubmitting}>
-                            {isSubmitting ? 'Registrando...' : 'Registrar Personal'}
+                            {isSubmitting ? 'Registrando...' : 'Registrar Empleado'}
                         </button>
                         
                     </div>

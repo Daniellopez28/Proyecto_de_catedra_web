@@ -7,12 +7,12 @@ import Success from './success.jsx'
 import { useState } from 'react'
 
 function EmployeeAdd({ open, closed }) {
+    const [showSuccess, setShowSuccess] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     if (!open) {
         return null;
     }
-
-    const [showSuccess, setShowSuccess] = useState(false)
-    const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleSubmit = (event) => {
         event.preventDefault()

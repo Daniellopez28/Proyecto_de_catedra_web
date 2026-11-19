@@ -301,7 +301,6 @@ function EmployeeComponent() {
                 </section>
             </div>
             <RegisterEmployee open={showSuccess} closed={() => setShowSuccess(false)} />
-
         </main>
     )
 }

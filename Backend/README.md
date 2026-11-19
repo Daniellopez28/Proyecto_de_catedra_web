@@ -1,27 +1,27 @@
 # Backend
 
-## Configuración
+## Configuracion
 
-El backend necesita una instancia accesible de SQL Server y la base de datos
-`Restaurante_Origenes_SV`. Si aún no existe, crea la base y sus tablas ejecutando
-`Proyecto_BD.sql` desde SQL Server Management Studio o Azure Data Studio.
+Abrir la base de datos OrigeneSV.sql en sql manager, hacer la conexion a un contenedor de docker con la siguiente linea:
 
-Desde PowerShell, en la carpeta `Backend`, crea el archivo local de configuración:
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" -p 1432:1433 --name proyecto_web -v sqlserver_data:/var/opt/mssql -d mcr.microsoft.com/mssql/server:2022-latest
 
-```powershell
-Copy-Item .env.example .env
-```
+este creara un contenedor de docker, luego en sql server pondras los siguientes datos:
 
-Edita `Backend/.env` y reemplaza en `DATABASE_URL` el servidor, usuario y
-contraseña con los de tu instancia. El ejemplo usa SQL Server en `localhost:1433`
-y autenticación de SQL Server; si tu instancia usa otro puerto o autenticación,
-ajusta la cadena de conexión. No compartas ni subas el archivo `.env`.
+- Nombre de el servidor: localhost,1432
+- Nombre de usuario: sa
+- contrasenia: ProyectoWeb@2026
 
-Luego instala dependencias y ejecuta el backend:
+luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo con F5.
 
-```powershell
+En el proyecto: 
+Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
+
+//Conexion a la database en docker
+DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=ProyectoWeb@2026;encrypt=true;trustServerCertificate=true"
+
+abre una terminal en la carpeta de backend y ejecuta lo siguiente:
 npm install
+npx prisma generate
 npm run dev
-```
 
-La instalación genera el cliente de Prisma automáticamente.

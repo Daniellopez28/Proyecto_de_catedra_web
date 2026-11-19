@@ -3,8 +3,27 @@ import personalInformation from '../src/assets/person.svg'
 import briefcaseIcon from '../src/assets/briefcase.svg'
 import specificationIcon from '../src/assets/coin.svg'
 import cardTextIcon from '../src/assets/card-text.svg'
+import Success from './success.jsx'
+import { useState } from 'react'
 
 function EmployeeAdd() {
+    const [showSuccess, setShowSuccess] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const handleSubmit = (event) => {
+        event.preventDefault()
+        setIsSubmitting(true)
+
+        const form = event.currentTarget
+        const employeeData = Object.fromEntries(new FormData(form).entries())
+
+        window.setTimeout(() => {
+            console.log('Simulación de registro:', employeeData)
+            form.reset()
+            setIsSubmitting(false)
+            setShowSuccess(true)
+        }, 500)
+    }
 
     const EmployeeTest = [
         { position: 'Barista', branch: 'Santa Elena' },
@@ -30,9 +49,11 @@ function EmployeeAdd() {
         { format: 'Por Horas' }
     ]
 
+    
+
     return (
         <main className='employee-form-main'>
-            <form action="">
+            <form onSubmit={handleSubmit}>
                 <div className='employee-add-container'>
                     <header className='employee-form-header'>
                         <h1>Inscripción de Nuevo Personal</h1>
@@ -166,11 +187,14 @@ function EmployeeAdd() {
                     <hr className='employee-section-divider' />
                     <div className='employee-form-actions'>
                         <button className='employee-cancel-button' type='button'>Cancelar</button>
-                        <button className='employee-submit-button' type='submit'>Registrar Personal</button>
+                        <button className='employee-submit-button' type='submit' disabled={isSubmitting}>
+                            {isSubmitting ? 'Registrando...' : 'Registrar Personal'}
+                        </button>
                         
                     </div>
                 </div>
             </form>
+            <Success isOpen={showSuccess} onClose={() => setShowSuccess(false)} />
         </main>
     )
 

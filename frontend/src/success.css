@@ -9,12 +9,15 @@
 
 
 .success-page {
-    min-height: 100svh;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
     padding: 24px;
+    background: rgba(41, 45, 41, 0.35);
 }
 
 .success-main-container{
@@ -27,7 +30,7 @@
     border: 1px solid #e7e6e4;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-    width: min(50%, 600px);
+    width: min(600px, calc(100% - 48px));
     box-sizing: border-box;
 }
 

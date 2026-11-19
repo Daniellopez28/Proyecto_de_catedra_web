@@ -6,9 +6,8 @@ import cardTextIcon from '../src/assets/card-text.svg'
 import Success from './success.jsx'
 import { useState } from 'react'
 
-function EmployeeAdd(Open, closed) {
-
-    if (!open){
+function EmployeeAdd({ open, closed }) {
+    if (!open) {
         return null;
     }
 
@@ -28,6 +27,11 @@ function EmployeeAdd(Open, closed) {
             setIsSubmitting(false)
             setShowSuccess(true)
         }, 500)
+    }
+
+    const closeSuccessAndForm = () => {
+        setShowSuccess(false)
+        closed()
     }
 
     const EmployeeTest = [
@@ -199,7 +203,7 @@ function EmployeeAdd(Open, closed) {
                     </div>
                 </div>
             </form>
-            <Success isOpen={showSuccess} onClose={() => setShowSuccess(false)} />
+            <Success isOpen={showSuccess} onClose={closeSuccessAndForm} />
         </main>
     )
 

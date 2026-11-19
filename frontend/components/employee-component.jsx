@@ -6,11 +6,6 @@ import RegisterEmployee from './employee-add'
 function EmployeeComponent() {
     // Valores de muestra luego se usaran resultados de consultas SQL.
     //Falta ver la logica para sql
-
-        if (!open){
-        return null;
-    }
-
     const [showSuccess, setShowSuccess] = useState(false)
 
     const employeeTest = [
@@ -182,7 +177,11 @@ function EmployeeComponent() {
                         Equipo Orígenes · Expedientes, puestos y condiciones de contratación
                     </p>
                 </div>
-                <button className="employee-add-button" type="button">
+                <button
+                    className="employee-add-button"
+                    type="button"
+                    onClick={() => setShowSuccess(true)}
+                >
                     <span aria-hidden="true">+</span>
                     Nuevo empleado
                 </button>

@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
 import planilla_routes from './routes/planilla.routes.js';
+/*Importa las rutas del POS dentro de tu archivo principal de Express*/
+import posRutas from './rutas/posRutas.js';
 
 const app = express();
 app.use(cors());

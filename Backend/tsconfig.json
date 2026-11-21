@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "types": ["node"],
-    "esModuleInterop": true,
-    "strict": true
+    "target": "ES2020", // Versión moderna de JS compatible con Node[cite: 369]
+    "module": "CommonJS", // Sistema de módulos configurado en el proyecto[cite: 369]
+    "types": ["node"], // Habilita definiciones globales de Node (process, __dirname, etc.)[cite: 369]
+    "esModuleInterop": true, // Permite importar módulos CommonJS/ESM sin conflictos[cite: 369]
+    "strict": true // Activa comprobaciones estrictas de tipos[cite: 369]
   }
 }

@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
+  url = env("DATABASE_URL") // Lee la cadena de conexión desde .env o variables del servidor
 }
 
 model cajas {

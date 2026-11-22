@@ -1,0 +1,27 @@
+# Backend
+
+## Configuracion
+
+Abrir la base de datos OrigeneSV.sql en sql manager, hacer la conexion a un contenedor de docker con la siguiente linea:
+
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" -p 1432:1433 --name proyecto_web -v sqlserver_data:/var/opt/mssql -d mcr.microsoft.com/mssql/server:2022-latest
+
+este creara un contenedor de docker, luego en sql server pondras los siguientes datos:
+
+- Nombre de el servidor: localhost,1432
+- Nombre de usuario: sa
+- contrasenia: ProyectoWeb@2026
+
+luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo con F5.
+
+En el proyecto: 
+Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
+
+//Conexion a la database en docker
+DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=ProyectoWeb@2026;encrypt=true;trustServerCertificate=true"
+
+abre una terminal en la carpeta de backend y ejecuta lo siguiente:
+npm install
+npx prisma generate
+npm run dev
+

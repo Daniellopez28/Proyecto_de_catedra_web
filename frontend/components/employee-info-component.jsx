@@ -56,7 +56,6 @@ function EmployeeInfoComponent({ employee }) {
 
             <footer className="employee-card-actions">
                 <button type="button">Editar expediente</button>
-                <button type="button">Ver en planilla</button>
             </footer>
         </article>
     );

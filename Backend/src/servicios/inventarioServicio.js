@@ -1,3 +1,4 @@
+// Clase de error personalizada que extiende Error para asociar un código HTTP y detalle estructurado a fallos de inventario
 export class ErrorInventario extends Error {
     constructor(mensaje, codigoHttp = 400, detalle = null) {
         super(mensaje);
@@ -7,12 +8,12 @@ export class ErrorInventario extends Error {
     }
 }
 
-/** Redondea a 2 decimales (precisión de las columnas DECIMAL(10,2)). */
+//Funcion que redondea el numero a dos decimales 
 function redondearADosDecimales(valor) {
     return Math.round((valor + Number.EPSILON) * 100) / 100;
 }
 
-/** Valida el arreglo "productos" del body y suma los productos repetidos. */
+//Export para normalizar el arreglo de productos de una venta
 export function normalizarProductosVenta(productos) {
     if (!Array.isArray(productos) || productos.length === 0) {
         throw new ErrorInventario('Debe enviar al menos un producto en el arreglo "productos"', 400);
@@ -35,14 +36,14 @@ export function normalizarProductosVenta(productos) {
     return Array.from(cantidadesPorProducto, ([id_producto, cantidad]) => ({ id_producto, cantidad }));
 }
 
-/** Única definición de las reglas de alerta: 'AGOTADO', 'STOCK_BAJO' o null. */
+//Funcion para calificar el nivel de stock de un insumo
 function clasificarNivel(stockActual, stockMinimo) {
     if (stockActual <= 0) return 'AGOTADO';
     if (stockActual <= stockMinimo) return 'STOCK_BAJO';
     return null;
 }
 
-/** Convierte insumos en alertas (ignora inactivos); los AGOTADO van primero. */
+//Funcion para construir las alertas de stock a partir de un arreglo de insumos osea los insumos activos que estan en stock bajo o agotado
 function construirAlertas(insumos) {
     const alertas = [];
     for (const insumo of insumos) {
@@ -72,10 +73,7 @@ function construirAlertas(insumos) {
     return alertas;
 }
 
-/**
- * Calcula cuánto de cada insumo hace falta (solo lectura).
- * Lanza 404 si un producto no existe y 409 si está desactivado.
- */
+//Funcion para calcualr la explosion de materiales de una venta, es decir, calcular el consumo de insumos a partir de los productos vendidos y sus recetas
 async function calcularExplosion(cliente, productosVenta) {
     const idsProductos = productosVenta.map((producto) => producto.id_producto);
 
@@ -144,7 +142,7 @@ async function calcularExplosion(cliente, productosVenta) {
     return { consumos, productosSinReceta };
 }
 
-/** Lista los insumos cuyo stock no alcanza para el consumo calculado. */
+//Funcion para obtener los insumos que no alcanzan para otra orden
 function obtenerFaltantes(consumos) {
     return consumos
         .filter((consumo) => consumo.stock_actual < consumo.cantidad_total)
@@ -158,7 +156,7 @@ function obtenerFaltantes(consumos) {
         }));
 }
 
-/** Indica si el inventario alcanza para la orden, sin modificar nada. */
+//Export para devolver el consumo de insumos a partir de los productos vendidos y sus recetas 
 export async function simularExplosion(cliente, productosVenta) {
     const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta);
     const faltantes = obtenerFaltantes(consumos);
@@ -175,11 +173,7 @@ export async function simularExplosion(cliente, productosVenta) {
     };
 }
 
-/**
- * Descuenta los insumos. Llamar con el cliente de una transacción (tx).
- * Protección doble: verificación previa (informa todos los faltantes) y UPDATE condicionado
- * a stock_actual >= cantidad (si otra venta se llevó el stock, afecta 0 filas y aborta).
- */
+//Export para descontar el consumo de insumso 
 export async function ejecutarExplosion(cliente, productosVenta) {
     const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta);
 
@@ -222,13 +216,13 @@ export async function ejecutarExplosion(cliente, productosVenta) {
     };
 }
 
-/** Insumos activos agotados o bajo el mínimo. Se filtra en memoria porque Prisma no compara dos columnas. */
+//Export para obtener alertas para los insumos que estan con un stock bajo o agotado
 export async function obtenerAlertasStock(cliente) {
     const insumosActivos = await cliente.insumos.findMany({ where: { activo: true } });
     return construirAlertas(insumosActivos);
 }
 
-/** Tabla de inventario: insumos activos con su estado (NORMAL, STOCK_BAJO o AGOTADO). */
+//Export para listar los insumos con sus stock y estado
 export async function listarInsumos(cliente) {
     const insumos = await cliente.insumos.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } });
 
@@ -247,10 +241,7 @@ export async function listarInsumos(cliente) {
     });
 }
 
-/**
- * Recetas de los productos activos con su costo de elaboración (suma de cantidad x costo promedio).
- * Con idProducto devuelve solo esa; lanza 404 si no existe o está desactivado.
- */
+//Export que funciona para obtener los insumos que se encuentran bajos para las recetas
 export async function obtenerRecetas(cliente, idProducto = null) {
     const filtroProducto = { activo: true };
     if (idProducto !== null) filtroProducto.id_producto = idProducto;

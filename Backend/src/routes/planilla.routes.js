@@ -1,148 +1,128 @@
-import express from 'express';
-import prisma from '../config/prisma.js';
-import { calcular_planilla_empleado, redondear } from '../services/planilla.service.js';
+//routa encargada de manejas las peticiones de planilla
+import { Router } from 'express'; //importamos el express para que se cree la ruta 
+import prisma from '../config/prisma.js'; //importamos la configuracion de la base de datos 
+import { calcular_planilla_empleado, redondear } from '../services/planilla.service.js'; //importamos los servicios de la planilla
+import { requerirPermiso } from '../../auth/permisos.js'; //importa la funcion de requerir permisos para que solo usuarios con permiso puedan acceder 
 
-const router = express.Router();
-const dia_en_ms = 24 * 60 * 60 * 1000;
+//Plantea la ruta de planilla 
+const router = Router();
+const diaEnMs = 24 * 60 * 60 * 1000;
 
-// convierte 'aaaa-mm-dd' en date, o null si no es valida
-function convertir_fecha(texto) {
+//funcion para convertir la fecha de texto a una fecha valida
+function convertirFecha(texto) {
   if (typeof texto !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(texto)) return null;
   const fecha = new Date(`${texto}T00:00:00.000Z`);
-  return Number.isNaN(fecha.getTime()) ? null : fecha;
+  if (Number.isNaN(fecha.getTime()) || fecha.toISOString().slice(0, 10) !== texto) return null;
+  return fecha;
 }
 
-// post /api/planillas/generar
-// body: { "periodo_inicio": "2026-11-01", "periodo_fin": "2026-11-15" }
-router.post('/generar', async (req, res) => {
+//funcion para convertir un texto a un id positivo
+function idPositivo(texto) {
+  const id = Number(texto);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+//Ruta que maneja la generacion de planilla, si ya existe devuelve un 409, si no hay empleados devuelve un 404 y si es invalido devuelve un 400
+router.post('/generar', requerirPermiso('generar_planillas'), async (req, res) => {
+  const inicio = convertirFecha(req.body?.periodo_inicio);
+  const fin = convertirFecha(req.body?.periodo_fin);
+  if (!inicio || !fin || fin < inicio || (fin - inicio) / diaEnMs + 1 > 16) {
+    return res.status(400).json({ mensaje: 'Envíe un periodo válido de hasta 16 días' });
+  }
+
   try {
-    const { periodo_inicio, periodo_fin } = req.body;
+    const resultado = await prisma.$transaction(async (tx) => {
+      const existente = await tx.planillas.findFirst({
+        where: { tipo_planilla: 'quincenal', periodo_inicio: inicio, periodo_fin: fin }
+      });
+      if (existente) throw Object.assign(new Error('Ya existe una planilla para ese periodo'), { status: 409 });
 
-    const inicio = convertir_fecha(periodo_inicio);
-    const fin = convertir_fecha(periodo_fin);
+      const empleados = await tx.empleados.findMany({
+        where: { activo: true, tipo_planilla: 'quincenal' }
+      });
+      if (!empleados.length) throw Object.assign(new Error('No hay empleados quincenales activos'), { status: 404 });
 
-    if (!inicio || !fin) {
-      return res.status(400).json({ mensaje: 'las fechas deben tener formato aaaa-mm-dd' });
-    }
-    if (fin < inicio) {
-      return res.status(400).json({ mensaje: 'la fecha fin no puede ser menor a la fecha inicio' });
-    }
-    if ((fin - inicio) / dia_en_ms + 1 > 16) {
-      return res.status(400).json({ mensaje: 'una quincena no puede exceder 16 dias' });
-    }
+      const detalles = empleados.map((empleado) => ({
+        id_empleado: empleado.id_empleado,
+        ...calcular_planilla_empleado(empleado.salario_base)
+      }));
+      const total_pagar = redondear(detalles.reduce((total, detalle) => total + detalle.salario_neto, 0));
 
-    // evita generar dos veces la misma quincena
-    const existente = await prisma.planillas.findFirst({
-      where: { tipo_planilla: 'Quincenal', periodo_inicio: inicio, periodo_fin: fin },
-    });
-    if (existente) {
-      return res.status(409).json({ mensaje: 'ya existe una planilla para ese periodo' });
-    }
+      return tx.planillas.create({
+        data: {
+          periodo_inicio: inicio,
+          periodo_fin: fin,
+          tipo_planilla: 'quincenal',
+          total_pagar,
+          estado: 'generada',
+          planilla_detalle: { create: detalles }
+        },
+        include: { planilla_detalle: true }
+      });
+    }, { isolationLevel: 'Serializable' });
 
-    const empleados = await prisma.empleados.findMany({
-      where: { activo: true, tipo_planilla: 'Quincenal' },
-    });
-    if (empleados.length === 0) {
-      return res.status(404).json({ mensaje: 'no hay empleados activos con planilla quincenal' });
-    }
-
-    const detalles = empleados.map((empleado) => ({
-      id_empleado: empleado.id_empleado,
-      ...calcular_planilla_empleado(empleado.salario_base),
-    }));
-
-    const total_pagar = redondear(
-      detalles.reduce((acumulado, detalle) => acumulado + detalle.salario_neto, 0)
-    );
-
-    // se guarda la planilla y su detalle en una sola operacion
-    const planilla = await prisma.planillas.create({
-      data: {
-        periodo_inicio: inicio,
-        periodo_fin: fin,
-        tipo_planilla: 'Quincenal',
-        total_pagar,
-        estado: 'Generada',
-        planilla_detalle: { create: detalles },
-      },
-      include: { planilla_detalle: true },
-    });
-
-    res.status(201).json({ mensaje: 'planilla generada exitosamente', planilla });
+    return res.status(201).json({ mensaje: 'Planilla generada exitosamente', planilla: resultado });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: 'error interno al generar la planilla' });
+    if (error.status) return res.status(error.status).json({ mensaje: error.message });
+    if (error?.code === 'P2002') return res.status(409).json({ mensaje: 'Ya existe una planilla para ese periodo' });
+    console.error('Error al generar planilla:', error);
+    return res.status(500).json({ mensaje: 'Error interno al generar la planilla' });
   }
 });
 
-// get /api/planillas
-router.get('/', async (req, res) => {
+//Ruta para listar las planillas que se hayan generado, si no devuelve un 500
+router.get('/', requerirPermiso('ver_planillas'), async (_req, res) => {
   try {
-    const planillas = await prisma.planillas.findMany({
-      orderBy: { periodo_inicio: 'desc' },
-    });
-    res.json(planillas);
+    const planillas = await prisma.planillas.findMany({ orderBy: { periodo_inicio: 'desc' } });
+    return res.json(planillas);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: 'error interno al listar las planillas' });
+    console.error('Error al listar planillas:', error);
+    return res.status(500).json({ mensaje: 'Error interno al listar las planillas' });
   }
 });
 
-// get /api/planillas/:id
-router.get('/:id', async (req, res) => {
+//Ruta para obtener una planilla en especifico, buscando por su id
+router.get('/:id', requerirPermiso('ver_planillas'), async (req, res) => {
+  const id_planilla = idPositivo(req.params.id);
+  if (!id_planilla) return res.status(400).json({ mensaje: 'Id de planilla inválido' });
   try {
-    const id_planilla = Number.parseInt(req.params.id, 10);
-    if (Number.isNaN(id_planilla)) {
-      return res.status(400).json({ mensaje: 'id de planilla invalido' });
-    }
-
     const planilla = await prisma.planillas.findUnique({
       where: { id_planilla },
       include: {
         planilla_detalle: {
-          include: {
-            empleados: { select: { nombre_completo: true, dui: true, cargo: true } },
-          },
-        },
-      },
+          include: { empleados: { select: { nombre_completo: true, dui: true, cargo: true } } }
+        }
+      }
     });
-
-    if (!planilla) {
-      return res.status(404).json({ mensaje: 'planilla no encontrada' });
-    }
-
-    res.json(planilla);
+    if (!planilla) return res.status(404).json({ mensaje: 'Planilla no encontrada' });
+    return res.json(planilla);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: 'error interno al consultar la planilla' });
+    console.error('Error al consultar planilla:', error);
+    return res.status(500).json({ mensaje: 'Error interno al consultar la planilla' });
   }
 });
 
-// put /api/planillas/:id/pagar
-router.put('/:id/pagar', async (req, res) => {
+//Ruta para marcar una planilla como pagada, para los empleados que ya se les haya pagado su salario.
+router.put('/:id/pagar', requerirPermiso('generar_planillas'), async (req, res) => {
+  const id_planilla = idPositivo(req.params.id);
+  if (!id_planilla) return res.status(400).json({ mensaje: 'Id de planilla inválido' });
   try {
-    const id_planilla = Number.parseInt(req.params.id, 10);
-    if (Number.isNaN(id_planilla)) {
-      return res.status(400).json({ mensaje: 'id de planilla invalido' });
-    }
-
-    const planilla = await prisma.planillas.findUnique({ where: { id_planilla } });
-    if (!planilla) {
-      return res.status(404).json({ mensaje: 'planilla no encontrada' });
-    }
-    if (planilla.estado === 'Pagada') {
-      return res.status(409).json({ mensaje: 'la planilla ya fue marcada como pagada' });
-    }
-
-    const actualizada = await prisma.planillas.update({
-      where: { id_planilla },
-      data: { estado: 'Pagada' },
+    const resultado = await prisma.$transaction(async (tx) => {
+      const planilla = await tx.planillas.findUnique({ where: { id_planilla } });
+      if (!planilla) return { status: 404 };
+      if (planilla.estado === 'pagada') return { status: 409 };
+      const actualizada = await tx.planillas.update({
+        where: { id_planilla },
+        data: { estado: 'pagada' }
+      });
+      return { status: 200, planilla: actualizada };
     });
-
-    res.json({ mensaje: 'planilla marcada como pagada', planilla: actualizada });
+    if (resultado.status === 404) return res.status(404).json({ mensaje: 'Planilla no encontrada' });
+    if (resultado.status === 409) return res.status(409).json({ mensaje: 'La planilla ya está pagada' });
+    return res.json({ mensaje: 'Planilla marcada como pagada', planilla: resultado.planilla });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ mensaje: 'error interno al actualizar la planilla' });
+    console.error('Error al marcar planilla pagada:', error);
+    return res.status(500).json({ mensaje: 'Error interno al actualizar la planilla' });
   }
 });
 

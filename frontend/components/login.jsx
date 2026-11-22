@@ -1,154 +1,87 @@
+// CORRECCIÓN: autentica contra el backend y conserva el token para las llamadas protegidas.
+import { useState } from 'react';
 import '../src/login.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { useState } from 'react';
+import { iniciarSesion } from '../src/api.js';
 
 function Login({ onLogin }) {
-    const [correo, setCorreo] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [cargando, setCargando] = useState(false);
+  const [correo, setCorreo] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [cargando, setCargando] = useState(false);
 
-    //funcion que se ejecuta cuadno se da clic en el boton 'ACCEDER'
-    const manejarLogin = async (e) => {
-        e.preventDefault(); // Evita que la página se recargue
-        setError('');
-        setCargando(true);
+  async function manejarLogin(event) {
+    event.preventDefault();
+    setError('');
+    setCargando(true);
+    try {
+      const resultado = await iniciarSesion(correo.trim(), password);
+      onLogin({ usuario: resultado.usuario, token: resultado.token });
+    } catch (loginError) {
+      setError(loginError.message);
+    } finally {
+      setCargando(false);
+    }
+  }
 
-        try {
-            // cambio: hacemos la petición a tu Backend
-            const respuesta = await fetch('http://localhost:3000/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ correo, password })
-            });
-
-            const datos = await respuesta.json();
-
-            if (respuesta.ok) {
-                localStorage.setItem('usuarioLogueado', JSON.stringify(datos.usuario));
-                onLogin(datos.usuario);
-            } else {
-                setError(datos.mensaje || 'Correo o contraseña incorrectos');
-            }
-        } catch (error) {
-            setError('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.');
-        } finally {
-            setCargando(false);
-        }
-    };
-
-    return (
-        <section className='loginSection'>
-            <div className='mainContainer'>
-                <div className="px-4 py-5 px-md-5 text-center text-lg-start" >
-                    <div className="container" >
-                        <div className="row gx-lg-5 align-items-center" >
-                            <div className="col-lg-6 mb-5 mb-lg-5">
-                                <h1 className="my-5 display-3 fw-bold ls-tight">
-                                    Todo listo <br />
-                                    <span className=" " style={{ color: '#B95136' }}>para un buen servicio</span>
-                                </h1>
-                                <p style={{ color: '#7A7D75' }}>
-                                    Ingresa a tu espacio de trabajo para continuar la
-                                    operación de tu sucursal.
-                                </p>
-                            </div>
-
-                            <div className="col-lg-6 mb-5 mb-lg-0" >
-                                <div className="card" style={{ borderRadius: '16px' }}>
-                                    <div className="card-body py-5 px-md-5">
-                                        <h3 className="fw-bold ls-tight">Iniciar sesión</h3>
-                                        <span style={{ color: '#7A7D75', fontSize: '16px' }}>Usa las credenciales de tu cuenta para iniciar sesión.</span>
-                                        <form onSubmit={manejarLogin}>
-                                            <div data-mdb-input-init className="form-outline mb-4" style={{ marginTop: '20px' }}>
-                                                <label className="form-label fw-bold" htmlFor="form3Example3" style={{ fontSize: '16px' }}>Usuario</label>
-                                                <input
-                                                    type="email"
-                                                    id="form3Example3"
-                                                    className="form-control"
-                                                    value={correo}
-                                                    onChange={(event) => setCorreo(event.target.value)}
-                                                    autoComplete="username"
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div data-mdb-input-init className="form-outline mb-4">
-                                                <label className="form-label fw-bold" htmlFor="form3Example4" style={{ fontSize: '16px' }}>Contraseña</label>
-                                                <input
-                                                    type="password"
-                                                    id="form3Example4"
-                                                    className="form-control"
-                                                    value={password}
-                                                    onChange={(event) => setPassword(event.target.value)}
-                                                    autoComplete="current-password"
-                                                    required
-                                                />
-                                            </div>
-                                            {error && <div className="alert alert-danger" role="alert">{error}</div>}
-                                            <button
-                                                type="submit"
-                                                data-mdb-button-init
-                                                data-mdb-ripple-init
-                                                className="button-custom btn btn-block mb-4 p"
-                                                disabled={cargando}
-                                            >
-                                                
-                                                {/*flecha para acceder*/}
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-right-short mb-1" viewBox="0 0 16 16">
-                                                    <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8" />
-                                                </svg>
-
-                                                <span className="m-1">{cargando ? 'Ingresando...' : 'Acceder'}</span>
-                                            </button>
-
-                                            <div data-mdb-input-init className="form-outline mb-4">
-                                                {/*OJO FALTA PROGRAMAR BIEN LOS VALUE Y LA LOGICA */}
-                                                <label className="form-label fw-bold" htmlFor="form3Example4" style={{ fontSize: '14px' }}>Sucursal de acceso</label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Escalon
-                                                        </span>
-                                                    </div>
-                                                </label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Santa Tecla
-                                                        </span>
-                                                    </div>
-                                                </label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Mejicanos
-                                                        </span>
-                                                    </div>
-                                                </label>
-                                            </div>
-
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+  return (
+    <section className="loginSection">
+      <div className="mainContainer">
+        <div className="px-4 py-5 px-md-5 text-center text-lg-start">
+          <div className="container">
+            <div className="row gx-lg-5 align-items-center">
+              <div className="col-lg-6 mb-5">
+                <h1 className="my-5 display-3 fw-bold ls-tight">
+                  Todo listo <br />
+                  <span style={{ color: '#B95136' }}>para un buen servicio</span>
+                </h1>
+                <p style={{ color: '#7A7D75' }}>
+                  Ingresa a tu espacio de trabajo para continuar la operación de tu sucursal.
+                </p>
+              </div>
+              <div className="col-lg-6 mb-5 mb-lg-0">
+                <div className="card" style={{ borderRadius: '16px' }}>
+                  <div className="card-body py-5 px-md-5">
+                    <h3 className="fw-bold">Iniciar sesión</h3>
+                    <form onSubmit={manejarLogin}>
+                      <div className="mb-4 mt-4">
+                        <label className="form-label fw-bold" htmlFor="correo">Correo</label>
+                        <input
+                          id="correo"
+                          className="form-control"
+                          type="email"
+                          autoComplete="username"
+                          required
+                          value={correo}
+                          onChange={(event) => setCorreo(event.target.value)}
+                        />
+                      </div>
+                      <div className="mb-4">
+                        <label className="form-label fw-bold" htmlFor="password">Contraseña</label>
+                        <input
+                          id="password"
+                          className="form-control"
+                          type="password"
+                          autoComplete="current-password"
+                          required
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                        />
+                      </div>
+                      {error && <div className="alert alert-danger" role="alert">{error}</div>}
+                      <button className="button-custom btn btn-block mb-4" type="submit" disabled={cargando}>
+                        {cargando ? 'Ingresando...' : 'Acceder'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
+              </div>
             </div>
-        </section>
-
-        
-
-    );
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default Login;

@@ -1,5 +1,6 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
+//Este .js busca probar el servicio de el inventario, para ver si funciona con la base de datos y sus metodos tambien funcionan
+import { test } from 'node:test'; //llama a la libreria de el testeo para node
+import assert from 'node:assert/strict'; //llama a la libreria para hacer comparaciones de valores 
 import {
     ErrorInventario,
     normalizarProductosVenta,
@@ -8,9 +9,9 @@ import {
     obtenerAlertasStock,
     listarInsumos,
     obtenerRecetas
-} from '../src/servicios/inventarioServicio.js';
+} from '../src/servicios/inventarioServicio.js'; //llama a los metodos de el servicio para probarlo 
 
-/** Datos nuevos para cada prueba, así una no afecta a otra. */
+//hacemos una funcion para crear datos
 function crearDatosDePrueba() {
     return {
         productos: [
@@ -34,7 +35,7 @@ function crearDatosDePrueba() {
     };
 }
 
-/** Cliente Prisma falso: implementa solo las consultas que usa el servicio. */
+//Creamos un cliente 
 function crearClienteFalso(datos) {
     return {
         productos: {
@@ -71,11 +72,12 @@ function crearClienteFalso(datos) {
     };
 }
 
-/** Busca el stock actual de un insumo dentro de los datos de prueba. */
+//Funcion que nos permite obtener el stock de un insumo en especifico
 function stockDe(datos, idInsumo) {
     return datos.insumos.find((i) => i.id_insumo === idInsumo).stock_actual;
 }
 
+//Pruebas para ver que el servicio de inventario funcione
 test('vender 1 Latte descuenta 18 g de café, 250 ml de leche y 1 vaso', async () => {
     const datos = crearDatosDePrueba();
     const resultado = await ejecutarExplosion(crearClienteFalso(datos), [{ id_producto: 1, cantidad: 1 }]);
@@ -87,6 +89,7 @@ test('vender 1 Latte descuenta 18 g de café, 250 ml de leche y 1 vaso', async (
     assert.deepEqual(resultado.alertas_stock, []);
 });
 
+//Prueba para ver que el servicicio de el inventario funcione con mas de un producto
 test('vender 2 Lattes multiplica la receta por la cantidad vendida', async () => {
     const datos = crearDatosDePrueba();
     const resultado = await ejecutarExplosion(crearClienteFalso(datos), [{ id_producto: 1, cantidad: 2 }]);
@@ -97,6 +100,7 @@ test('vender 2 Lattes multiplica la receta por la cantidad vendida', async () =>
     assert.equal(cafe.stock_nuevo, 4964);
 });
 
+//prueba que busca verificar el servicio de inventario con productos que comparten insumos
 test('un insumo compartido por dos productos se suma y se descuenta una sola vez', async () => {
     const datos = crearDatosDePrueba();
     // 1 Latte (250 ml de leche) + 2 Capuchinos (150 ml cada uno) = 550 ml.
@@ -111,6 +115,7 @@ test('un insumo compartido por dos productos se suma y se descuenta una sola vez
     assert.equal(stockDe(datos, 2), 20000 - 550);
 });
 
+//prueba que verifica que un producto sin receta no descuente nada y se reporte 
 test('un producto sin receta no descuenta nada y se reporta', async () => {
     const datos = crearDatosDePrueba();
     const resultado = await ejecutarExplosion(crearClienteFalso(datos), [{ id_producto: 2, cantidad: 3 }]);
@@ -120,6 +125,7 @@ test('un producto sin receta no descuenta nada y se reporta', async () => {
     assert.equal(stockDe(datos, 1), 5000);
 });
 
+//prueba que verifica que un producto sin receta no descuente nada y se reporte, 
 test('si un insumo no alcanza se lanza 409, se informan todos los faltantes y no se descuenta nada', async () => {
     const datos = crearDatosDePrueba();
     datos.insumos[1].stock_actual = 100; // leche: solo 100 ml
@@ -136,11 +142,11 @@ test('si un insumo no alcanza se lanza 409, se informan todos los faltantes y no
         }
     );
 
-    // El café sí alcanzaba, pero por la regla "todo o nada" tampoco se tocó.
     assert.equal(stockDe(datos, 1), 5000);
     assert.equal(stockDe(datos, 2), 100);
 });
 
+//prueba para ver que el stock cambie dependiendo de la cantidad de productos que se vendan
 test('si el stock cambia entre la lectura y el descuento se lanza 409 (concurrencia)', async () => {
     const datos = crearDatosDePrueba();
     const cliente = crearClienteFalso(datos);
@@ -152,6 +158,7 @@ test('si el stock cambia entre la lectura y el descuento se lanza 409 (concurren
         (error) => error instanceof ErrorInventario && error.codigoHttp === 409
     );
 });
+
 
 test('un producto inexistente lanza 404 y uno desactivado lanza 409', async () => {
     const cliente = crearClienteFalso(crearDatosDePrueba());

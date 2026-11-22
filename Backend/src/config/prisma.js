@@ -1,16 +1,16 @@
+//archivo encargado de configurar la conexion a la base de datos, de una manera que pueda usar caulquier parte del back
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { PrismaMssql } from '@prisma/adapter-mssql';
-import 'dotenv/config'; // Asegura que lea el archivo .env
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  throw new Error('DATABASE_URL no está configurada en Backend/.env');
+  throw new Error('Falta DATABASE_URL en Backend/.env');
 }
 
-// PrismaMssql recibe la cadena directamente, no dentro de un objeto connectionString.
-const adapter = new PrismaMssql(databaseUrl);
-
-// Inicializamos Prisma pasándole el adaptador
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient({
+  adapter: new PrismaMssql(databaseUrl),
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error']
+});
 
 export default prisma;

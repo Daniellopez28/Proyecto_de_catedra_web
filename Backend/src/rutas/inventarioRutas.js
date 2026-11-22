@@ -1,3 +1,4 @@
+//Archivo para definir las rutas de el inventario
 import { Router } from 'express';
 import {
     explotarMateriales,

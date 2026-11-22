@@ -28,7 +28,14 @@ const sections = [
     ]
 ]
 
-function SideNavbar() {
+/*Componente de navegación lateral conservando estructura, íconos y clases*/
+function SideNavbar({ vistaActiva = 'Inicio', alCambiarVista }) {
+    /*Maneja el clic en cualquiera de las secciones del menú lateral*/
+    const manejarSeleccion = (nombreSeccion) => {
+        if (typeof alCambiarVista === 'function') {
+            alCambiarVista(nombreSeccion);
+        }
+    };
     return (
         <aside className="side-navbar">
             <div className="side-navbar-brand">Orígenes SV</div>

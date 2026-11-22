@@ -21,15 +21,23 @@ function Login({ onLogin }) {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ correo, password })
+                body: JSON.stringify({ correo, password, sucursal })
             });
-
+            
+            /*Convierte la respuesta del servidor a formato JSON*/
             const datos = await respuesta.json();
 
             if (respuesta.ok) {
-                localStorage.setItem('usuarioLogueado', JSON.stringify(datos.usuario));
-                onLogin(datos.usuario);
+                /*Combina los datos del usuario devueltos por el backend con la sucursal elegida*/
+                const usuarioConSucursal = {
+                    ...datos.usuario,
+                    sucursal: datos.usuario?.sucursal || sucursal
+                };
+                /*Guarda la sesión en localStorage y notifica al componente padre*/
+                localStorage.setItem('usuarioLogueado', JSON.stringify(usuarioConSucursal));
+                onLogin(usuarioConSucursal);
             } else {
+                /*Muestra el mensaje de error devuelto por el backend o uno por defecto*/
                 setError(datos.mensaje || 'Correo o contraseña incorrectos');
             }
         } catch (error) {

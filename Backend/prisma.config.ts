@@ -1,13 +1,13 @@
-import "dotenv/config";
-import { defineConfig } from "prisma/config";
+/*Backend/prisma.config.ts*/
+import 'dotenv/config';
+import { defineConfig, env } from 'prisma/config';
 
+/*Configuración de Prisma 7 para migraciones y CLI*/
 export default defineConfig({
-  schema: "prisma/schema.prisma",
-  migrations: {
-    path: "prisma/migrations",
-  },
+  /*Ruta del esquema de base de datos*/
+  schema: 'prisma/schema.prisma',
+  /*Configuración de conexión tomada de variables de entorno*/
   datasource: {
-    
-    url: process.env.DATABASE_URL!,
+    url: env('DATABASE_URL'),
   },
 });

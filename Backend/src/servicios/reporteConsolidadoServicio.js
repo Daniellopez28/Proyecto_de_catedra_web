@@ -2,7 +2,7 @@
 import prisma from '../config/prisma.js';
 
 /*Sucursales oficiales del restaurante en El Salvador*/
-const SUCURSALES_OFICIALES = ['Escalón', 'Santa Tecla', 'San Miguel'];
+const SUCURSALES_OFICIALES = ['Escalón', 'Santa Tecla', 'Mejicanos'];
 
 /*Redondea montos monetarios en USD a dos decimales*/
 function redondearUsd(valor) {

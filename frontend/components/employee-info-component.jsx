@@ -1,6 +1,6 @@
 import '../src/employee-info-component.css'
 
-function EmployeeInfoComponent({ employee }) {
+function EmployeeInfoComponent({ employee, onEdit }) {
     const initials = employee.name
         .split(/\s+/)
         .map((part) => part[0])
@@ -55,7 +55,7 @@ function EmployeeInfoComponent({ employee }) {
             </section>
 
             <footer className="employee-card-actions">
-                <button type="button">Editar expediente</button>
+                <button type="button" onClick={onEdit}>Editar expediente</button>
             </footer>
         </article>
     );

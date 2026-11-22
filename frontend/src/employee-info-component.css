@@ -66,6 +66,11 @@
     color: #99422d;
 }
 
+.employee-status.is-vacation {
+    background: #f1edda;
+    color: #807126;
+}
+
 .employee-details,
 .employee-affiliations {
     padding-top: 12px;

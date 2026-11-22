@@ -2,11 +2,13 @@ import '../src/employee-component.css'
 import { useState } from 'react'
 import EmployeeInfoComponent from './employee-info-component'
 import RegisterEmployee from './employee-add'
+import EmployeeEdit from './employee-edit'
 
 function EmployeeComponent() {
     // Valores de muestra luego se usaran resultados de consultas SQL.
     //Falta ver la logica para sql
     const [showSuccess, setShowSuccess] = useState(false)
+    const [showEdit, setShowEdit] = useState(false)
 
     const [employeeTest, setEmployeeTest] = useState([
         {
@@ -139,6 +141,16 @@ function EmployeeComponent() {
         ]);
         setSelectedEmployee(newEmployee.name);
     };
+    const updateEmployee = (updatedEmployee) => {
+        setEmployeeTest((currentEmployees) =>
+            currentEmployees.map((employee) =>
+                employee.name === selectedEmployee
+                    ? updatedEmployee
+                    : employee
+            )
+        )
+        setSelectedEmployee(updatedEmployee.name)
+    }
     //esta variable sirve para guardar el boton seleccionado
     const [selectedBranch, setSelectedBranch] = useState('Todos')
     const [selectedEmployee, setSelectedEmployee] = useState(employeeTest[0].name)
@@ -305,11 +317,20 @@ function EmployeeComponent() {
                     {selectedEmployee && (
                         <EmployeeInfoComponent
                             employee={employeeTest.find((employee) => employee.name === selectedEmployee)}
+                            onEdit={() => setShowEdit(true)}
                         />
                     )}
                 </section>
             </div>
             <RegisterEmployee open={showSuccess} closed={() => setShowSuccess(false)} onEmployeeAdded={addEmployee}/>
+            {showEdit && selectedEmployee && (
+                <EmployeeEdit
+                    open={showEdit}
+                    employee={employeeTest.find((employee) => employee.name === selectedEmployee)}
+                    onClose={() => setShowEdit(false)}
+                    onSave={updateEmployee}
+                />
+            )}
         </main>
     )
 }

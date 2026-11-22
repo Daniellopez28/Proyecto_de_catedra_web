@@ -1,0 +1,408 @@
+/* 1. Contenedor principal de la vista (.mp-shell) */
+.mp-shell {
+  min-height: 100vh;
+  background-color: #fdfcf9;
+  color: #292d29;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2. Barra superior / Topbar (.mp-topbar, marca, USD, fecha y usuario) */
+.mp-topbar {
+  height: 58px;
+  padding: 0 28px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e7e6e4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mp-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mp-brand-select {
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f221f;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.mp-topbar-divider {
+  color: #dcdad5;
+  font-size: 13px;
+}
+
+.mp-location-text {
+  font-size: 12px;
+  color: #7a7d75;
+}
+
+.mp-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.mp-usd-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: #f3f2ee;
+  color: #6f736b;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mp-date-text {
+  font-size: 12px;
+  color: #7a7d75;
+}
+
+.mp-user-box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.mp-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #f7eae3;
+  color: #b95136;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mp-user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.mp-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f221f;
+}
+
+.mp-user-role {
+  font-size: 10px;
+  color: #7a7d75;
+}
+
+/* 3. Área de contenido y cabecera de página (.mp-content, .mp-heading-row, + Nuevo producto) */
+.mp-content {
+  padding: 24px 32px 20px;
+  flex: 1;
+}
+
+.mp-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.mp-title {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1f221f;
+}
+
+.mp-subtitle {
+  margin: 0;
+  font-size: 12px;
+  color: #7a7d75;
+}
+
+.mp-btn-nuevo {
+  padding: 9px 15px;
+  border: 0;
+  border-radius: 7px;
+  background-color: #b95136;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mp-btn-nuevo:hover {
+  background-color: #99422d;
+}
+
+/* 4. Filtros por píldora, buscador y selector de sucursal (.mp-controls-row) */
+.mp-controls-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.mp-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mp-pill {
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid #e7e6e4;
+  background-color: #ffffff;
+  color: #5c605a;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mp-pill.active {
+  background-color: #f7eae3;
+  border-color: #e6c2b4;
+  color: #b95136;
+  font-weight: 600;
+}
+
+.mp-search-and-branch {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.mp-search-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mp-search-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6f736b;
+}
+
+.mp-search-box {
+  position: relative;
+  width: 230px;
+}
+
+.mp-search-box input {
+  width: 100%;
+  box-sizing: border-box;
+  height: 34px;
+  padding: 6px 30px 6px 11px;
+  border: 1px solid #e7e6e4;
+  border-radius: 7px;
+  background-color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  color: #292d29;
+}
+
+.mp-search-lupa {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8c8f88;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.mp-branch-col select {
+  height: 34px;
+  padding: 6px 12px;
+  border: 1px solid #e7e6e4;
+  border-radius: 7px;
+  background-color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #292d29;
+  cursor: pointer;
+}
+
+/* 5. Tarjeta de tabla, fila de alerta de stock y pie interno (.mp-table-card) */
+.mp-table-card {
+  background-color: #ffffff;
+  border: 1px solid #e7e6e4;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.mp-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.mp-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.mp-table thead th {
+  padding: 10px 16px;
+  background-color: #f2f2ed;
+  color: #7a7d75;
+  font-size: 11px;
+  font-weight: 500;
+  border-bottom: 1px solid #e7e6e4;
+  white-space: nowrap;
+}
+
+.mp-table tbody tr {
+  border-bottom: 1px solid #efeeeb;
+  cursor: pointer;
+}
+
+.mp-table tbody tr:hover {
+  background-color: #faf9f6;
+}
+
+.mp-table tbody tr.mp-row-alert {
+  background-color: #f8ebe7;
+}
+
+.mp-table tbody tr.mp-row-alert:hover {
+  background-color: #f5e3dd;
+}
+
+.mp-table tbody td {
+  padding: 10px 16px;
+  font-size: 12.5px;
+  color: #292d29;
+  white-space: nowrap;
+}
+
+.mp-col-prod,
+.mp-col-precio {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.mp-status-ok {
+  color: #47704e;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mp-status-low {
+  color: #9e3d28;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mp-no-aplica {
+  color: #8c8f88;
+  font-size: 12px;
+}
+
+.mp-receta-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #292d29;
+  cursor: pointer;
+}
+
+.mp-receta-btn.is-low {
+  color: #9e3d28;
+  font-weight: 600;
+}
+
+.mp-card-bottom {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mp-count-caption {
+  font-size: 11.5px;
+  color: #7a7d75;
+}
+
+.mp-open-recipe-btn {
+  padding: 7px 12px;
+  border: 1px solid #e7e6e4;
+  border-radius: 7px;
+  background-color: #ffffff;
+  color: #292d29;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+}
+
+.mp-open-recipe-btn:hover {
+  background-color: #faf9f6;
+}
+
+/* 6. Píldoras de regla de inventario y pie inferior (.mp-rules-pills, .mp-footer) */
+.mp-rules-pills {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mp-rule-elaborado {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background-color: #f8ebe7;
+  color: #9e3d28;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mp-rule-reventa {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background-color: #f1f0ec;
+  color: #6b6e67;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.mp-footer {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: #8c8f88;
+  flex-wrap: wrap;
+}

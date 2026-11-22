@@ -619,3 +619,4 @@ GO
 --Para el que quiera ver los distintos uesuarios que hay 
 USE OrigeneSV;
 SELECT id_usuario, correo, password_hash, activo FROM dbo.usuarios;
+

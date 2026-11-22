@@ -3,6 +3,7 @@ import { useState } from 'react'
 import Login from '../components/login.jsx'
 import SideNavbar from '../components/side-navbar.jsx'
 import MenuProductosView from '../components/MenuProductosView.jsx'
+import ProveedoresView from '../components/ProveedoresView.jsx'
 
 /* Usuario de muestra local para probar la vista sin depender del backend */
 const USUARIO_PRUEBA_LOCAL = {
@@ -34,11 +35,19 @@ function App() {
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
       <SideNavbar activeSection={activeSection} onSelectSection={setActiveSection} />
 
+      {/* 2. Renderiza la vista según la sección activa en el menú lateral */}
       {activeSection === 'Productos' ? (
         <div style={{ flex: 1, minWidth: 0 }}>
           <MenuProductosView
             onNuevoProducto={() => {}}
             onAbrirReceta={() => {}}
+          />
+        </div>
+      ) : activeSection === 'Proveedores' ? (
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <ProveedoresView
+            onNuevoProveedor={() => {}}
+            onPrepararAbono={() => {}}
           />
         </div>
       ) : (

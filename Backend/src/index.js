@@ -10,6 +10,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+/*Monta las rutas bajo el prefijo /api/pos*/
+app.use('/api/pos', posRutas);
 app.use('/api/planillas', planilla_routes);
 
 //Rutas de ventas

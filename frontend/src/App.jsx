@@ -2,30 +2,21 @@ import './App.css'
 import { useState } from 'react'
 import Login from '../components/login.jsx'
 import SideNavbar from '../components/side-navbar.jsx'
-import MenuProductosView from '../components/MenuProductosView.jsx'
-import ProveedoresView from '../components/ProveedoresView.jsx'
-
-/* Usuario de muestra local para probar la vista sin depender del backend */
-const USUARIO_PRUEBA_LOCAL = {
-  nombre_completo: 'Ana Villalobos',
-  rol: 'Gerente de operaciones'
-}
 
 function obtenerUsuarioGuardado() {
   const usuarioGuardado = localStorage.getItem('usuarioLogueado')
-  if (!usuarioGuardado) return USUARIO_PRUEBA_LOCAL
+  if (!usuarioGuardado) return null
 
   try {
     return JSON.parse(usuarioGuardado)
   } catch {
     localStorage.removeItem('usuarioLogueado')
-    return USUARIO_PRUEBA_LOCAL
+    return null
   }
 }
 
 function App() {
   const [usuario, setUsuario] = useState(obtenerUsuarioGuardado)
-  const [activeSection, setActiveSection] = useState('Productos')
 
   if (!usuario) {
     return <Login onLogin={setUsuario} />
@@ -33,40 +24,22 @@ function App() {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-      <SideNavbar activeSection={activeSection} onSelectSection={setActiveSection} />
-
-      {/* 2. Renderiza la vista según la sección activa en el menú lateral */}
-      {activeSection === 'Productos' ? (
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <MenuProductosView
-            onNuevoProducto={() => {}}
-            onAbrirReceta={() => {}}
-          />
-        </div>
-      ) : activeSection === 'Proveedores' ? (
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <ProveedoresView
-            onNuevoProveedor={() => {}}
-            onPrepararAbono={() => {}}
-          />
-        </div>
-      ) : (
-        <main style={{ flex: 1, padding: '40px' }}>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            style={{ float: 'right' }}
-            onClick={() => {
-              localStorage.removeItem('usuarioLogueado')
-              setUsuario(null)
-            }}
-          >
-            Cerrar sesión
-          </button>
-          <h1>Bienvenido, {usuario.nombre_completo}</h1>
-          <p>Has iniciado sesión correctamente en Orígenes SV.</p>
-        </main>
-      )}
+      <SideNavbar />
+      <main style={{ flex: 1, padding: '40px' }}>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          style={{ float: 'right' }}
+          onClick={() => {
+            localStorage.removeItem('usuarioLogueado')
+            setUsuario(null)
+          }}
+        >
+          Cerrar sesión
+        </button>
+        <h1>Bienvenido, {usuario.nombre_completo}</h1>
+        <p>Has iniciado sesión correctamente en Orígenes SV.</p>
+      </main>
     </div>
   )
 }

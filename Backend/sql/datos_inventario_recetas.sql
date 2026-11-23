@@ -43,3 +43,82 @@ FROM (VALUES
 ) AS v(nombre, descripcion, precio_venta, categoria, es_reventa)
 WHERE NOT EXISTS (SELECT 1 FROM productos p WHERE p.nombre = v.nombre);
 
+--Recetas que usan insumos y productos
+INSERT INTO recetas_detalle (id_producto, id_insumo, cantidad_requerida)
+SELECT p.id_producto, i.id_insumo, v.cantidad_requerida
+FROM (VALUES
+    (N'Latte Grande', N'Tapadera 16oz', 1.00),
+    (N'Latte Grande', N'Viñeta', 1.00),
+    (N'Latte Chico', N'Café en grano', 12.00),
+    (N'Latte Chico', N'Leche entera', 180.00),
+    (N'Latte Chico', N'Vaso 12oz', 1.00),
+    (N'Latte Chico', N'Tapadera 12oz', 1.00),
+    (N'Latte Chico', N'Viñeta', 1.00),
+    (N'Capuchino Grande', N'Café en grano', 18.00),
+    (N'Capuchino Grande', N'Leche entera', 150.00),
+    (N'Capuchino Grande', N'Vaso 16oz', 1.00),
+    (N'Capuchino Grande', N'Tapadera 16oz', 1.00),
+    (N'Capuchino Grande', N'Viñeta', 1.00),
+    (N'Espresso Doble', N'Café en grano', 18.00),
+    (N'Espresso Doble', N'Vaso 12oz', 1.00),
+    (N'Espresso Doble', N'Tapadera 12oz', 1.00),
+    (N'Espresso Doble', N'Viñeta', 1.00),
+    (N'Americano Grande', N'Café en grano', 18.00),
+    (N'Americano Grande', N'Agua purificada', 300.00),
+    (N'Americano Grande', N'Vaso 16oz', 1.00),
+    (N'Americano Grande', N'Tapadera 16oz', 1.00),
+    (N'Americano Grande', N'Viñeta', 1.00),
+    (N'Moca Grande', N'Café en grano', 18.00),
+    (N'Moca Grande', N'Leche entera', 200.00),
+    (N'Moca Grande', N'Chocolate en polvo', 25.00),
+    (N'Moca Grande', N'Vaso 16oz', 1.00),
+    (N'Moca Grande', N'Tapadera 16oz', 1.00),
+    (N'Moca Grande', N'Viñeta', 1.00),
+    (N'Caramel Macchiato Grande', N'Café en grano', 18.00),
+    (N'Caramel Macchiato Grande', N'Leche entera', 220.00),
+    (N'Caramel Macchiato Grande', N'Jarabe de caramelo', 30.00),
+    (N'Caramel Macchiato Grande', N'Vaso 16oz', 1.00),
+    (N'Caramel Macchiato Grande', N'Tapadera 16oz', 1.00),
+    (N'Caramel Macchiato Grande', N'Viñeta', 1.00),
+    (N'Vainilla Latte Grande', N'Café en grano', 18.00),
+    (N'Vainilla Latte Grande', N'Leche entera', 220.00),
+    (N'Vainilla Latte Grande', N'Jarabe de vainilla', 30.00),
+    (N'Vainilla Latte Grande', N'Vaso 16oz', 1.00),
+    (N'Vainilla Latte Grande', N'Tapadera 16oz', 1.00),
+    (N'Vainilla Latte Grande', N'Viñeta', 1.00),
+    (N'Chocolate Caliente Grande', N'Leche entera', 250.00),
+    (N'Chocolate Caliente Grande', N'Chocolate en polvo', 35.00),
+    (N'Chocolate Caliente Grande', N'Vaso 16oz', 1.00),
+    (N'Chocolate Caliente Grande', N'Tapadera 16oz', 1.00),
+    (N'Chocolate Caliente Grande', N'Viñeta', 1.00),
+    (N'Chai Latte Grande', N'Concentrado de té chai', 100.00),
+    (N'Chai Latte Grande', N'Leche entera', 200.00),
+    (N'Chai Latte Grande', N'Vaso 16oz', 1.00),
+    (N'Chai Latte Grande', N'Tapadera 16oz', 1.00),
+    (N'Chai Latte Grande', N'Viñeta', 1.00),
+    (N'Frappé de Café Grande', N'Café en grano', 18.00),
+    (N'Frappé de Café Grande', N'Leche entera', 150.00),
+    (N'Frappé de Café Grande', N'Hielo', 200.00),
+    (N'Frappé de Café Grande', N'Crema batida', 20.00),
+    (N'Frappé de Café Grande', N'Vaso 16oz', 1.00),
+    (N'Frappé de Café Grande', N'Tapadera 16oz', 1.00),
+    (N'Frappé de Café Grande', N'Viñeta', 1.00),
+    (N'Cold Brew Grande', N'Café en grano', 30.00),
+    (N'Cold Brew Grande', N'Agua purificada', 250.00),
+    (N'Cold Brew Grande', N'Hielo', 150.00),
+    (N'Cold Brew Grande', N'Vaso 16oz', 1.00),
+    (N'Cold Brew Grande', N'Tapadera 16oz', 1.00),
+    (N'Cold Brew Grande', N'Viñeta', 1.00),
+    (N'Galleta de Chocolate', N'Galleta de Chocolate (reventa)', 1.00),
+    (N'Botella de agua 500 ml', N'Botella de agua 500 ml (reventa)', 1.00),
+    (N'Barra de granola', N'Barra de granola (reventa)', 1.00)
+) AS v(producto, insumo, cantidad_requerida)
+JOIN productos p ON p.nombre = v.producto
+JOIN insumos   i ON i.nombre = v.insumo
+WHERE NOT EXISTS (
+    SELECT 1 FROM recetas_detalle r
+    WHERE r.id_producto = p.id_producto AND r.id_insumo = i.id_insumo
+);
+
+COMMIT TRANSACTION;
+

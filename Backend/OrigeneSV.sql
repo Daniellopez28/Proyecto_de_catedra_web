@@ -167,3 +167,19 @@ create table dbo.insumos (
         constraint ck_insumos_costo        check (costo_promedio is null or costo_promedio >= 0)
         );
 go
+
+--tabla de gestion de productos para guardar los productos que se venden en el local
+create table dbo.productos (
+        id_producto  int identity(1,1) not null constraint pk_productos primary key,
+        nombre       varchar(150) not null,
+        descripcion  varchar(max) null,
+        precio_venta decimal(10,2) not null,   -- precio con iva incluido
+        categoria    varchar(50)  null,
+        es_reventa   bit null constraint df_productos_es_reventa default (0),
+        activo       bit null constraint df_productos_activo default (1),
+        stock_actual decimal(10,2) null constraint df_productos_stock default (0.00),
+        constraint ck_productos_precio check (precio_venta >= 0),
+        constraint ck_productos_stock  check (stock_actual is null or stock_actual >= 0)
+        );
+go
+

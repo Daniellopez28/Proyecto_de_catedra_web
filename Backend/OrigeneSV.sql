@@ -586,3 +586,243 @@ go
 if not exists (select 1 from sys.indexes where name = N'ix_reservas_mesa_fecha' and object_id = object_id(N'dbo.reservas'))
     create index ix_reservas_mesa_fecha on dbo.reservas (mesaid, fecha_hora_inicio);
 go
+
+--------seccion de datos de referencias--------
+--rol de pantalla_inicio, para que lso roles tengan la pantalla de inicio
+insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
+select v.nombre, v.descripcion, v.es_admin, v.pantalla
+from (values
+    ('administrador', 'administracion del sistema',            1, 'panel_principal'),
+    ('rrhh',          'personal y planillas',                  1, 'empleados'),
+    ('cajero',        'ventas y operaciones de caja',          0, 'caja'),
+    ('mesero',        'pedidos y atencion en salon',           0, 'toma_pedidos'),
+    ('cocinero',      'consulta y preparacion de pedidos',     0, 'cocina')
+) as v(nombre, descripcion, es_admin, pantalla)
+where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
+go
+
+--Sucursales, son 3, escalon, mejicanos y santa elena 
+insert into dbo.sucursales (nombre, direccion)
+select v.nombre, 'direccion pendiente'
+from (values ('escalon'), ('mejicanos'), ('santa elena')) as v(nombre)
+where not exists (select 1 from dbo.sucursales s where s.nombre = v.nombre);
+go
+
+--Insumos, estos son los que usaremos para el menu
+insert into dbo.insumos (nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
+select v.nombre, v.unidad, v.stock, v.minimo, v.costo
+from (values
+    ('cafe en grano',                     'g',      5000, 500,  0.0200),
+    ('leche entera',                      'ml',    20000, 2000, 0.0015),
+    ('vaso 16oz',                         'unidad', 1000, 100,  0.0500),
+    ('galleta de chocolate para reventa', 'unidad',   60, 10,   0.6000)
+) as v(nombre, unidad, stock, minimo, costo)
+where not exists (select 1 from dbo.insumos i where i.nombre = v.nombre);
+go
+
+--Productos de el menu
+insert into dbo.productos (nombre, descripcion, precio_venta, categoria, es_reventa)
+select v.nombre, v.descripcion, v.precio, v.categoria, v.reventa
+from (values
+    ('latte grande',         'cafe con leche',              3.50, 'bebida caliente', 0),
+    ('galleta de chocolate', 'producto empacado de reventa', 1.25, 'reventa',         1)
+) as v(nombre, descripcion, precio, categoria, reventa)
+where not exists (select 1 from dbo.productos p where p.nombre = v.nombre);
+go
+
+--Recetas y su consumo
+insert into dbo.recetas_detalle (id_producto, id_insumo, cantidad_requerida)
+select p.id_producto, i.id_insumo, r.cantidad
+from (values
+    ('latte grande',         'cafe en grano',                     cast(18.00  as decimal(10,2))),
+    ('latte grande',         'leche entera',                      cast(250.00 as decimal(10,2))),
+    ('latte grande',         'vaso 16oz',                         cast(1.00   as decimal(10,2))),
+    ('galleta de chocolate', 'galleta de chocolate para reventa', cast(1.00   as decimal(10,2)))
+) as r(producto, insumo, cantidad)
+join dbo.productos p on p.nombre = r.producto
+join dbo.insumos   i on i.nombre = r.insumo
+where not exists (
+    select 1
+    from dbo.recetas_detalle rd
+    where rd.id_producto = p.id_producto
+      and rd.id_insumo   = i.id_insumo
+);
+go
+
+--Saldo inicial de el inventario por sucursal
+insert into dbo.inventario_sucursal (sucursalid, insumoid, stock_actual, stock_minimo)
+select s.sucursalid, i.id_insumo, i.stock_actual, i.stock_minimo
+from dbo.sucursales s
+cross join dbo.insumos i
+where s.nombre = 'escalon'
+  and not exists (
+      select 1
+      from dbo.inventario_sucursal x
+      where x.sucursalid = s.sucursalid
+        and x.insumoid   = i.id_insumo
+  );
+go
+
+--Los niveles de acceso con sus permisos y desc
+insert into dbo.niveles_acceso (codigo, descripcion)
+select v.codigo, v.descripcion
+from (values
+    ('administrador', 'puede ver y hacer todo en el sistema'),
+    ('gerente',       'hace las tareas de gerente: operacion, compras, inventario, personal y reportes'),
+    ('empleado',      've reservas y lo relacionado a su trabajo y su propia informacion'),
+    ('cliente',       'solo ve el menu, las reservas disponibles y sus propias reservas')
+) as v(codigo, descripcion)
+where not exists (select 1 from dbo.niveles_acceso n where n.codigo = v.codigo);
+go
+
+--catalogo de permisos (para agregar uno nuevo: insertarlo aqui y asignarlo a un nivel mas abajo)
+insert into dbo.permisos (codigo, descripcion)
+select v.codigo, v.descripcion
+from (values
+
+    --lo que puede ver un cliente
+    ('ver_menu',                 'consultar el menu de productos'),
+    ('ver_reservas_disponibles', 'consultar mesas y horarios disponibles para reservar'),
+    ('ver_mis_reservas',         'ver las reservas propias del cliente'),
+    ('ver_mi_perfil',            'ver los datos propios de la cuenta'),
+
+    --lo que puede hacer un empleado
+    ('ver_reservas',             'ver todas las reservas de la sucursal'),
+    ('ver_mesas',                'ver el estado de las mesas'),
+    ('tomar_pedidos',            'registrar pedidos en salon'),
+    ('ver_pedidos_cocina',       'ver los pedidos pendientes en cocina'),
+    ('ver_mi_ficha',             'ver la ficha laboral propia'),
+    ('ver_mi_planilla',          'ver la planilla o boleta propia'),
+
+    --lo que puede hacer un gerente (ademas de lo del empleado)
+    ('gestionar_reservas',       'crear, confirmar y cancelar reservas'),
+    ('ver_empleados',            'ver el listado y las fichas de los empleados'),
+    ('registrar_empleados',      'registrar nuevos empleados'),
+    ('ver_planillas',            'ver las planillas generadas'),
+    ('generar_planillas',        'generar la planilla de un periodo'),
+    ('ver_inventario',           'ver el inventario de insumos'),
+    ('gestionar_inventario',     'ajustar y administrar el inventario'),
+    ('ver_compras',              'ver las compras a proveedores'),
+    ('registrar_compras',        'registrar compras a proveedores'),
+    ('ver_proveedores',          'ver el listado de proveedores'),
+    ('ver_ventas',               'ver las ventas realizadas'),
+    ('operar_caja',              'abrir y cerrar caja y registrar movimientos'),
+    ('ver_reportes',             'ver los reportes del negocio'),
+    ('gestionar_productos',      'crear y editar productos del menu y sus recetas'),
+
+    --solo el administrador
+    ('gestionar_usuarios',       'crear, desactivar y administrar cuentas de usuario'),
+    ('gestionar_sucursales',     'crear y editar sucursales'),
+    ('gestionar_roles_permisos', 'administrar roles, niveles y permisos')
+) as v(codigo, descripcion)
+where not exists (select 1 from dbo.permisos p where p.codigo = v.codigo);
+go
+
+--permisos del cliente (usuario normal): solo ver menu, reservas disponibles y lo suyo
+--(para que el cliente tambien pueda reservar, crear un permiso 'crear_reserva' y asignarlo aqui)
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('cliente', 'ver_menu'),
+    ('cliente', 'ver_reservas_disponibles'),
+    ('cliente', 'ver_mis_reservas'),
+    ('cliente', 'ver_mi_perfil')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del empleado: ver reservas y cosas relacionadas a el empleado
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('empleado', 'ver_menu'),
+    ('empleado', 'ver_reservas_disponibles'),
+    ('empleado', 'ver_reservas'),
+    ('empleado', 'ver_mesas'),
+    ('empleado', 'tomar_pedidos'),
+    ('empleado', 'ver_pedidos_cocina'),
+    ('empleado', 'ver_mi_ficha'),
+    ('empleado', 'ver_mi_planilla'),
+    ('empleado', 'ver_mi_perfil')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del gerente: todo lo del empleado (se hereda) mas las cosas de gerente
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select g.id_nivel, np.id_permiso
+from dbo.niveles_acceso g
+join dbo.niveles_acceso e  on e.codigo = 'empleado'
+join dbo.nivel_permiso  np on np.id_nivel = e.id_nivel
+where g.codigo = 'gerente'
+  and not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = g.id_nivel and x.id_permiso = np.id_permiso);
+go
+
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('gerente', 'gestionar_reservas'),
+    ('gerente', 'ver_empleados'),
+    ('gerente', 'registrar_empleados'),
+    ('gerente', 'ver_planillas'),
+    ('gerente', 'generar_planillas'),
+    ('gerente', 'ver_inventario'),
+    ('gerente', 'gestionar_inventario'),
+    ('gerente', 'ver_compras'),
+    ('gerente', 'registrar_compras'),
+    ('gerente', 'ver_proveedores'),
+    ('gerente', 'ver_ventas'),
+    ('gerente', 'operar_caja'),
+    ('gerente', 'ver_reportes'),
+    ('gerente', 'gestionar_productos')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del administrador: todos los permisos del catalogo
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select a.id_nivel, p.id_permiso
+from dbo.niveles_acceso a
+cross join dbo.permisos p
+where a.codigo = 'administrador'
+  and not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = a.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--roles nuevos: gerente y cliente (los nombres van en minuscula para coincidir con los roles ya existentes)
+insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
+select v.nombre, v.descripcion, v.es_admin, v.pantalla
+from (values
+    ('gerente', 'gerente de sucursal: operacion, compras, inventario y personal', 1, 'panel_gerente'),
+    ('cliente', 'cliente: consulta el menu y las reservas disponibles',           0, 'menu_reservas')
+) as v(nombre, descripcion, es_admin, pantalla)
+where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
+go
+
+--a que nivel pertenece cada rol (rrhh queda en el nivel gerente; se puede cambiar con un update)
+update r
+set r.id_nivel = n.id_nivel
+from dbo.roles r
+join (values
+    ('administrador', 'administrador'),
+    ('gerente',       'gerente'),
+    ('rrhh',          'gerente'),
+    ('cajero',        'empleado'),
+    ('mesero',        'empleado'),
+    ('cocinero',      'empleado'),
+    ('cliente',       'cliente')
+) as m(rol, nivel) on m.rol = r.nombre_rol
+join dbo.niveles_acceso n on n.codigo = m.nivel
+where r.id_nivel is null;
+go
+
+--desde ahora todo rol debe tener nivel (solo se aplica si ningun rol quedo sin nivel)
+if not exists (select 1 from dbo.roles where id_nivel is null)
+    alter table dbo.roles alter column id_nivel int not null;
+go
+

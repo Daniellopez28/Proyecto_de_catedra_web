@@ -122,3 +122,15 @@ WHERE NOT EXISTS (
 
 COMMIT TRANSACTION;
 
+--Verificacion para ver que se hayan ingersado correctamente.
+SELECT
+    (SELECT COUNT(*) FROM productos WHERE es_reventa = 0 AND activo = 1) AS productos_elaborados,
+    (SELECT COUNT(*) FROM productos WHERE es_reventa = 1 AND activo = 1) AS productos_reventa,
+    (SELECT COUNT(*) FROM productos p WHERE p.activo = 1
+        AND NOT EXISTS (SELECT 1 FROM recetas_detalle r WHERE r.id_producto = p.id_producto)) AS productos_sin_receta;
+
+SELECT p.nombre AS producto, i.nombre AS insumo, r.cantidad_requerida, i.unidad_medida
+FROM recetas_detalle r
+JOIN productos p ON p.id_producto = r.id_producto
+JOIN insumos   i ON i.id_insumo   = r.id_insumo
+WHERE p.nombre = N'Latte Grande';

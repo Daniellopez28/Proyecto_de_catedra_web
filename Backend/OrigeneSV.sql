@@ -427,4 +427,93 @@ create table dbo.pagos_compra (
         );
 go
 
+--------desarrollo de indices para encontrar datos especificos, los dejare comentados para que funciona cada uno--------
+--ajustes de sesion requeridos para crear indices filtrados
+set ansi_nulls on; --Este es para comparar valores nulos en los indices
+set ansi_padding on; --este es para rellenar valores nulos
+set ansi_warnings on; --Este es para mostrar advertencias de ANSI para optimizar consultas
+set arithabort on; --Este es para abortas las consultas si hay errores
+set concat_null_yields_null on; --este para concatenar valores nulos en los indices
+set quoted_identifier on; --este es para permitir el uso de identificadores 
+set numeric_roundabort off; --este para evitar errores de redondeo en los indices
+
+--indice planilla por tipo y periordo (este busca ecitar generar dos veces la misma)
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ux_planillas_periodo_tipo'
+      and object_id = object_id(N'dbo.planillas')
+)
+    create unique index ux_planillas_periodo_tipo
+    on dbo.planillas (tipo_planilla, periodo_inicio, periodo_fin);
+go
+
+--indice que acelera reportes de ventas por sucursal (enetrega la sucursal y la fecha en la que se realiza)
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ix_ventas_fecha_sucursal'
+      and object_id = object_id(N'dbo.ventas')
+)
+    create index ix_ventas_fecha_sucursal
+    on dbo.ventas (sucursalid, fecha_hora);
+go
+
+--indice que acelera el historial de movimientos de un insumo
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ix_movimientos_inventario_insumo_fecha'
+      and object_id = object_id(N'dbo.movimientos_inventario')
+)
+    create index ix_movimientos_inventario_insumo_fecha
+    on dbo.movimientos_inventario (insumoid, fecha desc);
+go
+
+--indice que sa una caja por sucursal (esto significa que solo puede haber una sesion de caja abierta por sucursal)
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ux_cajas_una_abierta_por_sucursal'
+      and object_id = object_id(N'dbo.cajas')
+)
+    create unique index ux_cajas_una_abierta_por_sucursal
+    on dbo.cajas (sucursalid)
+        where estado = 'abierta' and sucursalid is not null;
+go
+
+--indice de empleado que tiene solo un usuario (este busca de que un empleado tiene un usuario y ya, no mas para evitar duplicidad)
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ux_usuarios_empleado'
+      and object_id = object_id(N'dbo.usuarios')
+)
+    create unique index ux_usuarios_empleado
+    on dbo.usuarios (id_empleado)
+        where id_empleado is not null;
+go
+
+--indice de dui y nit , evita duplicidad (no pueden haber dos usuarios con el mismo dui o nit)
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ux_clientes_dui'
+      and object_id = object_id(N'dbo.clientes')
+)
+    create unique index ux_clientes_dui
+    on dbo.clientes (dui)
+        where dui is not null;
+go
+
+if not exists (
+    select 1
+    from sys.indexes
+    where name = N'ux_clientes_nit'
+      and object_id = object_id(N'dbo.clientes')
+)
+    create unique index ux_clientes_nit
+    on dbo.clientes (nit)
+        where nit is not null;
+go
 

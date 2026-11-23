@@ -86,3 +86,17 @@ create table dbo.usuarios (
         constraint fk_usuarios_empleados  foreign key (id_empleado) references dbo.empleados(id_empleado)
         );
 go
+
+--------seguimos con las tablas pero con plantillas para otras funciones--------
+--tabla para almacenar las planillas de los empleados
+create table dbo.planillas (
+        id_planilla    int identity(1,1) not null constraint pk_planillas primary key,
+        periodo_inicio date not null,
+        periodo_fin    date not null,
+        tipo_planilla  varchar(20) not null,
+        total_pagar    decimal(10,2) not null,
+        estado         varchar(20) null constraint df_planillas_estado default ('generada'),
+        constraint ck_planillas_periodo check (periodo_fin >= periodo_inicio),
+        constraint ck_planillas_total   check (total_pagar >= 0)
+        );
+go

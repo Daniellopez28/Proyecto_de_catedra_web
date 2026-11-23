@@ -7,6 +7,26 @@ export class ErrorInventario extends Error {
     }
 }
 
+export function resolverSucursalInventario(usuario, permisos, valor) {
+    const sucursalUsuario = Number(usuario.sucursalid);
+    if (Number.isInteger(sucursalUsuario) && sucursalUsuario > 0) {
+        if (valor !== undefined && valor !== null && valor !== '' &&
+            Number(valor) !== sucursalUsuario) {
+            throw new ErrorInventario('No puedes consultar ni modificar inventario de otra sucursal', 403);
+        }
+        return sucursalUsuario;
+    }
+
+    if (!permisos.has('gestionar_sucursales')) {
+        throw new ErrorInventario('Tu cuenta no tiene una sucursal asignada', 403);
+    }
+    const sucursalSolicitada = Number(valor);
+    if (!Number.isInteger(sucursalSolicitada) || sucursalSolicitada <= 0) {
+        throw new ErrorInventario('Selecciona una sucursal para consultar o modificar el inventario', 400);
+    }
+    return sucursalSolicitada;
+}
+
 /** Redondea a 2 decimales (precisión de las columnas DECIMAL(10,2)). */
 function redondearADosDecimales(valor) {
     return Math.round((valor + Number.EPSILON) * 100) / 100;
@@ -29,10 +49,36 @@ export function normalizarProductosVenta(productos) {
         if (!Number.isInteger(cantidad) || cantidad <= 0) {
             throw new ErrorInventario(`El elemento ${posicion} no tiene una cantidad válida`, 400);
         }
-        cantidadesPorProducto.set(idProducto, (cantidadesPorProducto.get(idProducto) ?? 0) + cantidad);
+        const modificadores = elemento.modificadores ?? [];
+        if (!Array.isArray(modificadores) || modificadores.length > 50 ||
+            modificadores.some((modificador) =>
+                !Number.isInteger(modificador?.modificadorid) || modificador.modificadorid <= 0)) {
+            throw new ErrorInventario(`El elemento ${posicion} no tiene modificadores válidos`, 400);
+        }
+        const productoExistente = cantidadesPorProducto.get(idProducto) ?? {
+            cantidad: 0,
+            modificadores: modificadores.map(({ modificadorid }) => ({ modificadorid }))
+        };
+        const modificadoresEntrada = modificadores.map(({ modificadorid }) => modificadorid);
+        const modificadoresExistentes = productoExistente.modificadores.map(({ modificadorid }) => modificadorid);
+        if (cantidadesPorProducto.has(idProducto) &&
+            (modificadoresEntrada.length !== modificadoresExistentes.length ||
+                modificadoresEntrada.some((id, indice) => id !== modificadoresExistentes[indice]))) {
+            throw new ErrorInventario(
+                `Las líneas del producto ${idProducto} deben tener los mismos modificadores`, 400);
+        }
+        productoExistente.cantidad += cantidad;
+        if (!Number.isSafeInteger(productoExistente.cantidad)) {
+            throw new ErrorInventario(`La cantidad total del producto ${idProducto} no es válida`, 400);
+        }
+        cantidadesPorProducto.set(idProducto, productoExistente);
     }
 
-    return Array.from(cantidadesPorProducto, ([id_producto, cantidad]) => ({ id_producto, cantidad }));
+    return Array.from(cantidadesPorProducto, ([id_producto, datos]) => ({
+        id_producto,
+        cantidad: datos.cantidad,
+        modificadores: datos.modificadores
+    }));
 }
 
 /** Única definición de las reglas de alerta: 'AGOTADO', 'STOCK_BAJO' o null. */
@@ -76,7 +122,7 @@ function construirAlertas(insumos) {
  * Calcula cuánto de cada insumo hace falta (solo lectura).
  * Lanza 404 si un producto no existe y 409 si está desactivado.
  */
-async function calcularExplosion(cliente, productosVenta) {
+async function calcularExplosion(cliente, productosVenta, opciones = {}) {
     const idsProductos = productosVenta.map((producto) => producto.id_producto);
 
     const productosEncontrados = await cliente.productos.findMany({
@@ -101,6 +147,18 @@ async function calcularExplosion(cliente, productosVenta) {
         where: { id_producto: { in: idsProductos } },
         include: { insumos: true }
     });
+    const insumosInactivos = filasReceta.filter((fila) => fila.insumos.activo === false);
+    if (insumosInactivos.length > 0) {
+        const nombres = Array.from(new Set(insumosInactivos.map((fila) => fila.insumos.nombre)));
+        throw new ErrorInventario(`La receta contiene insumos inactivos: ${nombres.join(', ')}`, 409);
+    }
+    const idsInsumos = Array.from(new Set(filasReceta.map((fila) => fila.id_insumo)));
+    const inventarioPorInsumo = opciones.sucursalid
+        ? new Map((await cliente.inventario_sucursal.findMany({
+            where: { sucursalid: opciones.sucursalid, insumoid: { in: idsInsumos } },
+            select: { insumoid: true, stock_actual: true, stock_minimo: true }
+        })).map((fila) => [fila.insumoid, fila]))
+        : null;
 
     const cantidadVendida = new Map(productosVenta.map((p) => [p.id_producto, p.cantidad]));
     const productosConReceta = new Set();
@@ -113,11 +171,19 @@ async function calcularExplosion(cliente, productosVenta) {
 
         let consumo = consumosPorInsumo.get(fila.id_insumo);
         if (!consumo) {
+            const inventarioSucursal = inventarioPorInsumo?.get(fila.id_insumo);
+            const stockActual = opciones.sucursalid
+                ? Number(inventarioSucursal?.stock_actual ?? 0)
+                : Number(fila.insumos.stock_actual ?? 0);
+            const stockMinimo = opciones.sucursalid
+                ? Number(inventarioSucursal?.stock_minimo ?? 0)
+                : Number(fila.insumos.stock_minimo ?? 0);
             consumo = {
                 id_insumo: fila.id_insumo,
                 nombre: fila.insumos.nombre,
                 unidad_medida: fila.insumos.unidad_medida,
-                stock_actual: Number(fila.insumos.stock_actual ?? 0),
+                stock_actual: stockActual,
+                stock_minimo: stockMinimo,
                 cantidad_total: 0,
                 origen: []
             };
@@ -159,8 +225,8 @@ function obtenerFaltantes(consumos) {
 }
 
 /** Indica si el inventario alcanza para la orden, sin modificar nada. */
-export async function simularExplosion(cliente, productosVenta) {
-    const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta);
+export async function simularExplosion(cliente, productosVenta, opciones = {}) {
+    const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta, opciones);
     const faltantes = obtenerFaltantes(consumos);
 
     return {
@@ -180,8 +246,8 @@ export async function simularExplosion(cliente, productosVenta) {
  * Protección doble: verificación previa (informa todos los faltantes) y UPDATE condicionado
  * a stock_actual >= cantidad (si otra venta se llevó el stock, afecta 0 filas y aborta).
  */
-export async function ejecutarExplosion(cliente, productosVenta) {
-    const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta);
+export async function ejecutarExplosion(cliente, productosVenta, opciones = {}) {
+    const { consumos, productosSinReceta } = await calcularExplosion(cliente, productosVenta, opciones);
 
     const faltantes = obtenerFaltantes(consumos);
     if (faltantes.length > 0) {
@@ -190,22 +256,67 @@ export async function ejecutarExplosion(cliente, productosVenta) {
     }
 
     for (const consumo of consumos) {
-        const resultado = await cliente.insumos.updateMany({
-            where: { id_insumo: consumo.id_insumo, stock_actual: { gte: consumo.cantidad_total } },
-            data: { stock_actual: { decrement: consumo.cantidad_total } }
-        });
+        const resultado = opciones.sucursalid
+            ? await cliente.inventario_sucursal.updateMany({
+                where: {
+                    sucursalid: opciones.sucursalid,
+                    insumoid: consumo.id_insumo,
+                    stock_actual: { gte: consumo.cantidad_total }
+                },
+                data: { stock_actual: { decrement: consumo.cantidad_total } }
+            })
+            : await cliente.insumos.updateMany({
+                where: { id_insumo: consumo.id_insumo, stock_actual: { gte: consumo.cantidad_total } },
+                data: { stock_actual: { decrement: consumo.cantidad_total } }
+            });
         if (resultado.count === 0) { // el stock cambió mientras se procesaba la orden
             throw new ErrorInventario(
                 `El stock de "${consumo.nombre}" cambió mientras se procesaba la orden. Intente de nuevo`, 409,
                 { id_insumo: consumo.id_insumo });
         }
+
+        if (opciones.sucursalid) {
+            const inventarioTotal = await cliente.inventario_sucursal.aggregate({
+                where: { insumoid: consumo.id_insumo },
+                _sum: { stock_actual: true }
+            });
+            await cliente.insumos.update({
+                where: { id_insumo: consumo.id_insumo },
+                data: { stock_actual: redondearADosDecimales(Number(inventarioTotal._sum.stock_actual ?? 0)) }
+            });
+            await cliente.movimientos_inventario.create({
+                data: {
+                    sucursalid: opciones.sucursalid,
+                    insumoid: consumo.id_insumo,
+                    tipo_movimiento: 'salida',
+                    cantidad: consumo.cantidad_total,
+                    referencia: opciones.referencia ?? 'venta',
+                    id_usuario: opciones.id_usuario ?? null
+                }
+            });
+        }
     }
 
     // Se releen los insumos tocados para devolver el stock real y evaluar alertas.
-    const insumosActualizados = await cliente.insumos.findMany({
-        where: { id_insumo: { in: consumos.map((consumo) => consumo.id_insumo) } }
-    });
-    const stockNuevo = new Map(insumosActualizados.map((i) => [i.id_insumo, Number(i.stock_actual ?? 0)]));
+    const insumosActualizados = opciones.sucursalid
+        ? (await cliente.inventario_sucursal.findMany({
+            where: {
+                sucursalid: opciones.sucursalid,
+                insumoid: { in: consumos.map((consumo) => consumo.id_insumo) }
+            },
+            include: { insumos: true }
+        })).map((fila) => ({
+            ...fila.insumos,
+            id_insumo: fila.insumoid,
+            stock_actual: fila.stock_actual,
+            stock_minimo: fila.stock_minimo
+        }))
+        : await cliente.insumos.findMany({
+            where: { id_insumo: { in: consumos.map((consumo) => consumo.id_insumo) } }
+        });
+    const stockNuevo = new Map(insumosActualizados.map((i) => [
+        i.id_insumo, Number(i.stock_actual ?? 0)
+    ]));
 
     return {
         consumos: consumos.map((consumo) => ({
@@ -222,14 +333,113 @@ export async function ejecutarExplosion(cliente, productosVenta) {
     };
 }
 
+export async function revertirExplosion(cliente, productosVenta, opciones = {}) {
+    const cantidadesVendidas = new Map(productosVenta.map((producto) => [
+        producto.id_producto, producto.cantidad
+    ]));
+    const recetas = await cliente.recetas_detalle.findMany({
+        where: { id_producto: { in: productosVenta.map((producto) => producto.id_producto) } },
+        include: { insumos: { select: { nombre: true } } }
+    });
+    const consumoPorInsumo = new Map();
+    for (const receta of recetas) {
+        const cantidad = Number(receta.cantidad_requerida) * cantidadesVendidas.get(receta.id_producto);
+        consumoPorInsumo.set(
+            receta.id_insumo,
+            (consumoPorInsumo.get(receta.id_insumo) ?? 0) + cantidad
+        );
+    }
+
+    for (const [idInsumo, cantidad] of Array.from(consumoPorInsumo).sort(([a], [b]) => a - b)) {
+        const cantidadRedondeada = redondearADosDecimales(cantidad);
+        if (opciones.sucursalid) {
+            const resultado = await cliente.inventario_sucursal.updateMany({
+                where: { sucursalid: opciones.sucursalid, insumoid: idInsumo },
+                data: { stock_actual: { increment: cantidadRedondeada } }
+            });
+            if (resultado.count !== 1) {
+                throw new ErrorInventario('No se pudo restaurar el inventario de la sucursal', 409, {
+                    id_insumo: idInsumo
+                });
+            }
+            const agregado = await cliente.inventario_sucursal.aggregate({
+                where: { insumoid: idInsumo },
+                _sum: { stock_actual: true }
+            });
+            await cliente.insumos.update({
+                where: { id_insumo: idInsumo },
+                data: { stock_actual: Number(agregado._sum.stock_actual ?? 0) }
+            });
+            await cliente.movimientos_inventario.create({
+                data: {
+                    sucursalid: opciones.sucursalid,
+                    insumoid: idInsumo,
+                    tipo_movimiento: 'entrada',
+                    cantidad: cantidadRedondeada,
+                    referencia: opciones.referencia ?? 'cancelacion',
+                    id_usuario: opciones.id_usuario ?? null
+                }
+            });
+        } else {
+            await cliente.insumos.update({
+                where: { id_insumo: idInsumo },
+                data: { stock_actual: { increment: cantidadRedondeada } }
+            });
+        }
+    }
+}
+
 /** Insumos activos agotados o bajo el mínimo. Se filtra en memoria porque Prisma no compara dos columnas. */
-export async function obtenerAlertasStock(cliente) {
+export async function obtenerAlertasStock(cliente, sucursalid = null) {
+    if (sucursalid) {
+        const [insumos, filas] = await Promise.all([
+            cliente.insumos.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
+            cliente.inventario_sucursal.findMany({
+                where: { sucursalid },
+                select: { insumoid: true, stock_actual: true, stock_minimo: true }
+            })
+        ]);
+        const inventarioPorInsumo = new Map(filas.map((fila) => [fila.insumoid, fila]));
+        return construirAlertas(insumos.map((insumo) => {
+            const inventario = inventarioPorInsumo.get(insumo.id_insumo);
+            return {
+                ...insumo,
+                stock_actual: inventario?.stock_actual ?? 0,
+                stock_minimo: inventario?.stock_minimo ?? insumo.stock_minimo ?? 0
+            };
+        }));
+    }
     const insumosActivos = await cliente.insumos.findMany({ where: { activo: true } });
     return construirAlertas(insumosActivos);
 }
 
 /** Tabla de inventario: insumos activos con su estado (NORMAL, STOCK_BAJO o AGOTADO). */
-export async function listarInsumos(cliente) {
+export async function listarInsumos(cliente, sucursalid = null) {
+    if (sucursalid) {
+        const [insumos, filas] = await Promise.all([
+            cliente.insumos.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } }),
+            cliente.inventario_sucursal.findMany({
+                where: { sucursalid },
+                select: { insumoid: true, stock_actual: true, stock_minimo: true }
+            })
+        ]);
+        const inventarioPorInsumo = new Map(filas.map((fila) => [fila.insumoid, fila]));
+        return insumos.map((insumo) => {
+            const inventario = inventarioPorInsumo.get(insumo.id_insumo);
+            const stockActual = Number(inventario?.stock_actual ?? 0);
+            const stockMinimo = Number(inventario?.stock_minimo ?? insumo.stock_minimo ?? 0);
+            return {
+                id_insumo: insumo.id_insumo,
+                nombre: insumo.nombre,
+                unidad_medida: insumo.unidad_medida,
+                stock_actual: stockActual,
+                stock_minimo: stockMinimo,
+                costo_promedio: Number(insumo.costo_promedio ?? 0),
+                estado: clasificarNivel(stockActual, stockMinimo) ?? 'NORMAL'
+            };
+        });
+    }
+
     const insumos = await cliente.insumos.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } });
 
     return insumos.map((insumo) => {

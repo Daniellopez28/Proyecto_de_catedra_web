@@ -25,3 +25,6 @@ npm install
 npx prisma generate
 npm run dev
 
+abre una terminal en la carpeta de frontend y ejecuta lo siguiente:
+npom install
+npm run dev

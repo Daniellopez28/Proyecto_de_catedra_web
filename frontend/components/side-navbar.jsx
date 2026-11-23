@@ -1,51 +1,43 @@
-import '../src/side-navbar.css'
-{/*icons svg*/}
-import forkKnifeIcon from '../src/assets/fork-knife.svg'
-import receiptIcon from '../src/assets/receipt.svg'
-import productsIcon from '../src/assets/book-half.svg'
-import boxesIcon from '../src/assets/boxes.svg'
-import calculatorIcon from '../src/assets/calculator.svg'
-import truckIcon from '../src/assets/truck.svg'
-import peopleIcon from '../src/assets/people.svg'
-import walletIcon from '../src/assets/wallet2.svg'
-import resumeIcon from '../src/assets/columns-gap.svg'
-
-const sections = [
-    [
-        { name: 'Inicio', icon: resumeIcon },
-        { name: 'Ventas', icon: forkKnifeIcon },
-        { name: 'Facturacion', icon: receiptIcon  }
-    ],
-    [
-        { name: 'Productos', icon: productsIcon },
-        { name: 'Inventario', icon: boxesIcon },
-        { name: 'Proveedores', icon: truckIcon }
-    ],
-    [
-        { name: 'Caja', icon: walletIcon },
-        { name: 'Empleados', icon: peopleIcon },
-        { name: 'Planillas', icon: calculatorIcon }
-    ]
-]
-
-function SideNavbar() {
+function SideNavbar({ items, selected, onSelect, abierta, onClose }) {
     return (
-        <aside className="side-navbar">
-            <div className="side-navbar-brand">Orígenes SV</div>
-            <nav aria-label="Navegación principal">
-                <ul className="side-navbar-menu">
-                    {sections.flat().map(({ name, icon }) => (
-                        <li className="side-navbar-item" key={name}>
-                            <button className="side-navbar-button" type="button">
-                                {icon && <img src={icon} alt="" className="side-navbar-icon" />}
-                                <span>{name}</span>
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
-        </aside>
-    )
+        <>
+            {abierta && (
+                <button
+                    className="workspace-overlay"
+                    type="button"
+                    aria-label="Cerrar menú"
+                    onClick={onClose}
+                />
+            )}
+            <aside className={`workspace-sidebar ${abierta ? 'is-open' : ''}`}>
+                <div className="workspace-brand">
+                    <span className="workspace-brand-mark" aria-hidden="true">O</span>
+                    <span>Orígenes SV</span>
+                </div>
+                <nav aria-label="Navegación principal">
+                    <ul className="workspace-nav">
+                        {items.map(({ id, name, icon }) => (
+                            <li key={id}>
+                                <button
+                                    className={selected === id ? 'is-active' : ''}
+                                    type="button"
+                                    aria-current={selected === id ? 'page' : undefined}
+                                    onClick={() => {
+                                        onSelect(id);
+                                        onClose();
+                                    }}
+                                >
+                                    <img src={icon} alt="" className="workspace-nav-icon" />
+                                    <span>{name}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+                <p className="workspace-sidebar-note">El menú muestra solo las opciones autorizadas para tu cuenta.</p>
+            </aside>
+        </>
+    );
 }
 
-export default SideNavbar
+export default SideNavbar;

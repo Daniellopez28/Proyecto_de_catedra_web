@@ -332,3 +332,45 @@ create table dbo.pagos (
     constraint ck_pagos_montos check (monto > 0)
     );
 go
+
+--------continuamos con las tablas de cajas--------
+--tabla de caja para la gestion de aperturas y cierres de turno de los empleados.
+create table dbo.cajas (
+    id_caja                int identity(1,1) not null constraint pk_cajas primary key,
+    id_usuario             int not null,
+    sucursalid             int null,
+    nombre_caja            varchar(50) null,
+    fecha_apertura         datetime null constraint df_cajas_apertura default (getdate()),
+    fecha_cierre           datetime null,
+    monto_apertura         decimal(10,2) not null,
+    monto_cierre_sistema   decimal(10,2) null,
+    monto_cierre_fisico    decimal(10,2) null,
+    diferencia             decimal(10,2) null,
+    estado                 varchar(20) null constraint df_cajas_estado default ('abierta'),
+    observaciones_apertura varchar(255) null,
+    observaciones_cierre   varchar(255) null,
+    empleado_autoriza_id   int null,
+    constraint fk_caja_usuario  foreign key (id_usuario)           references dbo.usuarios(id_usuario),
+    constraint fk_caja_sucursal foreign key (sucursalid)           references dbo.sucursales(sucursalid),
+    constraint fk_caja_autoriza foreign key (empleado_autoriza_id) references dbo.empleados(id_empleado),
+    constraint ck_cajas_montos  check (monto_apertura >= 0),
+    constraint ck_cajas_estado  check (estado in ('abierta', 'cerrada'))
+    );
+go
+
+--tabla de movimientos de la caja, sean retiros, ingresos extra y pagos a proveedores con efectivo, esto ayuda a la gestion de cuanto ingresa y cuanto sale
+create table dbo.movimientos_caja (
+        movimientocajaid     bigint identity(1,1) not null constraint pk_movimientos_caja primary key,
+        cajaid               int not null,
+        tipo_movimiento      varchar(30) not null,
+        monto                decimal(10,2) not null,
+        motivo               varchar(255) null,
+        empleado_autoriza_id int null,
+        fecha                datetime2(0) not null constraint df_movimientos_caja_fecha default (sysdatetime()),
+        constraint fk_movimientos_caja_caja foreign key (cajaid) references dbo.cajas(id_caja),
+        constraint fk_movimientos_caja_empleado foreign key (empleado_autoriza_id)
+            references dbo.empleados(id_empleado),
+        constraint ck_movimientos_caja_tipo  check (tipo_movimiento in ('retiro', 'ingreso_extra', 'pago_proveedor')),
+        constraint ck_movimientos_caja_monto check (monto > 0)
+        );
+go

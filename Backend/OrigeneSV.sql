@@ -151,3 +151,19 @@ create table dbo.proveedores (
         activo          bit null constraint df_proveedores_activo default (1)
         );
 go
+
+--------ahora continuamos con las tablas de gestion de el local--------
+--tabla de insumos para guaradar los insumos que se van a utilizar
+create table dbo.insumos (
+        id_insumo      int identity(1,1) not null constraint pk_insumos primary key,
+        nombre         varchar(100) not null constraint uq_insumos_nombre unique,
+        unidad_medida  varchar(20)  not null,
+        stock_actual   decimal(10,2) null constraint df_insumos_stock default (0.00),
+        stock_minimo   decimal(10,2) null constraint df_insumos_stock_minimo default (0.00),
+        costo_promedio decimal(10,4) null constraint df_insumos_costo default (0.0000),
+        activo         bit null constraint df_insumos_activo default (1),
+        constraint ck_insumos_stock        check (stock_actual   is null or stock_actual   >= 0),
+        constraint ck_insumos_stock_minimo check (stock_minimo   is null or stock_minimo   >= 0),
+        constraint ck_insumos_costo        check (costo_promedio is null or costo_promedio >= 0)
+        );
+go

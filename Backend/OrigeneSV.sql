@@ -27,3 +27,14 @@ create table dbo.roles (
         );
 
 go
+
+--tablaa de sucursales, aca estan las sedes de los restaurantes
+create table dbo.sucursales (
+    sucursalid int identity(1,1) not null constraint pk_sucursales primary key,
+    nombre varchar(100) not null constraint uq_sucursales_nombre unique,
+    direccion varchar(255) not null,
+    telefono varchar(20) null,
+    activo bit not null constraint df_sucursales_activo default (1)
+    );
+
+go

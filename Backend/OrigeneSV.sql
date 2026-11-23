@@ -138,3 +138,16 @@ create table dbo.clientes (
         creado_en        datetime null constraint df_clientes_creado_en default (getdate())
         );
 go
+
+--tabla para proveedores para guardar la informacion 
+create table dbo.proveedores (
+        id_proveedor    int identity(1,1) not null constraint pk_proveedores primary key,
+        nombre_empresa  varchar(150) not null,
+        contacto_nombre varchar(100) null,
+        nit             varchar(17)  null,
+        telefono        varchar(20)  null,
+        correo          varchar(150) null,
+        direccion       varchar(max) null,
+        activo          bit null constraint df_proveedores_activo default (1)
+        );
+go

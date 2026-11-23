@@ -318,3 +318,17 @@ create table dbo.detalle_venta_modificadores (
         constraint ck_dvm_precio check (precio_aplicado >= 0)
         );
 go
+
+--tabla de pago (el cobro de cada venta, si es en tarjeta o efectivo)
+create table dbo.pagos (
+    id_pagos               int identity(1,1) not null constraint pk_pagos primary key,
+    id_venta               int not null,
+    metodo_pago            varchar(50) not null,
+    monto                  decimal(10,2) not null,
+    referencia_transaccion varchar(100) null,
+    fecha_pago             datetime null constraint df_pagos_fecha default (getdate()),
+    constraint fk_pago_venta foreign key (id_venta)
+        references dbo.ventas(id_venta) on delete cascade,
+    constraint ck_pagos_montos check (monto > 0)
+    );
+go

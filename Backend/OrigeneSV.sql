@@ -260,7 +260,7 @@ create table dbo.modificadores (
 go
 
 --------tablas dedicadas a la gestion de ventas y de pagos--------
---tabla de gestion de ventas que se realizan:
+--tabla de gestion de ventas que se realizan
 create table dbo.ventas (
         id_venta        int identity(1,1) not null constraint pk_ventas primary key,
         id_cliente      int null,
@@ -287,7 +287,7 @@ create table dbo.ventas (
         );
 go
 
---tabla de los detalles de la venta:
+--tabla de los detalles de la venta
 create table dbo.venta_detalle (
         id_venta        int not null,
         id_producto     int not null,
@@ -301,5 +301,20 @@ create table dbo.venta_detalle (
         constraint fk_detalle_producto foreign key (id_producto)
             references dbo.productos(id_producto),
         constraint ck_venta_detalle_montos check (cantidad > 0 and precio_unitario >= 0 and subtotal_linea >= 0)
+        );
+go
+
+--tabla por si sucede una modificacion en la venta (si se aplica algun extra que no se habia agregado previamente):
+create table dbo.detalle_venta_modificadores (
+        detalle_modificadoid int identity(1,1) not null constraint pk_detalle_venta_modificadores primary key,
+        id_venta        int not null,
+        id_producto     int not null,
+        modificadorid   int not null,
+        precio_aplicado decimal(10,2) not null,
+        constraint fk_dvm_detalle foreign key (id_venta, id_producto)
+            references dbo.venta_detalle(id_venta, id_producto) on delete cascade,
+        constraint fk_dvm_modificador foreign key (modificadorid)
+            references dbo.modificadores(modificadorid),
+        constraint ck_dvm_precio check (precio_aplicado >= 0)
         );
 go

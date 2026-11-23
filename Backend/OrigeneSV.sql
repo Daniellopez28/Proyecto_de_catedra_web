@@ -120,5 +120,21 @@ create table dbo.planilla_detalle (
             and descuento_renta >= 0 and salario_neto >= 0
         )
         );
+go
 
+--------continuamos con las tablas pero ahora para otro publico--------
+--tabla de clientes para guardar la informacion de los clientes
+create table dbo.clientes (
+        id_cliente       int identity(1,1) not null constraint pk_clientes primary key,
+        nombre           varchar(150) not null,
+        dui              varchar(10)  null,
+        nit              varchar(17)  null,
+        nrc              varchar(15)  null,
+        telefono         varchar(20)  null,
+        correo           varchar(150) null,
+        direccion        varchar(max) null,
+        giro             varchar(150) null,
+        direccion_fiscal varchar(255) null,
+        creado_en        datetime null constraint df_clientes_creado_en default (getdate())
+        );
 go

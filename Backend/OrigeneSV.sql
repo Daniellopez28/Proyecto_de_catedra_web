@@ -286,3 +286,20 @@ create table dbo.ventas (
         constraint ck_ventas_pedido  check (estado_pedido in ('abierto', 'en_cocina', 'servido', 'pagado', 'cancelado'))
         );
 go
+
+--tabla de los detalles de la venta:
+create table dbo.venta_detalle (
+        id_venta        int not null,
+        id_producto     int not null,
+        cantidad        int not null,
+        precio_unitario decimal(10,2) not null,
+        subtotal_linea  decimal(10,2) not null,
+        notas           varchar(255) null,
+        constraint pk_venta_detalle primary key (id_venta, id_producto),
+        constraint fk_detalle_venta foreign key (id_venta)
+            references dbo.ventas(id_venta) on delete cascade,
+        constraint fk_detalle_producto foreign key (id_producto)
+            references dbo.productos(id_producto),
+        constraint ck_venta_detalle_montos check (cantidad > 0 and precio_unitario >= 0 and subtotal_linea >= 0)
+        );
+go

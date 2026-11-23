@@ -4,6 +4,9 @@
 //Funcion base
 function OptionPanel(){
 
+   return(
+    <h1>Abeja azul</h1>
+   )
 
 }
 

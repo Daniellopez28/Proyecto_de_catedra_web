@@ -233,3 +233,19 @@ create table dbo.movimientos_inventario (
         constraint ck_movimientos_inventario_cantidad check (cantidad > 0)
         );
 go
+
+--------tablas para los servicios de el restaurante--------
+--tabla de mesas por sucrusal(esto tabien puede variar en base al tamanio de el local)
+create table dbo.mesas (
+        mesaid int identity(1,1) not null constraint pk_mesas primary key,
+        sucursalid  int not null,
+        numero_mesa varchar(20) not null,
+        capacidad  int not null,
+        estado varchar(20) not null constraint df_mesas_estado default ('libre'),
+        constraint uq_mesas_sucursal_numero unique (sucursalid, numero_mesa),
+        constraint fk_mesas_sucursal foreign key (sucursalid) references dbo.sucursales(sucursalid),
+        constraint ck_mesas_capacidad check (capacidad > 0),
+        constraint ck_mesas_estado    check (estado in ('libre', 'ocupada', 'reservada', 'inactiva'))
+        );
+go
+

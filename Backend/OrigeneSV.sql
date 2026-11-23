@@ -66,3 +66,23 @@ go
         constraint ck_empleados_planilla   check (tipo_planilla in ('quincenal', 'mensual'))
         );
 go
+
+--tabla de usuarios, aca estan las credenciales de ingreso o acceso
+create table dbo.usuarios (
+        id_usuario            int identity(1,1) not null constraint pk_usuarios primary key,
+        id_rol                int not null,
+        sucursalid            int null,
+        id_empleado           int null,
+        nombre_completo       varchar(150) not null,
+        correo                varchar(150) not null constraint uq_usuarios_correo unique,
+        password_hash         varchar(255) not null,
+        password_salt         varchar(32)  null,
+        debe_cambiar_password bit not null constraint df_usuarios_cambiar default (1),
+        ultimo_acceso         datetime null,
+        activo                bit not null constraint df_usuarios_activo default (1),
+        creado_en             datetime not null constraint df_usuarios_creado_en default (getdate()),
+        constraint fk_usuario_rol         foreign key (id_rol)      references dbo.roles(id_rol),
+        constraint fk_usuarios_sucursales foreign key (sucursalid)  references dbo.sucursales(sucursalid),
+        constraint fk_usuarios_empleados  foreign key (id_empleado) references dbo.empleados(id_empleado)
+        );
+go

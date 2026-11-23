@@ -213,3 +213,23 @@ create table dbo.inventario_sucursal (
         );
 go
 
+--Tabla de movimiento o historial de el inventario
+create table dbo.movimientos_inventario (
+        movimientoid    bigint identity(1,1) not null constraint pk_movimientos_inventario primary key,
+        sucursalid      int not null,
+        insumoid        int not null,
+        tipo_movimiento varchar(20) not null,
+        cantidad        decimal(10,2) not null,
+        referencia      varchar(100) null,
+        fecha           datetime2(0) not null constraint df_movimientos_inventario_fecha default (sysdatetime()),
+        id_usuario      int null,
+        constraint fk_movimientos_inventario_sucursal foreign key (sucursalid)
+            references dbo.sucursales(sucursalid),
+        constraint fk_movimientos_inventario_insumo foreign key (insumoid)
+            references dbo.insumos(id_insumo),
+        constraint fk_movimientos_inventario_usuario foreign key (id_usuario)
+            references dbo.usuarios(id_usuario),
+        constraint ck_movimientos_inventario_tipo     check (tipo_movimiento in ('entrada', 'salida', 'ajuste')),
+        constraint ck_movimientos_inventario_cantidad check (cantidad > 0)
+        );
+go

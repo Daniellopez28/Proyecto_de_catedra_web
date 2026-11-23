@@ -15,3 +15,15 @@ go
 
 use origenesv;
 go
+
+--generamos las tablas de la base de datos:
+--tabla para almacenar los roles de los usuarios del sistema 
+create table dbo.roles (
+        id_rol int identity(1,1) not null constraint pk_roles primary key,
+        nombre_rol varchar(50)  not null constraint uq_roles_nombre unique,
+        descripcion varchar(max) null,
+        es_administrativo bit not null constraint df_roles_es_admin default (0),
+        pantalla_inicio   varchar(50) not null constraint df_roles_pantalla default ('panel_principal')
+        );
+
+go

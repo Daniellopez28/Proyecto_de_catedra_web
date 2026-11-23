@@ -197,3 +197,19 @@ create table dbo.recetas_detalle (
         );
 go
 
+--tabla de gestion de inventario dependiendo la sucrusal (esto puede variar en base a su sucrsal)
+create table dbo.inventario_sucursal (
+        inventarioid int identity(1,1) not null constraint pk_inventario_sucursal primary key,
+        sucursalid   int not null,
+        insumoid     int not null,
+        stock_actual decimal(10,2) not null constraint df_inventario_sucursal_stock  default (0.00),
+        stock_minimo decimal(10,2) not null constraint df_inventario_sucursal_minimo default (0.00),
+        constraint uq_inventario_sucursal_insumo unique (sucursalid, insumoid),
+        constraint fk_inventario_sucursal_sucursal foreign key (sucursalid)
+            references dbo.sucursales(sucursalid),
+        constraint fk_inventario_sucursal_insumo foreign key (insumoid)
+            references dbo.insumos(id_insumo),
+        constraint ck_inventario_sucursal_stock check (stock_actual >= 0 and stock_minimo >= 0)
+        );
+go
+

@@ -258,3 +258,31 @@ create table dbo.modificadores (
         constraint ck_modificadores_precio check (precio >= 0)
         );
 go
+
+--------tablas dedicadas a la gestion de ventas y de pagos--------
+--tabla de gestion de ventas que se realizan:
+create table dbo.ventas (
+        id_venta        int identity(1,1) not null constraint pk_ventas primary key,
+        id_cliente      int null,
+        id_usuario      int not null,
+        sucursalid      int null,
+        mesaid          int null,
+        fecha_hora      datetime null constraint df_ventas_fecha default (getdate()),
+        tipo_documento  varchar(30) not null,
+        correlativo     varchar(50) not null constraint uq_ventas_correlativo unique,
+        subtotal        decimal(10,2) not null,
+        iva             decimal(10,2) not null,
+        total           decimal(10,2) not null,
+        descuento       decimal(10,2) not null constraint df_ventas_descuento default (0.00),
+        estado          varchar(20) null constraint df_ventas_estado default ('pagada'),
+        estado_pedido   varchar(30) null constraint df_ventas_estado_pedido default ('pagado'),
+        notas_generales varchar(255) null,
+        constraint fk_venta_cliente  foreign key (id_cliente)
+            references dbo.clientes(id_cliente) on delete set null,
+        constraint fk_venta_usuario  foreign key (id_usuario) references dbo.usuarios(id_usuario),
+        constraint fk_ventas_sucursal foreign key (sucursalid) references dbo.sucursales(sucursalid),
+        constraint fk_ventas_mesa    foreign key (mesaid)     references dbo.mesas(mesaid),
+        constraint ck_ventas_montos  check (subtotal >= 0 and iva >= 0 and total >= 0 and descuento >= 0),
+        constraint ck_ventas_pedido  check (estado_pedido in ('abierto', 'en_cocina', 'servido', 'pagado', 'cancelado'))
+        );
+go

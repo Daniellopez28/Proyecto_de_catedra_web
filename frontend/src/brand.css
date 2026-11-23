@@ -1,0 +1,354 @@
+:root {
+  --brand-sage: #babd92;
+  --brand-brown: #53441b;
+  --brand-rust: #c53c10;
+  --brand-cream: #f8ebd8;
+  --brand-olive: #a4992f;
+  --brand-paper: #fffdf8;
+  --brand-border: #ded8c4;
+  --brand-muted: #716a55;
+  color: var(--brand-brown);
+  background: var(--brand-cream);
+  font-family: "Quicksand", sans-serif;
+}
+
+body {
+  color: var(--brand-brown);
+  background: var(--brand-cream);
+  font-family: "Quicksand", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: "Quicksand", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.workspace-page-title,
+.page-heading h1,
+.dashboard-welcome h1 {
+  color: var(--brand-brown);
+  font-family: "Manrope", sans-serif;
+  font-weight: 500;
+}
+
+.workspace-sidebar {
+  border-color: rgba(83, 68, 27, 0.14);
+  background: var(--brand-sage);
+}
+
+.workspace-brand {
+  margin: 0 4px 34px;
+}
+
+.workspace-brand img {
+  display: block;
+  width: min(190px, 100%);
+  height: auto;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+}
+
+.workspace-nav button {
+  color: var(--brand-brown);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.workspace-nav button:hover,
+.workspace-nav button.is-active {
+  background: var(--brand-cream);
+  color: var(--brand-rust);
+}
+
+.workspace-nav-icon {
+  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+}
+
+.workspace-nav button.is-active .workspace-nav-icon {
+  filter: brightness(0) saturate(100%) invert(25%) sepia(83%) saturate(2625%) hue-rotate(355deg) brightness(82%) contrast(96%);
+}
+
+.workspace-sidebar-note {
+  color: rgba(83, 68, 27, 0.78);
+}
+
+.workspace-main {
+  background: var(--brand-cream);
+}
+
+.workspace-topbar {
+  border-color: var(--brand-border);
+  background: rgba(255, 253, 248, 0.92);
+}
+
+.workspace-page-title,
+.workspace-user-name,
+.page-heading h1,
+.dashboard-welcome h1,
+.stat-card-value,
+.surface-card h2,
+.sales-total strong,
+.password-card h1 {
+  color: var(--brand-brown);
+}
+
+.workspace-page-subtitle,
+.workspace-user-detail,
+.page-heading p,
+.dashboard-welcome p,
+.stat-card-label,
+.stat-card-note,
+.form-help {
+  color: var(--brand-muted);
+}
+
+.workspace-logout,
+.workspace-menu-toggle,
+.secondary-button {
+  border-color: var(--brand-border);
+  background: var(--brand-paper);
+  color: var(--brand-brown);
+}
+
+.workspace-logout:hover,
+.workspace-menu-toggle:hover,
+.secondary-button:hover:not(:disabled) {
+  border-color: var(--brand-rust);
+  color: var(--brand-rust);
+}
+
+.workspace-nav button:focus-visible,
+.workspace-logout:focus-visible,
+.workspace-menu-toggle:focus-visible,
+.primary-button:focus-visible,
+.secondary-button:focus-visible,
+.danger-button:focus-visible {
+  outline-color: var(--brand-olive);
+}
+
+.workspace-content {
+  color: var(--brand-brown);
+}
+
+.dashboard-welcome,
+.surface-card,
+.stat-card,
+.password-card {
+  border-color: var(--brand-border);
+  background-color: var(--brand-paper);
+  box-shadow: 0 8px 26px rgba(83, 68, 27, 0.06);
+}
+
+.dashboard-welcome {
+  background: linear-gradient(110deg, var(--brand-paper) 0%, var(--brand-cream) 68%, rgba(186, 189, 146, 0.45) 100%);
+}
+
+.dashboard-art {
+  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+}
+
+.data-table {
+  color: var(--brand-brown);
+}
+
+.data-table th,
+.data-table td,
+.cart-row,
+.sales-total {
+  border-color: rgba(83, 68, 27, 0.12);
+}
+
+.data-table th {
+  color: var(--brand-muted);
+}
+
+.status-pill {
+  background: rgba(186, 189, 146, 0.35);
+  color: var(--brand-brown);
+}
+
+.status-pill.is-warning {
+  background: rgba(164, 153, 47, 0.2);
+  color: #665c17;
+}
+
+.status-pill.is-danger,
+.notice.is-error {
+  background: rgba(197, 60, 16, 0.1);
+  color: #9c2f0c;
+}
+
+.form-field {
+  color: var(--brand-brown);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.cart-row input,
+.form-control,
+.form-select {
+  border-color: var(--brand-border);
+  background-color: var(--brand-paper);
+  color: var(--brand-brown);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--brand-olive);
+  outline-color: rgba(164, 153, 47, 0.18);
+  box-shadow: 0 0 0 0.2rem rgba(164, 153, 47, 0.16);
+}
+
+.primary-button,
+.button-custom {
+  border-color: var(--brand-rust) !important;
+  background: var(--brand-rust) !important;
+  color: var(--brand-cream) !important;
+}
+
+.primary-button:hover:not(:disabled),
+.button-custom:hover {
+  border-color: var(--brand-brown) !important;
+  background: var(--brand-brown) !important;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--brand-cream);
+}
+
+.danger-button {
+  border-color: rgba(197, 60, 16, 0.28);
+  background: var(--brand-paper);
+  color: var(--brand-rust);
+}
+
+.danger-button:hover:not(:disabled) {
+  background: rgba(197, 60, 16, 0.1);
+}
+
+.notice {
+  border-color: rgba(164, 153, 47, 0.28);
+  background: rgba(186, 189, 146, 0.2);
+  color: var(--brand-brown);
+}
+
+.notice.is-info {
+  border-color: var(--brand-border);
+  background: var(--brand-paper);
+  color: var(--brand-muted);
+}
+
+.credential-box {
+  border-color: rgba(164, 153, 47, 0.55);
+  background: rgba(186, 189, 146, 0.18);
+  color: var(--brand-brown);
+}
+
+.credential-box code {
+  background: var(--brand-cream);
+  color: var(--brand-brown);
+}
+
+.password-screen {
+  background: var(--brand-sage);
+}
+
+.password-card .workspace-brand-mark {
+  display: block;
+  padding: 5px;
+  border-radius: 50%;
+  background: var(--brand-brown);
+  object-fit: contain;
+  filter: none;
+}
+
+.loginSection {
+  background:
+    radial-gradient(ellipse at 12% 12%, rgba(248, 235, 216, 0.54), transparent 40%),
+    var(--brand-sage);
+  color: var(--brand-brown);
+}
+
+.login-brand-logo {
+  display: block;
+  width: min(300px, 78%);
+  height: auto;
+  margin: 0 0 34px;
+  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+}
+
+.loginSection h1 {
+  color: var(--brand-brown);
+  font-family: "Manrope", sans-serif;
+  font-size: clamp(2.4rem, 5vw, 4.5rem);
+  font-weight: 500;
+  letter-spacing: -0.06em;
+  line-height: 1.08;
+}
+
+.loginSection h1 span,
+.loginSection p,
+.loginSection .form-label {
+  color: var(--brand-brown) !important;
+}
+
+.loginSection .card {
+  border: 1px solid rgba(83, 68, 27, 0.12);
+  background: var(--brand-paper);
+  box-shadow: 0 24px 70px rgba(83, 68, 27, 0.16);
+}
+
+.loginSection .card h3 {
+  color: var(--brand-brown);
+  font-family: "Manrope", sans-serif;
+}
+
+.loginSection .card-body > span {
+  color: var(--brand-muted) !important;
+}
+
+.loginSection .form-control,
+.loginSection .form-select {
+  min-height: 46px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.loginSection .form-label {
+  margin-bottom: 8px;
+}
+
+.loginSection .button-custom {
+  min-height: 48px;
+  border-radius: 9px;
+  font-weight: 700 !important;
+}
+
+.loginSection .alert-danger {
+  border-color: rgba(197, 60, 16, 0.2);
+  background: rgba(197, 60, 16, 0.08);
+  color: #8e2b0d;
+}
+
+@media (max-width: 991px) {
+  .login-brand-logo {
+    width: min(250px, 68%);
+    margin-bottom: 22px;
+  }
+
+  .loginSection h1 {
+    margin: 0 0 18px !important;
+    font-size: clamp(2.2rem, 7vw, 3.5rem);
+  }
+}

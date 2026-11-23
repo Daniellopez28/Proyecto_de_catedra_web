@@ -11,8 +11,7 @@ function SideNavbar({ items, selected, onSelect, abierta, onClose }) {
             )}
             <aside className={`workspace-sidebar ${abierta ? 'is-open' : ''}`}>
                 <div className="workspace-brand">
-                    <span className="workspace-brand-mark" aria-hidden="true">O</span>
-                    <span>Orígenes SV</span>
+                    <img src="/brand/origenes-logo.png" alt="Orígenes SV" />
                 </div>
                 <nav aria-label="Navegación principal">
                     <ul className="workspace-nav">

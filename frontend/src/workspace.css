@@ -37,16 +37,21 @@ button {
 }
 
 .workspace-sidebar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
   display: flex;
   width: 248px;
   height: 100vh;
+  height: 100dvh;
   flex: 0 0 248px;
   flex-direction: column;
   padding: 24px 16px;
   border-right: 1px solid #e8e5df;
   background: #fff;
+  overflow-y: auto;
 }
 
 .workspace-brand {
@@ -128,6 +133,7 @@ button {
 .workspace-main {
   min-width: 0;
   flex: 1;
+  margin-left: 248px;
 }
 
 .workspace-topbar {
@@ -654,6 +660,10 @@ button {
     flex-basis: 210px;
   }
 
+  .workspace-main {
+    margin-left: 210px;
+  }
+
   .workspace-content,
   .workspace-topbar {
     padding-right: 22px;
@@ -673,15 +683,19 @@ button {
 
   .workspace-sidebar {
     position: fixed;
-    z-index: 20;
     top: 0;
     bottom: 0;
     left: 0;
+    z-index: 20;
     width: min(280px, 84vw);
     height: 100dvh;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
     box-shadow: 8px 0 32px rgba(30, 30, 25, 0.12);
+  }
+
+  .workspace-main {
+    margin-left: 0;
   }
 
   .workspace-sidebar.is-open {
@@ -762,7 +776,10 @@ button {
   }
 
   .dashboard-art {
-    display: none;
+    display: block;
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
   }
 
   .cart-row {

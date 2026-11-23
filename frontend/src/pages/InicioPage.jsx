@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { solicitudApi } from '../api.js';
-import hero from '../assets/image.png';
 
 function InicioPage({ usuario, modulosDisponibles }) {
     const [estadoApi, setEstadoApi] = useState('comprobando');
@@ -26,7 +25,7 @@ function InicioPage({ usuario, modulosDisponibles }) {
                     <h1>Hola, {usuario.nombre_completo?.split(' ')[0] || 'bienvenido'}.</h1>
                     <p>Tu espacio de trabajo para la operación de Orígenes SV.</p>
                 </div>
-                <img className="dashboard-art" src={hero} alt="" />
+                <img className="dashboard-art" src="/brand/origenes-isotipo.png" alt="Isotipo de Orígenes SV" />
             </section>
 
             <article className="stat-card">

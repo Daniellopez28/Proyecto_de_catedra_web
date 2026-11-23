@@ -37,7 +37,7 @@ function CambiarPasswordPage({ alCambiar }) {
     return (
         <main className="password-screen">
             <form className="password-card" onSubmit={cambiar}>
-                <span className="workspace-brand-mark" aria-hidden="true">O</span>
+                <img className="workspace-brand-mark" src="/brand/origenes-isotipo.png" alt="" />
                 <h1>Actualiza tu contraseña</h1>
                 <p>Por seguridad, debes cambiar la contraseña inicial antes de continuar.</p>
                 {error && <div className="notice is-error" role="alert">{error}</div>}

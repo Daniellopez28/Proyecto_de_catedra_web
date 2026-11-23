@@ -2,6 +2,7 @@ import './App.css'
 import { useState } from 'react'
 import Login from '../components/login.jsx'
 import SideNavbar from '../components/side-navbar.jsx'
+import TopHeader from '../components/top-header.jsx'
 
 function obtenerUsuarioGuardado() {
   const usuarioGuardado = localStorage.getItem('usuarioLogueado')
@@ -23,23 +24,24 @@ function App() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+    <div className="app-shell">
       <SideNavbar />
-      <main style={{ flex: 1, padding: '40px' }}>
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          style={{ float: 'right' }}
-          onClick={() => {
+
+      <div className="app-workspace">
+        <TopHeader
+          usuario={usuario}
+          sucursal={usuario.sucursal || 'San Salvador · Escalón'}
+          onLogout={() => {
             localStorage.removeItem('usuarioLogueado')
             setUsuario(null)
           }}
-        >
-          Cerrar sesión
-        </button>
-        <h1>Bienvenido, {usuario.nombre_completo}</h1>
-        <p>Has iniciado sesión correctamente en Orígenes SV.</p>
-      </main>
+        />
+
+        <main className="app-content">
+          <h1>Bienvenido, {usuario.nombre_completo}</h1>
+          <p>Has iniciado sesión correctamente en Orígenes SV.</p>
+        </main>
+      </div>
     </div>
   )
 }

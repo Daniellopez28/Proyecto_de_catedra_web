@@ -249,3 +249,12 @@ create table dbo.mesas (
         );
 go
 
+--tabla de modificaciones de productos (si se agrega o algo un producto pasara por esta tabla)
+create table dbo.modificadores (
+        modificadorid int identity(1,1) not null constraint pk_modificadores primary key,
+        nombre varchar(100) not null constraint uq_modificadores_nombre unique,
+        precio decimal(10,2) not null,
+        activo bit not null constraint df_modificadores_activo default (1),
+        constraint ck_modificadores_precio check (precio >= 0)
+        );
+go

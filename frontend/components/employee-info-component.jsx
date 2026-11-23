@@ -1,12 +1,6 @@
 import '../src/employee-info-component.css'
 
 function EmployeeInfoComponent({ employee }) {
-    const initials = employee.name
-        .split(/\s+/)
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join('')
-
     const details = [
         ['Contratación', employee.contractDate],
         ['Contrato', employee.contractType],

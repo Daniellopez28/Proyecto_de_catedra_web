@@ -183,3 +183,17 @@ create table dbo.productos (
         );
 go
 
+--tabla de recetas a detalle de el menu, para saber los insumos que se utilizan
+create table dbo.recetas_detalle (
+        id_producto        int not null,
+        id_insumo          int not null,
+        cantidad_requerida decimal(10,2) not null,
+        constraint pk_recetas_detalle primary key (id_producto, id_insumo),
+        constraint fk_receta_producto foreign key (id_producto)
+            references dbo.productos(id_producto) on delete cascade,
+        constraint fk_receta_insumo foreign key (id_insumo)
+            references dbo.insumos(id_insumo),
+        constraint ck_recetas_cantidad check (cantidad_requerida > 0)
+        );
+go
+

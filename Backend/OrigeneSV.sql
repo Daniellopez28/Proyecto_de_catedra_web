@@ -517,3 +517,72 @@ if not exists (
         where nit is not null;
 go
 
+--------Niveles de acceso y permisos--------
+create table dbo.niveles_acceso (
+    id_nivel    int identity(1,1) not null constraint pk_niveles_acceso primary key,
+    codigo      varchar(20)  not null constraint uq_niveles_acceso_codigo unique,  -- administrador | gerente | empleado | cliente
+    descripcion varchar(255) null
+);
+go
+
+--permisos: cada accion que se puede controlar (ej. ver_menu, generar_planillas)
+create table dbo.permisos (
+    id_permiso  int identity(1,1) not null constraint pk_permisos primary key,
+    codigo      varchar(50)  not null constraint uq_permisos_codigo unique,
+    descripcion varchar(255) null
+);
+go
+
+--nivel_permiso: que permisos tiene cada nivel
+create table dbo.nivel_permiso (
+    id_nivel   int not null,
+    id_permiso int not null,
+    constraint pk_nivel_permiso primary key (id_nivel, id_permiso),
+    constraint fk_nivel_permiso_nivel   foreign key (id_nivel)   references dbo.niveles_acceso(id_nivel) on delete cascade,
+    constraint fk_nivel_permiso_permiso foreign key (id_permiso) references dbo.permisos(id_permiso)     on delete cascade
+);
+go
+
+--roles: cada rol de puesto pertenece a un nivel (columna nueva, se llena mas abajo con el update de roles)
+alter table dbo.roles add id_nivel int null;
+go
+
+alter table dbo.roles add constraint fk_roles_nivel foreign key (id_nivel) references dbo.niveles_acceso(id_nivel);
+go
+
+--usuarios: un cliente tambien tiene cuenta (columna nueva id_cliente). una cuenta es de un empleado o de un cliente, nunca de ambos
+alter table dbo.usuarios add id_cliente int null;
+go
+
+alter table dbo.usuarios add constraint fk_usuarios_clientes foreign key (id_cliente) references dbo.clientes(id_cliente);
+alter table dbo.usuarios add constraint ck_usuarios_un_solo_origen check (id_empleado is null or id_cliente is null);
+go
+
+--un cliente tiene una sola cuenta (filtrado: permite varios usuarios sin cliente)
+if not exists (select 1 from sys.indexes where name = N'ux_usuarios_cliente' and object_id = object_id(N'dbo.usuarios'))
+    create unique index ux_usuarios_cliente on dbo.usuarios (id_cliente) where id_cliente is not null;
+go
+
+--reservas: necesaria para que el cliente y el empleado puedan consultar reservas
+create table dbo.reservas (
+    id_reserva        int identity(1,1) not null constraint pk_reservas primary key,
+    mesaid            int not null,                  -- la sucursal se obtiene de la mesa
+    id_cliente        int not null,
+    fecha_hora_inicio datetime2(0) not null,
+    duracion_minutos  int not null constraint df_reservas_duracion default (90),
+    cantidad_personas int not null,
+    estado            varchar(20) not null constraint df_reservas_estado default ('pendiente'),
+    notas             varchar(255) null,
+    creada_en         datetime not null constraint df_reservas_creada_en default (getdate()),
+    constraint fk_reservas_mesa    foreign key (mesaid)     references dbo.mesas(mesaid),
+    constraint fk_reservas_cliente foreign key (id_cliente) references dbo.clientes(id_cliente),
+    constraint ck_reservas_estado    check (estado in ('pendiente', 'confirmada', 'cancelada', 'completada')),
+    constraint ck_reservas_personas  check (cantidad_personas > 0),
+    constraint ck_reservas_duracion  check (duracion_minutos between 30 and 480)
+);
+go
+
+--acelera la busqueda de disponibilidad por mesa y hora
+if not exists (select 1 from sys.indexes where name = N'ix_reservas_mesa_fecha' and object_id = object_id(N'dbo.reservas'))
+    create index ix_reservas_mesa_fecha on dbo.reservas (mesaid, fecha_hora_inicio);
+go

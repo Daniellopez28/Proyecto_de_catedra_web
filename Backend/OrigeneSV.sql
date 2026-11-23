@@ -1019,4 +1019,299 @@ begin
 end;
 go
 
+--------procedimiento para el login--------
+create or alter procedure dbo.sp_login_empleado
+    @identificador varchar(150),
+    @password      varchar(100),
+    @sucursalid    int
+as
+begin
+    set nocount on;
+    declare @id_usuario int, @salt varchar(32), @hash varchar(255), @ok bit = 0;
+    set @identificador = lower(ltrim(rtrim(isnull(@identificador, ''))));
+
+    --busca por codigo o correo
+    select top (1)
+           @id_usuario = u.id_usuario,
+           @salt       = u.password_salt,
+           @hash       = u.password_hash
+    from dbo.usuarios u
+    join dbo.empleados e on e.id_empleado = u.id_empleado
+    where u.activo = 1
+      and e.activo = 1
+      and u.sucursalid = @sucursalid
+      and e.sucursalid = @sucursalid
+      and (e.codigo_empleado = @identificador or u.correo = @identificador);
+
+    --verificacion de la contrasenia
+    if @id_usuario is not null and @hash = dbo.fn_hash_password(isnull(@password, ''), @salt)
+        set @ok = 1;
+    if @ok = 0
+        return;
+
+    --registra el acceso
+    update dbo.usuarios set ultimo_acceso = getdate() where id_usuario = @id_usuario;
+
+    --devuelve los datos de la sesion
+    select u.id_usuario,
+           e.id_empleado,
+           e.codigo_empleado,
+           e.nombre_completo,
+           u.correo,
+           r.nombre_rol        as rol,
+           r.es_administrativo,
+           r.pantalla_inicio,
+           n.codigo            as nivel_acceso,
+           e.cargo,
+           e.sucursalid,
+           s.nombre            as sucursal,
+           u.debe_cambiar_password
+    from dbo.usuarios u
+    join dbo.empleados e on e.id_empleado = u.id_empleado
+    join dbo.roles r     on r.id_rol = e.id_rol
+    join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+    left join dbo.sucursales s on s.sucursalid = e.sucursalid
+    where u.id_usuario = @id_usuario
+      and u.sucursalid = @sucursalid
+      and e.sucursalid = @sucursalid;
+end;
+go
+
+--procedimiento para el cambio de contrasenia si se olvida:
+create or alter procedure dbo.sp_cambiar_password
+    @id_usuario      int,
+    @password_actual varchar(100),
+    @password_nueva  varchar(100)
+as
+begin
+    set nocount on;
+    if len(isnull(@password_nueva, '')) < 8
+        throw 50010, 'la nueva contrasenia debe tener al menos 8 caracteres.', 1;
+    declare @salt varchar(32), @hash varchar(255);
+    select @salt = password_salt, @hash = password_hash
+    from dbo.usuarios
+    where id_usuario = @id_usuario and activo = 1;
+    if @hash is null or @hash <> dbo.fn_hash_password(isnull(@password_actual, ''), @salt)
+        throw 50011, 'la contrasena actual no es correcta.', 1;
+    declare @nueva_salt varchar(32) = convert(varchar(32), crypt_gen_random(16), 2);
+    update dbo.usuarios
+    set password_salt = @nueva_salt,
+        password_hash = dbo.fn_hash_password(@password_nueva, @nueva_salt),
+        debe_cambiar_password = 0
+    where id_usuario = @id_usuario;
+    select 1 as cambiado;
+end;
+go
+
+--registro de un cliente (usuario normal): crea el cliente y su cuenta en una sola transaccion
+create or alter procedure dbo.sp_registrar_cliente_usuario
+    @nombre   nvarchar(150),
+    @correo   varchar(150),
+    @password varchar(100),
+    @telefono varchar(20) = null
+as
+begin
+    set nocount on;
+    set xact_abort on;
+    set @nombre   = ltrim(rtrim(isnull(@nombre, N'')));
+    set @correo   = lower(ltrim(rtrim(isnull(@correo, ''))));
+    set @telefono = nullif(ltrim(rtrim(isnull(@telefono, ''))), '');
+    if @nombre = N''
+        throw 50020, 'el nombre es obligatorio.', 1;
+    if @correo not like '_%@_%._%' or @correo like '% %'
+        throw 50021, 'el correo no tiene un formato valido.', 1;
+    if len(isnull(@password, '')) < 8
+        throw 50022, 'la contrasena debe tener al menos 8 caracteres.', 1;
+
+    --los correos @origene.sv se generan solo para empleados: un cliente no puede usarlos
+    if @correo like '%@origene.sv'
+        throw 50023, 'los correos @origene.sv son solo para empleados.', 1;
+    declare @id_rol int;
+    select @id_rol = id_rol from dbo.roles where nombre_rol = 'cliente';
+    if @id_rol is null
+        throw 50024, 'no existe el rol cliente.', 1;
+    begin try
+        begin tran;
+        if exists (select 1 from dbo.usuarios with (updlock, holdlock) where correo = @correo)
+            throw 50025, 'ese correo ya esta registrado.', 1;
+        insert into dbo.clientes (nombre, telefono, correo)
+        values (@nombre, @telefono, @correo);
+        declare @id_cliente int = scope_identity();
+        declare @salt varchar(32) = convert(varchar(32), crypt_gen_random(16), 2);
+
+        --el cliente elige su propia contrasena, por eso no se exige cambiarla (debe_cambiar_password = 0)
+        insert into dbo.usuarios
+            (id_rol, id_cliente, nombre_completo, correo, password_hash, password_salt, debe_cambiar_password)
+        values
+            (@id_rol, @id_cliente, @nombre, @correo, dbo.fn_hash_password(@password, @salt), @salt, 0);
+        declare @id_usuario int = scope_identity();
+        commit tran;
+        select @id_usuario as id_usuario,
+               @id_cliente as id_cliente,
+               @nombre     as nombre_completo,
+               @correo     as correo,
+               'cliente'   as rol,
+               'cliente'   as nivel_acceso;
+    end try
+    begin catch
+        if xact_state() <> 0 rollback tran;
+        throw;
+    end catch;
+end;
+go
+
+--login del cliente: devuelve una fila si el correo y la contrasena son correctos; cero filas si no
+create or alter procedure dbo.sp_login_cliente
+    @correo   varchar(150),
+    @password varchar(100)
+as
+begin
+    set nocount on;
+    declare @id_usuario int, @salt varchar(32), @hash varchar(255), @ok bit = 0;
+    set @correo = lower(ltrim(rtrim(isnull(@correo, ''))));
+
+    --solo cuentas de cliente (id_cliente no nulo): un empleado no entra por aqui
+    select top (1)
+           @id_usuario = u.id_usuario,
+           @salt       = u.password_salt,
+           @hash       = u.password_hash
+    from dbo.usuarios u
+    where u.activo = 1
+      and u.id_cliente is not null
+      and u.correo = @correo;
+    if @id_usuario is not null and @hash = dbo.fn_hash_password(isnull(@password, ''), @salt)
+        set @ok = 1;
+    if @ok = 0
+        return;
+    update dbo.usuarios set ultimo_acceso = getdate() where id_usuario = @id_usuario;
+    select u.id_usuario,
+           c.id_cliente,
+           c.nombre          as nombre_completo,
+           u.correo,
+           r.nombre_rol      as rol,
+           n.codigo          as nivel_acceso,
+           r.pantalla_inicio,
+           u.debe_cambiar_password
+    from dbo.usuarios u
+    join dbo.clientes c       on c.id_cliente = u.id_cliente
+    join dbo.roles r          on r.id_rol = u.id_rol
+    join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+    where u.id_usuario = @id_usuario;
+end;
+go
+
+--funcion para ver si un usuario tiene un permiso (el administrador siempre tiene todos)
+create or alter function dbo.fn_tiene_permiso (@id_usuario int, @codigo_permiso varchar(50))
+returns bit
+as
+begin
+    declare @resultado bit = 0;
+    if exists (
+        select 1
+        from dbo.usuarios u
+        join dbo.roles r          on r.id_rol = u.id_rol
+        join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+        where u.id_usuario = @id_usuario and u.activo = 1 and n.codigo = 'administrador'
+    )
+    begin
+        set @resultado = 1;
+    end
+    else if exists (
+        select 1
+        from dbo.usuarios u
+        join dbo.roles r          on r.id_rol = u.id_rol
+        join dbo.nivel_permiso np on np.id_nivel = r.id_nivel
+        join dbo.permisos p       on p.id_permiso = np.id_permiso
+        where u.id_usuario = @id_usuario and u.activo = 1 and p.codigo = @codigo_permiso
+    )
+    begin
+        set @resultado = 1;
+    end;
+    return @resultado;
+end;
+go
+
+--lista de permisos de un usuario: el frontend la usa para mostrar solo las opciones que le corresponden
+create or alter procedure dbo.sp_permisos_usuario
+    @id_usuario int
+as
+begin
+    set nocount on;
+    select p.codigo, p.descripcion
+    from dbo.usuarios u
+    join dbo.roles r          on r.id_rol = u.id_rol
+    join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+    join dbo.permisos p       on n.codigo = 'administrador'
+                              or exists (select 1 from dbo.nivel_permiso np
+                                         where np.id_nivel = n.id_nivel and np.id_permiso = p.id_permiso)
+    where u.id_usuario = @id_usuario and u.activo = 1
+    order by p.codigo;
+end;
+go
+
+--mesas disponibles para una fecha y hora: excluye mesas inactivas, pequenas para el grupo y las que ya tienen
+--una reserva (pendiente o confirmada) que se cruce con el horario pedido
+create or alter function dbo.fn_mesas_disponibles
+    (@sucursalid int, @fecha_hora datetime2(0), @personas int, @duracion_minutos int)
+returns table
+as
+return (
+    select m.mesaid, m.sucursalid, m.numero_mesa, m.capacidad
+    from dbo.mesas m
+    where m.sucursalid = @sucursalid
+      and m.estado <> 'inactiva'
+      and m.capacidad >= @personas
+      and not exists (
+          select 1
+          from dbo.reservas r
+          where r.mesaid = m.mesaid
+            and r.estado in ('pendiente', 'confirmada')
+            and r.fecha_hora_inicio < dateadd(minute, @duracion_minutos, @fecha_hora)
+            and dateadd(minute, r.duracion_minutos, r.fecha_hora_inicio) > @fecha_hora
+      )
+);
+go
+
+--migracion de datos y limpieza(convierte los codigos viejos que puedan existir esto es solo si hay conflicto de codigo previo)
+declare @id_pendiente int, @codigo_nuevo varchar(6);
+while exists (
+    select 1
+    from dbo.empleados
+    where codigo_empleado is null
+       or codigo_empleado not like '[0-9][0-9][0-9][0-9][0-9][0-9]'
+)
+begin
+    select top (1) @id_pendiente = id_empleado
+    from dbo.empleados
+    where codigo_empleado is null
+       or codigo_empleado not like '[0-9][0-9][0-9][0-9][0-9][0-9]'
+    order by id_empleado;
+    exec dbo.sp_generar_codigo_empleado @codigo = @codigo_nuevo output;
+    update dbo.empleados
+    set codigo_empleado = @codigo_nuevo
+    where id_empleado = @id_pendiente;
+end;
+go
+
+if not exists (
+    select 1
+    from sys.check_constraints
+    where name = N'ck_empleados_codigo_6_digitos'
+      and parent_object_id = object_id(N'dbo.empleados')
+)
+    alter table dbo.empleados
+        add constraint ck_empleados_codigo_6_digitos
+        check (codigo_empleado like '[0-9][0-9][0-9][0-9][0-9][0-9]');
+go
+
+if exists (
+    select 1
+    from sys.sequences
+    where name = N'seq_codigo_empleado'
+      and schema_id = schema_id(N'dbo')
+)
+    drop sequence dbo.seq_codigo_empleado;
+go
+
+
 

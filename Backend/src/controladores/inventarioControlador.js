@@ -56,3 +56,14 @@ export async function simularExplosionMateriales(peticion, respuesta) {
     }
 }
 
+//Export que devuelve la alerta si el stock es bajo 
+export async function consultarAlertasStock(peticion, respuesta) {
+    try {
+        const sucursalid = await resolverSucursal(peticion, peticion.query.sucursalid);
+        const alertas = await obtenerAlertasStock(prisma, sucursalid);
+        return respuesta.status(200).json({ total: alertas.length, alertas });
+    } catch (error) {
+        return manejarError(error, respuesta);
+    }
+}
+

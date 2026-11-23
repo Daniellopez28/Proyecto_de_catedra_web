@@ -1532,6 +1532,150 @@ go
 select id_usuario, correo, activo, debe_cambiar_password, ultimo_acceso from dbo.usuarios;
 go
 
+--------poblacion de la base de datos--------
+-- obtenemos la sucursal principal de empleados
+declare @sucursalid int;
 
+select @sucursalid = sucursalid
+from dbo.sucursales
+where nombre = 'escalon';
 
+if @sucursalid is null
+    throw 50030, 'no existe la sucursal escalon.', 1;
 
+--------registro de el administrador--------
+exec dbo.sp_registrar_empleado
+    @nombres = 'checo',
+    @apellido_paterno = 'perez',
+    @apellido_materno = 'mendoza',
+    @dui = '01234567-8',
+    @fecha_nacimiento = '19900126',
+    @nombre_rol = 'administrador',
+    @cargo = 'administrador general',
+    @tipo_planilla = 'mensual',
+    @salario_base = 1200.00,
+    @fecha_ingreso = '20250101',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100007';
+
+--------registro de empleados--------
+--rrhh (empleado 1)
+exec dbo.sp_registrar_empleado
+    @nombres = 'ana',
+    @apellido_paterno = 'hernandez',
+    @apellido_materno = 'castro',
+    @dui = '01234568-6',
+    @fecha_nacimiento = '19950312',
+    @nombre_rol = 'rrhh',
+    @cargo = 'encargada de recursos humanos',
+    @tipo_planilla = 'mensual',
+    @salario_base = 850.00,
+    @fecha_ingreso = '20250201',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100008';
+
+--gerente (empleado 2)
+exec dbo.sp_registrar_empleado
+    @nombres = 'miguel',
+    @apellido_paterno = 'ramirez',
+    @apellido_materno = 'torres',
+    @dui = '01234569-4',
+    @fecha_nacimiento = '19880520',
+    @nombre_rol = 'gerente',
+    @cargo = 'gerente de sucursal',
+    @tipo_planilla = 'mensual',
+    @salario_base = 1000.00,
+    @fecha_ingreso = '20250301',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100009';
+
+--cajero(empleado 3)
+exec dbo.sp_registrar_empleado
+    @nombres = 'jose',
+    @apellido_paterno = 'castillo',
+    @apellido_materno = 'flores',
+    @dui = '01234570-8',
+    @fecha_nacimiento = '19980210',
+    @nombre_rol = 'cajero',
+    @cargo = 'cajero',
+    @tipo_planilla = 'quincenal',
+    @salario_base = 450.00,
+    @fecha_ingreso = '20250401',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100010';
+
+--mesero (empleado 4)
+exec dbo.sp_registrar_empleado
+    @nombres = 'maria',
+    @apellido_paterno = 'garcia',
+    @apellido_materno = 'rivera',
+    @dui = '01234571-6',
+    @fecha_nacimiento = '20000125',
+    @nombre_rol = 'mesero',
+    @cargo = 'mesera',
+    @tipo_planilla = 'quincenal',
+    @salario_base = 400.00,
+    @fecha_ingreso = '20250501',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100011';
+
+--cocinero (empleado 5)
+exec dbo.sp_registrar_empleado
+    @nombres = 'pedro',
+    @apellido_paterno = 'lopez',
+    @apellido_materno = 'mendez',
+    @dui = '01234572-4',
+    @fecha_nacimiento = '19970118',
+    @nombre_rol = 'cocinero',
+    @cargo = 'cocinero',
+    @tipo_planilla = 'quincenal',
+    @salario_base = 500.00,
+    @fecha_ingreso = '20250601',
+    @sucursalid = @sucursalid,
+        @codigo_empleado = '100012';
+
+--registramos clientes
+exec dbo.sp_registrar_cliente_usuario
+    @nombre = 'juan perez',
+    @correo = 'juan.perez@gmail.com',
+    @password = 'cliente123',
+    @telefono = '70000001';
+
+exec dbo.sp_registrar_cliente_usuario
+    @nombre = 'lucia ramirez',
+    @correo = 'lucia.ramirez@gmail.com',
+    @password = 'cliente123',
+    @telefono = '70000002';
+
+exec dbo.sp_registrar_cliente_usuario
+    @nombre = 'andres flores',
+    @correo = 'andres.flores@gmail.com',
+    @password = 'cliente123',
+    @telefono = '70000003';
+
+exec dbo.sp_registrar_cliente_usuario
+    @nombre = 'sofia castillo',
+    @correo = 'sofia.castillo@gmail.com',
+    @password = 'cliente123',
+    @telefono = '70000004';
+
+--consultamos apra ver el usuario registrado
+select
+    u.id_usuario,
+    u.nombre_completo,
+    u.correo,
+    r.nombre_rol,
+    n.codigo as nivel_acceso,
+    e.codigo_empleado,
+    s.nombre as sucursal
+from dbo.usuarios u
+inner join dbo.roles r
+    on r.id_rol = u.id_rol
+inner join dbo.niveles_acceso n
+    on n.id_nivel = r.id_nivel
+left join dbo.empleados e
+    on e.id_empleado = u.id_empleado
+left join dbo.sucursales s
+    on s.sucursalid = u.sucursalid
+order by u.id_usuario;
+go

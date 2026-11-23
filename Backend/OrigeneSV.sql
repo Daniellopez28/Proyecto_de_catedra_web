@@ -374,3 +374,57 @@ create table dbo.movimientos_caja (
         constraint ck_movimientos_caja_monto check (monto > 0)
         );
 go
+
+--------continuamos con las tablas de compras, pagos a proveedores--------
+--tabla de compras (es la factura para los proveedores)
+    create table dbo.compras (
+        id_compra                int identity(1,1) not null constraint pk_compras primary key,
+        id_proveedor             int not null,
+        sucursalid               int null,
+        fecha_compra             datetime null constraint df_compras_fecha default (getdate()),
+        numero_factura_proveedor varchar(50) not null,
+        subtotal                 decimal(10,2) not null constraint df_compras_subtotal default (0.00),
+        iva                      decimal(10,2) not null constraint df_compras_iva default (0.00),
+        total_compra             decimal(10,2) not null,
+        estado_pago              varchar(20) null constraint df_compras_estado_pago default ('pendiente'),
+        fecha_vencimiento        date null,
+        condicion_pago           varchar(50) null,
+        clasificacion            varchar(50) null,
+        estado_documento         varchar(20) null constraint df_compras_estado_documento default ('registrada'),
+        constraint fk_compra_proveedor foreign key (id_proveedor) references dbo.proveedores(id_proveedor),
+        constraint fk_compras_sucursal foreign key (sucursalid)   references dbo.sucursales(sucursalid),
+        constraint ck_compras_montos   check (subtotal >= 0 and iva >= 0 and total_compra >= 0)
+        );
+go
+
+--tabla de detalles de la compra (osea el inventario que se compro)
+create table dbo.compra_detalle (
+        id_compra      int not null,
+        id_insumo      int not null,
+        cantidad       decimal(10,2) not null,
+        costo_unitario decimal(10,4) not null,
+        subtotal       decimal(10,2) not null,
+        constraint pk_compra_detalle primary key (id_compra, id_insumo),
+        constraint fk_compradet_compra foreign key (id_compra)
+            references dbo.compras(id_compra) on delete cascade,
+        constraint fk_compradet_insumo foreign key (id_insumo) references dbo.insumos(id_insumo),
+        constraint ck_compra_detalle_montos check (cantidad > 0 and costo_unitario >= 0 and subtotal >= 0)
+        );
+go
+
+--tabla de pagos para la compra (el abono o pago de una compra dada)
+create table dbo.pagos_compra (
+        pagocompraid int identity(1,1) not null constraint pk_pagos_compra primary key,
+        id_compra    int not null,
+        monto        decimal(10,2) not null,
+        metodo_pago  varchar(30) not null,
+        referencia   varchar(50) null,
+        fecha        datetime2(0) not null constraint df_pagos_compra_fecha default (sysdatetime()),
+        id_usuario   int not null,
+        constraint fk_pagos_compra_compra  foreign key (id_compra)  references dbo.compras(id_compra),
+        constraint fk_pagos_compra_usuario foreign key (id_usuario) references dbo.usuarios(id_usuario),
+        constraint ck_pagos_compra_monto   check (monto > 0)
+        );
+go
+
+

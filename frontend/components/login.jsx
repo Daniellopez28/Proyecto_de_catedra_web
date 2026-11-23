@@ -54,6 +54,7 @@ function Login({ onLogin }) {
                     <div className="container" >
                         <div className="row gx-lg-5 align-items-center" >
                             <div className="col-lg-6 mb-5 mb-lg-5">
+                                <img className="login-brand-logo" src="/brand/origenes-logo.png" alt="Orígenes SV" />
                                 <h1 className="my-5 display-3 fw-bold ls-tight">
                                     Todo listo <br />
                                     <span className=" " style={{ color: '#B95136' }}>para un buen servicio</span>

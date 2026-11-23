@@ -826,3 +826,197 @@ if not exists (select 1 from dbo.roles where id_nivel is null)
     alter table dbo.roles alter column id_nivel int not null;
 go
 
+--------sentencias para el login y registro de los empleados--------
+--normalizamos el texto que se ingrese:
+create or alter function dbo.fn_normalizar_texto (@texto nvarchar(200))
+returns varchar(200)
+as
+begin
+    declare @t nvarchar(200) = lower(isnull(@texto, N''));
+    set @t = replace(@t, nchar(225), N'a');
+    set @t = replace(@t, nchar(233), N'e');
+    set @t = replace(@t, nchar(237), N'i');
+    set @t = replace(@t, nchar(243), N'o');
+    set @t = replace(@t, nchar(250), N'u');
+    set @t = replace(@t, nchar(252), N'u');
+    set @t = replace(@t, nchar(241), N'n');
+    declare @pos int = patindex(N'%[^a-z0-9]%', @t collate latin1_general_bin);
+    while @pos > 0
+    begin
+        set @t = stuff(@t, @pos, 1, N'');
+        set @pos = patindex(N'%[^a-z0-9]%', @t collate latin1_general_bin);
+    end;
+    return cast(@t as varchar(200));
+end;
+go
+
+--funcion para la contrasenia
+create or alter function dbo.fn_hash_password (@password varchar(100), @salt varchar(32))
+returns varchar(64)
+as
+begin
+    return convert(varchar(64), hashbytes('sha2_256', @salt + @password), 2);
+end;
+go
+
+--generador de codigo para cada empleado (este cumple una regla especifica, son 6 digitos no repetibles entre empleados)
+create or alter procedure dbo.sp_generar_codigo_empleado
+    @codigo varchar(6) output
+as
+begin
+    set nocount on;
+    declare @intentos int = 0, @candidato varchar(6);
+    set @codigo = null;
+    while @intentos < 200
+    begin
+        set @intentos += 1;
+        set @candidato = cast(100000 + abs(cast(crypt_gen_random(4) as bigint) % 900000) as varchar(6));
+        if not exists (select 1 from dbo.empleados with (updlock, holdlock) where codigo_empleado = @candidato)
+        begin
+            set @codigo = @candidato;
+            return;
+        end;
+    end;
+    throw 50006, 'no se pudo generar un codigo de empleado unico. intente de nuevo.', 1;
+end;
+go
+
+--registro de empleado:
+create or alter procedure dbo.sp_registrar_empleado
+    @nombres          nvarchar(100),
+    @apellido_paterno nvarchar(50),
+    @apellido_materno nvarchar(50) = null,
+    @dui              varchar(10),
+    @fecha_nacimiento date,
+    @nombre_rol       varchar(50),
+    @cargo            varchar(50),
+    @tipo_planilla    varchar(20),
+    @salario_base     decimal(10,2),
+    @fecha_ingreso    date,
+    @sucursalid       int = null,
+    @isss_numero      varchar(15) = null,
+    @afp_numero       varchar(20) = null,
+    @tipo_contrato    varchar(50) = null,
+    @jornada          varchar(50) = null,
+    @forma_pago       varchar(50) = null,
+    @codigo_empleado  varchar(6)  = null   --opcional: si no se indica, se genera uno aleatorio de 6 digitos
+as
+begin
+    set nocount on;
+    set xact_abort on;
+
+    --hago una limpieza previa de datos de entrada
+    set @nombres          = ltrim(rtrim(isnull(@nombres, N'')));
+    set @apellido_paterno = ltrim(rtrim(isnull(@apellido_paterno, N'')));
+    set @apellido_materno = nullif(ltrim(rtrim(isnull(@apellido_materno, N''))), N'');
+    set @tipo_planilla    = ltrim(rtrim(isnull(@tipo_planilla, '')));
+
+    --validamos los datos, roles y demas para ver si son correctos
+    declare @id_rol int, @es_admin bit, @rol_db varchar(50);
+    select @id_rol = id_rol, @es_admin = es_administrativo, @rol_db = nombre_rol
+    from dbo.roles where nombre_rol = @nombre_rol;
+    if @id_rol is null
+        throw 50001, 'el rol indicado no existe.', 1;
+
+--empleado no puede tener el rol de un cliente como tal
+    if exists (select 1
+               from dbo.roles r
+               join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+               where r.id_rol = @id_rol and n.codigo = 'cliente')
+        throw 50007, 'un empleado no puede tener el rol de cliente.', 1;
+
+    if @nombres = N'' or @apellido_paterno = N''
+        throw 50002, 'el nombre y el apellido paterno son obligatorios.', 1;
+    if @fecha_nacimiento is null or @fecha_nacimiento > cast(getdate() as date)
+        throw 50003, 'la fecha de nacimiento es obligatoria y no puede ser futura.', 1;
+    if lower(@tipo_planilla) not in ('quincenal', 'mensual')
+        throw 50004, 'el tipo de planilla debe ser quincenal o mensual.', 1;
+
+    --preparamos el correo y contrasenia
+    declare @primer_nombre nvarchar(100) = left(@nombres, charindex(N' ', @nombres + N' ') - 1);
+    declare @ini_nombre varchar(3)   = left(dbo.fn_normalizar_texto(@primer_nombre), 3);  
+    declare @ape_pat    varchar(100) = dbo.fn_normalizar_texto(@apellido_paterno);         
+    declare @ini_pat    varchar(3)   = left(@ape_pat, 3);                                  
+    declare @ini_mat    varchar(3)   = left(dbo.fn_normalizar_texto(@apellido_materno), 3); 
+    if @ini_nombre = '' or @ape_pat = ''
+        throw 50005, 'el nombre y el apellido deben contener letras.', 1;
+
+    --fecha de nacimiento de la forma ddmmaaaa
+    declare @fecha_txt varchar(8) = replace(convert(varchar(10), @fecha_nacimiento, 105), '-', '');
+
+    --contrasenia personal por cada uno
+    declare @password_inicial varchar(40) =
+        case when @es_admin = 1
+             then @ini_nombre + @ini_pat + @fecha_txt  
+             else @fecha_txt                          
+        end;
+    declare @nombre_completo varchar(250) =
+        @nombres + ' ' + @apellido_paterno + isnull(' ' + @apellido_materno, '');
+    begin try
+        begin tran;
+
+       --aca esta el generador de el correo unico (esto ayuda a evitar la duplicidad de correos)
+        declare @base   varchar(100) = @ini_nombre + @ape_pat;
+        declare @correo varchar(150) = @base + '@origene.sv';
+        if exists (select 1 from dbo.usuarios with (updlock, holdlock) where correo = @correo)
+        begin
+
+            --si es que ya eiste entonces agregan las 3 primeras letras del segundo apellido.
+            set @base   = @base + @ini_mat;
+            set @correo = @base + '@origene.sv';
+
+            -- si aun existe (o no hay segundo apellido): numero al final.
+            declare @n int = 1;
+            while exists (select 1 from dbo.usuarios with (updlock, holdlock) where correo = @correo)
+            begin
+                set @n += 1;
+                set @correo = @base + cast(@n as varchar(5)) + '@origene.sv';
+            end;
+        end;
+
+        --para cada empleado generamos un codigo de 6 digitos
+        --si se indico un codigo fijo (empleados de prueba) se valida y se usa; si no, se genera uno aleatorio
+        declare @codigo varchar(6) = nullif(ltrim(rtrim(@codigo_empleado)), '');
+        if @codigo is null
+        begin
+            exec dbo.sp_generar_codigo_empleado @codigo = @codigo output;
+        end
+        else if @codigo not like '[0-9][0-9][0-9][0-9][0-9][0-9]'
+                or exists (select 1 from dbo.empleados where codigo_empleado = @codigo)
+            throw 50008, 'el codigo indicado no tiene 6 digitos o ya lo usa otro empleado.', 1;
+
+        --guardamos la ficha de el empleado agregado
+        insert into dbo.empleados
+            (codigo_empleado, sucursalid, id_rol, nombres, apellido_paterno, apellido_materno,
+             nombre_completo, dui, fecha_nacimiento, isss_numero, afp_numero, cargo,
+             tipo_planilla, salario_base, fecha_ingreso, correo, tipo_contrato, jornada, forma_pago)
+        values
+            (@codigo, @sucursalid, @id_rol, @nombres, @apellido_paterno, @apellido_materno,
+             @nombre_completo, @dui, @fecha_nacimiento, @isss_numero, @afp_numero, @cargo,
+             @tipo_planilla, @salario_base, @fecha_ingreso, @correo, @tipo_contrato, @jornada, @forma_pago);
+        declare @id_empleado int = scope_identity();
+
+        --creamos el usuario con su contrasenia
+        declare @salt varchar(32) = convert(varchar(32), crypt_gen_random(16), 2);
+        insert into dbo.usuarios
+            (id_rol, sucursalid, id_empleado, nombre_completo, correo,
+             password_hash, password_salt, debe_cambiar_password)
+        values
+            (@id_rol, @sucursalid, @id_empleado, @nombre_completo, @correo,
+             dbo.fn_hash_password(@password_inicial, @salt), @salt, 1);
+        commit tran;
+        select @id_empleado      as id_empleado,
+               @codigo           as codigo_empleado,
+               @nombre_completo  as nombre_completo,
+               @correo           as correo,
+               @rol_db           as rol,
+               @password_inicial as password_inicial;
+    end try
+    begin catch
+        if xact_state() <> 0 rollback tran;
+        throw;
+    end catch;
+end;
+go
+
+

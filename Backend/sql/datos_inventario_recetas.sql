@@ -22,3 +22,24 @@ FROM (VALUES
     (N'Barra de granola (reventa)', N'unidad', 50, 10, 0.7000)
 ) AS v(nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
 WHERE NOT EXISTS (SELECT 1 FROM insumos i WHERE i.nombre = v.nombre);
+
+--Productos nuevos, para datos iniciales
+INSERT INTO productos (nombre, descripcion, precio_venta, categoria, es_reventa)
+SELECT v.nombre, v.descripcion, v.precio_venta, v.categoria, v.es_reventa
+FROM (VALUES
+    (N'Latte Chico', N'Espresso con leche vaporizada, 12 oz', 2.75, N'Bebida Caliente', 0),
+    (N'Capuchino Grande', N'Espresso con leche y espuma, 16 oz', 3.50, N'Bebida Caliente', 0),
+    (N'Espresso Doble', N'Doble shot de café de especialidad', 2.25, N'Bebida Caliente', 0),
+    (N'Americano Grande', N'Espresso con agua caliente, 16 oz', 2.75, N'Bebida Caliente', 0),
+    (N'Moca Grande', N'Espresso con leche y chocolate, 16 oz', 4.00, N'Bebida Caliente', 0),
+    (N'Caramel Macchiato Grande', N'Espresso con leche y jarabe de caramelo, 16 oz', 4.25, N'Bebida Caliente', 0),
+    (N'Vainilla Latte Grande', N'Espresso con leche y jarabe de vainilla, 16 oz', 3.95, N'Bebida Caliente', 0),
+    (N'Chocolate Caliente Grande', N'Leche caliente con chocolate, 16 oz', 3.25, N'Bebida Caliente', 0),
+    (N'Chai Latte Grande', N'Té chai especiado con leche, 16 oz', 3.95, N'Bebida Caliente', 0),
+    (N'Frappé de Café Grande', N'Café frío licuado con hielo y crema batida, 16 oz', 4.50, N'Bebida Fría', 0),
+    (N'Cold Brew Grande', N'Café infusionado en frío con hielo, 16 oz', 3.75, N'Bebida Fría', 0),
+    (N'Botella de agua 500 ml', N'Agua purificada embotellada', 1.00, N'Reventa', 1),
+    (N'Barra de granola', N'Barra de granola empacada', 1.75, N'Reventa', 1)
+) AS v(nombre, descripcion, precio_venta, categoria, es_reventa)
+WHERE NOT EXISTS (SELECT 1 FROM productos p WHERE p.nombre = v.nombre);
+

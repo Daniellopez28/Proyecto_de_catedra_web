@@ -1313,5 +1313,225 @@ if exists (
     drop sequence dbo.seq_codigo_empleado;
 go
 
+--------vistas de consulta--------
+--consulta cuando este por debajo de el minimo o en el minimo.
+create or alter view dbo.v_reporte_alertas_stock
+as
+    select id_insumo,
+           nombre as insumo,
+           unidad_medida,
+           stock_actual,
+           stock_minimo,
+           case when stock_minimo > stock_actual then stock_minimo - stock_actual else 0 end as cantidad_faltante
+    from dbo.insumos
+    where activo = 1
+      and stock_actual <= stock_minimo;
+go
+
+--ventas agrupadas por su sucursal.
+create or alter view dbo.v_reporte_ventas_sucursal
+as
+    select coalesce(s.nombre, 'sin sucursal') as sucursal,
+           v.tipo_documento,
+           count_big(*)    as cantidad_ventas,
+           sum(v.subtotal) as total_subtotal,
+           sum(v.iva)      as total_iva,
+           sum(v.total)    as total_facturado
+    from dbo.ventas v
+    left join dbo.sucursales s on s.sucursalid = v.sucursalid
+    group by coalesce(s.nombre, 'sin sucursal'), v.tipo_documento;
+go
+
+--detalle de cada planilla de los empleados
+create or alter view dbo.v_reporte_planilla
+as
+    select pl.id_planilla,
+           pl.periodo_inicio,
+           pl.periodo_fin,
+           pl.estado,
+           e.id_empleado,
+           e.codigo_empleado,
+           e.nombre_completo,
+           e.cargo,
+           pd.salario_bruto,
+           pd.descuento_isss,
+           pd.descuento_afp,
+           pd.descuento_renta,
+           pd.salario_neto
+    from dbo.planilla_detalle pd
+    join dbo.planillas pl on pl.id_planilla = pd.id_planilla
+    join dbo.empleados e  on e.id_empleado  = pd.id_empleado;
+go
+
+--listado de empleados (esta contiene el rol, su sucrsal y correo de acceso, no expone la contrasenia)
+create or alter view dbo.v_empleados_detalle
+as
+    select e.id_empleado,
+           e.codigo_empleado,
+           e.nombre_completo,
+           e.cargo,
+           r.nombre_rol as rol,
+           s.nombre as sucursal,
+           e.activo,
+           e.tipo_contrato,
+           e.jornada,
+           e.forma_pago,
+           e.tipo_planilla,
+           e.salario_base,
+           e.fecha_ingreso,
+           e.isss_numero,
+           e.afp_numero,
+           u.correo as correo_login,
+           u.ultimo_acceso
+    from dbo.empleados e
+    join dbo.roles r on r.id_rol = e.id_rol
+    left join dbo.sucursales s on s.sucursalid = e.sucursalid
+    left join dbo.usuarios u   on u.id_empleado = e.id_empleado;
+go
+
+--solo productos activos y solo datos de cara al publico: no muestra stock, costos ni recetas
+create or alter view dbo.v_menu_publico
+as
+    select p.id_producto,
+           p.nombre,
+           p.descripcion,
+           p.categoria,
+           p.precio_venta
+    from dbo.productos p
+    where p.activo = 1;
+go
+
+--------datos de prueba utilizados para la bd--------
+set nocount on;
+declare @escalon int = (select sucursalid from dbo.sucursales where nombre = 'escalon');
+
+--tabla temporal para guardar las credenciales de los empleados de prueba
+--si quedo de una ejecucion anterior en la misma ventana, se elimina
+if object_id(N'tempdb..#credenciales') is not null
+    drop table #credenciales;
+create table #credenciales (
+    id_empleado      int,
+    codigo_empleado  varchar(12),
+    nombre_completo  varchar(250),
+    correo           varchar(150),
+    rol              varchar(50),
+    password_inicial varchar(40)
+);
+
+-- administrador del sistema -> admsistema@origene.sv / admsis01011990
+if not exists (select 1 from dbo.empleados where dui = '00000001-1')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'admin', @apellido_paterno = N'sistema', @dui = '00000001-1',
+        @fecha_nacimiento = '1990-01-01', @nombre_rol = 'administrador',
+        @cargo = 'administrador del sistema', @tipo_planilla = 'mensual',
+        @salario_base = 1500, @fecha_ingreso = '2024-01-01', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'mensual',
+        @codigo_empleado = '100001';
+
+-- rrhh -> davbarahona@origene.sv / davbar11121983 (entra directo a empleados)
+if not exists (select 1 from dbo.empleados where dui = '00000002-2')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'david alejandro', @apellido_paterno = N'barahona', @apellido_materno = N'lopez',
+        @dui = '00000002-2', @fecha_nacimiento = '1983-12-11', @nombre_rol = 'rrhh',
+        @cargo = 'jefe de rrhh', @tipo_planilla = 'mensual', @salario_base = 1200,
+        @fecha_ingreso = '2024-03-10', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'mensual',
+        @codigo_empleado = '100002';
+
+-- mismo nombre y primer apellido -> usa el segundo apellido: davbarahonaguz@origene.sv
+if not exists (select 1 from dbo.empleados where dui = '00000003-3')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'david enrique', @apellido_paterno = N'barahona', @apellido_materno = N'guzman',
+        @dui = '00000003-3', @fecha_nacimiento = '1990-06-05', @nombre_rol = 'cajero',
+        @cargo = 'cajero', @tipo_planilla = 'quincenal', @salario_base = 550,
+        @fecha_ingreso = '2025-02-05', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'quincenal',
+        @codigo_empleado = '100003';
+
+-- mesera -> camrios@origene.sv / 22031995 (entra directo a toma de pedidos)
+if not exists (select 1 from dbo.empleados where dui = '00000004-4')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'camila andrea', @apellido_paterno = N'rios', @apellido_materno = N'mejia',
+        @dui = '00000004-4', @fecha_nacimiento = '1995-03-22', @nombre_rol = 'mesero',
+        @cargo = 'mesera', @tipo_planilla = 'quincenal', @salario_base = 575,
+        @fecha_ingreso = '2025-11-12', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'quincenal',
+        @codigo_empleado = '100004';
+
+-- cocinero -> serperez@origene.sv / 14091988 (entra directo a cocina)
+if not exists (select 1 from dbo.empleados where dui = '00000005-5')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'sergio', @apellido_paterno = N'perez', @apellido_materno = N'alas',
+        @dui = '00000005-5', @fecha_nacimiento = '1988-09-14', @nombre_rol = 'cocinero',
+        @cargo = 'cocinero', @tipo_planilla = 'quincenal', @salario_base = 600,
+        @fecha_ingreso = '2026-08-03', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'quincenal',
+        @codigo_empleado = '100005';
+
+--gerente de prueba
+if not exists (select 1 from dbo.empleados where dui = '00000006-6')
+    insert into #credenciales
+    exec dbo.sp_registrar_empleado
+        @nombres = N'laura beatriz', @apellido_paterno = N'campos', @apellido_materno = N'rivas',
+        @dui = '00000006-6', @fecha_nacimiento = '1985-04-17', @nombre_rol = 'gerente',
+        @cargo = 'gerente de sucursal', @tipo_planilla = 'mensual', @salario_base = 1300,
+        @fecha_ingreso = '2024-05-01', @sucursalid = @escalon,
+        @tipo_contrato = 'indefinido', @jornada = 'completa', @forma_pago = 'mensual',
+        @codigo_empleado = '100006';
+
+-- credenciales iniciales de lo registrado en esta ejecucion (con sus codigos de 6 digitos).
+select * from #credenciales order by id_empleado;
+drop table #credenciales;
+
+-------- cliente de prueba -> cliente.prueba@correo.com / cliente2026 --------
+if not exists (select 1 from dbo.usuarios where correo = 'cliente.prueba@correo.com')
+    exec dbo.sp_registrar_cliente_usuario
+        @nombre = N'cliente de prueba', @correo = 'cliente.prueba@correo.com',
+        @password = 'cliente2026', @telefono = '7000-0000';
+go
+
+-- conteo basico para confirmar que la instalacion termino bien.
+select N'origenesv' as base_datos,
+       (select count(*) from dbo.roles)      as roles,
+       (select count(*) from dbo.sucursales) as sucursales,
+       (select count(*) from dbo.empleados)  as empleados,
+       (select count(*) from dbo.usuarios)   as usuarios,
+       (select count(*) from dbo.insumos)    as insumos,
+       (select count(*) from dbo.productos)  as productos;
+go
+
+-- empleados con su codigo, rol y correo de acceso.
+select codigo_empleado, nombre_completo, rol, correo_login, activo
+from dbo.v_empleados_detalle
+order by codigo_empleado;
+go
+
+-- comprobacion: no debe haber codigos repetidos ni con formato incorrecto (ambas deben devolver 0 filas).
+select codigo_empleado, count(*) as veces from dbo.empleados group by codigo_empleado having count(*) > 1;
+select codigo_empleado from dbo.empleados where codigo_empleado not like '[0-9][0-9][0-9][0-9][0-9][0-9]';
+go
+
+
+--que rol pertenece a que nivel, a que pantalla entra y cuantos permisos tiene su nivel
+select r.nombre_rol as rol,
+       n.codigo     as nivel_acceso,
+       r.pantalla_inicio,
+       (select count(*) from dbo.nivel_permiso np where np.id_nivel = r.id_nivel) as permisos_del_nivel
+from dbo.roles r
+join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
+order by n.id_nivel, r.nombre_rol;
+go
+
+
+-- para ver los usuarios existentes (nunca muestre password_hash en pantallas):
+select id_usuario, correo, activo, debe_cambiar_password, ultimo_acceso from dbo.usuarios;
+go
+
+
 
 

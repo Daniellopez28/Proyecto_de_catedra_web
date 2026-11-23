@@ -100,3 +100,25 @@ create table dbo.planillas (
         constraint ck_planillas_total   check (total_pagar >= 0)
         );
 go
+
+--tabla de planilla de detalle, que guarda los detalles de cada empleado
+create table dbo.planilla_detalle (
+        id_planilla     int not null,
+        id_empleado     int not null,
+        salario_bruto   decimal(10,2) not null,
+        descuento_isss  decimal(10,2) not null,
+        descuento_afp   decimal(10,2) not null,
+        descuento_renta decimal(10,2) not null,
+        salario_neto    decimal(10,2) not null,
+        constraint pk_planilla_detalle primary key (id_planilla, id_empleado),
+        constraint fk_plandet_planilla foreign key (id_planilla)
+            references dbo.planillas(id_planilla) on delete cascade,
+        constraint fk_plandet_empleado foreign key (id_empleado)
+            references dbo.empleados(id_empleado),
+        constraint ck_planilla_detalle_montos check (
+            salario_bruto >= 0 and descuento_isss >= 0 and descuento_afp >= 0
+            and descuento_renta >= 0 and salario_neto >= 0
+        )
+        );
+
+go

@@ -20,3 +20,4 @@ Lo que toma para avanzar es que exista ese espacio root en la página y que carg
 2.En App.jsx tenemos el componente principal que revisa si ya hay una sesión guardada y decide qué mostrar:
 
 Traemos useState para manejar el estado del usuario, cargamos App.css y llamamos a Login, SideNavbar y TopHeader; con obtenerUsuarioGuardado revisamos localStorage bajo 'usuarioLogueado' (y si el dato está dañado, lo borramos para evitar fallos).
+![alt text](App-jsx.png)

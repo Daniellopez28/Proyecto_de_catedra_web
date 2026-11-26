@@ -1,26 +1,19 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
-
-
 
 :root {
-    background-color: #FDFCF9;
-    --font-family: 'Inter', sans-serif;
+    background-color: #fff8ef;
+    --font-family: 'Quicksand', sans-serif;
 
 }
 
 body {
     margin: 0;
-    background-color: #FDFCF9;
+    background-color: #fff8ef;
     font-family: var(--font-family);
-    background-color: #f8fafc;
-    color: #0f172a;
-    margin: 0;
     padding: 0;
 }
 
 .loginSection {
-    background-color: #FDFCF9;
+    background-color: #fff8ef;
     width: 100%;
     min-height: 100vh;
     display: flex;
@@ -28,15 +21,15 @@ body {
 }
 
 .radio-options {
-    background-color: #FDFCF9;
+    background-color: #fffdf8;
     padding: 14px;
     border-radius: 8px;
     border: 1px solid #e7e6e4;
 }
 
 .radio-options:hover {
-    background-color: #f7f6f3;
-    border-color: #d7d6d4;
+    background-color: #fff8ef;
+    border-color: #e49d69;
 }
 
 .radio-input {
@@ -46,19 +39,40 @@ body {
 }
 
 .radio-options:has(input[type='radio']:checked) {
-    border-color: #B95136;
-    background-color: #F7EAE3;
+    border-color: #c53c10;
+    background-color: #ffd9a0;
     font-weight: 500;
 }
 
 .button-custom {
-    background-color: #B95136 !important;
-    color: #F7EAE3 !important;
+    background-color: #c53c10 !important;
+    color: #fffdf8 !important;
     font-weight: 500 !important;
 }
 
 .button-custom:hover {
-    background-color: #99422d !important;
+    background-color: #823b0f !important;
+}
+
+.login-password-help {
+    margin: -12px 0 16px;
+    color: #6b6f68;
+    font-size: 13px;
+}
+
+.login-password-help button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #823b0f;
+    font: inherit;
+    text-decoration: underline;
+}
+
+.login-password-help p {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 
@@ -74,10 +88,10 @@ input[type="radio"]:focus-visible {
 
 
 input[type='radio']:checked {
-    background-image: radial-gradient(#B95136 0%, #B95136 40%, transparent 50%, transparent);
-    color: #B95136;
-    background-color: #F7EAE3;
-    accent-color: #B95136;
-    border-color: #B95136;
+    background-image: radial-gradient(#c53c10 0%, #c53c10 40%, transparent 50%, transparent);
+    color: #c53c10;
+    background-color: #ffd9a0;
+    accent-color: #c53c10;
+    border-color: #c53c10;
 
 }

@@ -46,3 +46,50 @@ export function calcular_planilla_empleado(salario_base_mensual) {
 
   return { salario_bruto, descuento_isss, descuento_afp, descuento_renta, salario_neto };
 }
+
+function convertir_a_centavos(valor) {
+  if ((typeof valor !== 'number' && typeof valor !== 'string') ||
+      (typeof valor === 'number' && !Number.isFinite(valor))) {
+    return null;
+  }
+
+  const texto = String(valor);
+  if (!/^\d+(?:\.\d{1,2})?$/.test(texto)) return null;
+  const [unidades, fraccion = ''] = texto.split('.');
+  const centavos = Number(unidades) * 100 + Number(fraccion.padEnd(2, '0'));
+  if (!Number.isSafeInteger(centavos) || centavos > 9_999_999_999) return null;
+  return centavos;
+}
+
+function desde_centavos(centavos) {
+  return `${Math.floor(centavos / 100)}.${String(centavos % 100).padStart(2, '0')}`;
+}
+
+export function normalizar_detalle_editable(detalle) {
+  if (!detalle || typeof detalle !== 'object' || Array.isArray(detalle)) {
+    throw new TypeError('Los montos de la planilla son obligatorios');
+  }
+
+  const montos = {
+    salario_bruto: convertir_a_centavos(detalle.salario_bruto),
+    descuento_isss: convertir_a_centavos(detalle.descuento_isss),
+    descuento_afp: convertir_a_centavos(detalle.descuento_afp),
+    descuento_renta: convertir_a_centavos(detalle.descuento_renta)
+  };
+  if (Object.values(montos).some((monto) => monto === null)) {
+    throw new TypeError('Los montos deben ser positivos y tener hasta dos decimales');
+  }
+
+  const descuentos = montos.descuento_isss + montos.descuento_afp + montos.descuento_renta;
+  if (descuentos > montos.salario_bruto) {
+    throw new RangeError('Los descuentos no pueden superar el salario bruto');
+  }
+
+  return {
+    salario_bruto: desde_centavos(montos.salario_bruto),
+    descuento_isss: desde_centavos(montos.descuento_isss),
+    descuento_afp: desde_centavos(montos.descuento_afp),
+    descuento_renta: desde_centavos(montos.descuento_renta),
+    salario_neto: desde_centavos(montos.salario_bruto - descuentos)
+  };
+}

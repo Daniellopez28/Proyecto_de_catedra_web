@@ -2,14 +2,16 @@
 
 
 :root {
-  --brand-sage: #babd92;
-  --brand-brown: #53441b;
+  --brand-brown: #823b0f;
   --brand-rust: #c53c10;
-  --brand-cream: #f8ebd8;
-  --brand-olive: #a4992f;
+  --brand-cream: #fff8ef;
+  --brand-peach: #f2c399;
+  --brand-sand: #e49d69;
+  --brand-highlight: #ffd9a0;
   --brand-paper: #fffdf8;
-  --brand-border: #ded8c4;
-  --brand-muted: #716a55;
+  --brand-border: rgba(130, 59, 15, 0.18);
+  --brand-muted: #76513b;
+  --font-family: "Quicksand", sans-serif;
   color: var(--brand-brown);
   background: var(--brand-cream);
   font-family: "Quicksand", sans-serif;
@@ -43,8 +45,8 @@ h6,
 }
 
 .workspace-sidebar {
-  border-color: rgba(83, 68, 27, 0.14);
-  background: var(--brand-sage);
+  border-color: rgba(255, 217, 160, 0.2);
+  background: var(--brand-brown);
 }
 
 .workspace-brand {
@@ -55,31 +57,30 @@ h6,
   display: block;
   width: min(190px, 100%);
   height: auto;
-  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
 }
 
 .workspace-nav button {
-  color: var(--brand-brown);
+  color: var(--brand-highlight);
   font-size: 13px;
   font-weight: 600;
 }
 
 .workspace-nav button:hover,
 .workspace-nav button.is-active {
-  background: var(--brand-cream);
-  color: var(--brand-rust);
+  background: var(--brand-rust);
+  color: var(--brand-paper);
 }
 
 .workspace-nav-icon {
-  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+  filter: brightness(0) invert(88%);
 }
 
 .workspace-nav button.is-active .workspace-nav-icon {
-  filter: brightness(0) saturate(100%) invert(25%) sepia(83%) saturate(2625%) hue-rotate(355deg) brightness(82%) contrast(96%);
+  filter: brightness(0) invert(100%);
 }
 
 .workspace-sidebar-note {
-  color: rgba(83, 68, 27, 0.78);
+  color: rgba(255, 217, 160, 0.78);
 }
 
 .workspace-main {
@@ -88,7 +89,7 @@ h6,
 
 .workspace-topbar {
   border-color: var(--brand-border);
-  background: rgba(255, 253, 248, 0.92);
+  background: rgba(255, 253, 248, 0.94);
 }
 
 .workspace-page-title,
@@ -133,7 +134,7 @@ h6,
 .primary-button:focus-visible,
 .secondary-button:focus-visible,
 .danger-button:focus-visible {
-  outline-color: var(--brand-olive);
+  outline-color: var(--brand-sand);
 }
 
 .workspace-content {
@@ -146,15 +147,17 @@ h6,
 .password-card {
   border-color: var(--brand-border);
   background-color: var(--brand-paper);
-  box-shadow: 0 8px 26px rgba(83, 68, 27, 0.06);
+  box-shadow: 0 8px 26px rgba(130, 59, 15, 0.06);
 }
 
 .dashboard-welcome {
-  background: linear-gradient(110deg, var(--brand-paper) 0%, var(--brand-cream) 68%, rgba(186, 189, 146, 0.45) 100%);
+  background: linear-gradient(110deg, var(--brand-paper) 0%, var(--brand-cream) 68%, rgba(242, 195, 153, 0.45) 100%);
 }
 
 .dashboard-art {
-  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+  padding: 18px;
+  border-radius: 50%;
+  background: var(--brand-brown);
 }
 
 .data-table {
@@ -165,7 +168,7 @@ h6,
 .data-table td,
 .cart-row,
 .sales-total {
-  border-color: rgba(83, 68, 27, 0.12);
+  border-color: rgba(130, 59, 15, 0.12);
 }
 
 .data-table th {
@@ -173,19 +176,19 @@ h6,
 }
 
 .status-pill {
-  background: rgba(186, 189, 146, 0.35);
+  background: rgba(242, 195, 153, 0.5);
   color: var(--brand-brown);
 }
 
 .status-pill.is-warning {
-  background: rgba(164, 153, 47, 0.2);
-  color: #665c17;
+  background: rgba(228, 157, 105, 0.24);
+  color: var(--brand-brown);
 }
 
 .status-pill.is-danger,
 .notice.is-error {
   background: rgba(197, 60, 16, 0.1);
-  color: #9c2f0c;
+  color: var(--brand-brown);
 }
 
 .form-field {
@@ -208,9 +211,9 @@ h6,
 .form-field textarea:focus,
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--brand-olive);
-  outline-color: rgba(164, 153, 47, 0.18);
-  box-shadow: 0 0 0 0.2rem rgba(164, 153, 47, 0.16);
+  border-color: var(--brand-sand);
+  outline-color: rgba(228, 157, 105, 0.18);
+  box-shadow: 0 0 0 0.2rem rgba(228, 157, 105, 0.16);
 }
 
 .primary-button,
@@ -241,8 +244,8 @@ h6,
 }
 
 .notice {
-  border-color: rgba(164, 153, 47, 0.28);
-  background: rgba(186, 189, 146, 0.2);
+  border-color: rgba(228, 157, 105, 0.35);
+  background: rgba(242, 195, 153, 0.3);
   color: var(--brand-brown);
 }
 
@@ -253,8 +256,8 @@ h6,
 }
 
 .credential-box {
-  border-color: rgba(164, 153, 47, 0.55);
-  background: rgba(186, 189, 146, 0.18);
+  border-color: rgba(228, 157, 105, 0.55);
+  background: rgba(242, 195, 153, 0.22);
   color: var(--brand-brown);
 }
 
@@ -264,7 +267,7 @@ h6,
 }
 
 .password-screen {
-  background: var(--brand-sage);
+  background: var(--brand-peach);
 }
 
 .password-card .workspace-brand-mark {
@@ -278,9 +281,9 @@ h6,
 
 .loginSection {
   background:
-    radial-gradient(ellipse at 12% 12%, rgba(248, 235, 216, 0.54), transparent 40%),
-    var(--brand-sage);
-  color: var(--brand-brown);
+    radial-gradient(ellipse at 12% 12%, rgba(197, 60, 16, 0.35), transparent 40%),
+    var(--brand-brown);
+  color: var(--brand-paper);
 }
 
 .login-brand-logo {
@@ -288,11 +291,10 @@ h6,
   width: min(300px, 78%);
   height: auto;
   margin: 0 0 34px;
-  filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
 }
 
 .loginSection h1 {
-  color: var(--brand-brown);
+  color: var(--brand-paper);
   font-family: "Manrope", sans-serif;
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   font-weight: 500;
@@ -300,21 +302,31 @@ h6,
   line-height: 1.08;
 }
 
-.loginSection h1 span,
-.loginSection p,
+.loginSection h1 span {
+  color: var(--brand-highlight) !important;
+}
+
+.loginSection .login-intro {
+  color: var(--brand-paper) !important;
+}
+
 .loginSection .form-label {
   color: var(--brand-brown) !important;
 }
 
 .loginSection .card {
-  border: 1px solid rgba(83, 68, 27, 0.12);
+  border: 1px solid rgba(130, 59, 15, 0.12);
   background: var(--brand-paper);
-  box-shadow: 0 24px 70px rgba(83, 68, 27, 0.16);
+  box-shadow: 0 24px 70px rgba(130, 59, 15, 0.16);
 }
 
 .loginSection .card h3 {
   color: var(--brand-brown);
   font-family: "Manrope", sans-serif;
+}
+
+.loginSection .card p {
+  color: var(--brand-muted);
 }
 
 .loginSection .card-body > span {
@@ -341,7 +353,75 @@ h6,
 .loginSection .alert-danger {
   border-color: rgba(197, 60, 16, 0.2);
   background: rgba(197, 60, 16, 0.08);
-  color: #8e2b0d;
+  color: var(--brand-brown);
+}
+
+.employee-add-button,
+.employee-submit-button,
+.employee-form-actions .employee-submit-button,
+.employee-card-actions button:last-child,
+.success-main-container button {
+  border-color: var(--brand-rust);
+  background: var(--brand-rust);
+  color: var(--brand-paper);
+}
+
+.employee-add-button:hover,
+.employee-submit-button:hover,
+.employee-card-actions button:last-child:hover,
+.success-main-container button:hover {
+  border-color: var(--brand-brown);
+  background: var(--brand-brown);
+}
+
+.employee-status {
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.employee-summary-detail,
+.employee-page-title {
+  color: var(--brand-brown);
+}
+
+.employee-summary {
+  background-color: var(--brand-cream);
+  color: var(--brand-brown);
+}
+
+.employee-status.is-inactive {
+  background: rgba(197, 60, 16, 0.1);
+  color: var(--brand-brown);
+}
+
+.employee-table tbody tr.is-selected td {
+  background: rgba(242, 195, 153, 0.3);
+}
+
+.employee-table tbody tr:focus-visible,
+.employee-add-button:focus-visible {
+  outline-color: var(--brand-sand);
+}
+
+.sales-category:hover,
+.sales-category.is-selected {
+  border-color: var(--brand-rust);
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.sales-product-add {
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.sales-modifiers,
+.employee-list td:nth-child(4) {
+  color: var(--brand-brown);
+}
+
+.success-icon {
+  border-color: var(--brand-sand);
 }
 
 @media (max-width: 991px) {

@@ -1,7 +1,8 @@
+--Este .sql lo usamos para poblar la base de datos de una forma rapida.
 SET NOCOUNT ON;
 BEGIN TRANSACTION;
 
--- 1. Insumos nuevos (costo_promedio es por unidad de medida: por g, por ml...)
+--Insumos nuevos, para datos iniciales.
 INSERT INTO insumos (nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
 SELECT v.nombre, v.unidad_medida, v.stock_actual, v.stock_minimo, v.costo_promedio
 FROM (VALUES
@@ -22,7 +23,7 @@ FROM (VALUES
 ) AS v(nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
 WHERE NOT EXISTS (SELECT 1 FROM insumos i WHERE i.nombre = v.nombre);
 
--- 2. Productos nuevos: 11 elaborados + 2 de reventa (es_reventa: 0 = elaborado, 1 = reventa)
+--Productos nuevos, para datos iniciales
 INSERT INTO productos (nombre, descripcion, precio_venta, categoria, es_reventa)
 SELECT v.nombre, v.descripcion, v.precio_venta, v.categoria, v.es_reventa
 FROM (VALUES
@@ -42,7 +43,7 @@ FROM (VALUES
 ) AS v(nombre, descripcion, precio_venta, categoria, es_reventa)
 WHERE NOT EXISTS (SELECT 1 FROM productos p WHERE p.nombre = v.nombre);
 
--- 3. Recetas: cantidad que se descuenta por UNA unidad vendida, en la unidad del insumo
+--Recetas que usan insumos y productos
 INSERT INTO recetas_detalle (id_producto, id_insumo, cantidad_requerida)
 SELECT p.id_producto, i.id_insumo, v.cantidad_requerida
 FROM (VALUES
@@ -121,7 +122,7 @@ WHERE NOT EXISTS (
 
 COMMIT TRANSACTION;
 
--- 4. Verificación. Esperado: 12 elaborados, 3 de reventa, 0 sin receta, Latte con 5 ingredientes
+--Verificacion para ver que se hayan ingersado correctamente.
 SELECT
     (SELECT COUNT(*) FROM productos WHERE es_reventa = 0 AND activo = 1) AS productos_elaborados,
     (SELECT COUNT(*) FROM productos WHERE es_reventa = 1 AND activo = 1) AS productos_reventa,

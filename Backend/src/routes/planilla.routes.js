@@ -1,6 +1,10 @@
 import express from 'express';
 import prisma from '../config/prisma.js';
-import { calcular_planilla_empleado, redondear } from '../services/planilla.service.js';
+import {
+  calcular_planilla_empleado,
+  normalizar_detalle_editable,
+  redondear
+} from '../services/planilla.service.js';
 import { requerirAutenticacion, requerirPermiso } from '../middleware/autenticacion.js';
 
 const router = express.Router();
@@ -147,6 +151,68 @@ router.get('/:id', requerirPermiso('ver_planillas'), async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ mensaje: 'error interno al consultar la planilla' });
+  }
+});
+
+router.put('/:id/detalles/:id_empleado', requerirPermiso('editar_planillas'), async (req, res) => {
+  const id_planilla = Number(req.params.id);
+  const id_empleado = Number(req.params.id_empleado);
+  if (!Number.isInteger(id_planilla) || id_planilla <= 0 ||
+      !Number.isInteger(id_empleado) || id_empleado <= 0) {
+    return res.status(400).json({ mensaje: 'id de planilla o empleado invalido' });
+  }
+
+  let detalleNormalizado;
+  try {
+    detalleNormalizado = normalizar_detalle_editable(req.body);
+  } catch (error) {
+    return res.status(400).json({ mensaje: error.message });
+  }
+
+  try {
+    const resultado = await prisma.$transaction(async (tx) => {
+      const planilla = await tx.planillas.findUnique({
+        where: { id_planilla },
+        select: { estado: true }
+      });
+      if (!planilla) return { estado: 'no_encontrada' };
+      if (planilla.estado === 'Pagada') return { estado: 'pagada' };
+
+      const claveDetalle = { id_planilla_id_empleado: { id_planilla, id_empleado } };
+      const detalle = await tx.planilla_detalle.findUnique({ where: claveDetalle });
+      if (!detalle) return { estado: 'detalle_no_encontrado' };
+
+      await tx.planilla_detalle.update({
+        where: claveDetalle,
+        data: detalleNormalizado
+      });
+      const agregado = await tx.planilla_detalle.aggregate({
+        where: { id_planilla },
+        _sum: { salario_neto: true }
+      });
+      await tx.planillas.update({
+        where: { id_planilla },
+        data: { total_pagar: agregado._sum.salario_neto ?? '0.00' }
+      });
+      return { estado: 'actualizada' };
+    }, { isolationLevel: 'Serializable' });
+
+    if (resultado.estado === 'no_encontrada') {
+      return res.status(404).json({ mensaje: 'planilla no encontrada' });
+    }
+    if (resultado.estado === 'detalle_no_encontrado') {
+      return res.status(404).json({ mensaje: 'empleado no encontrado en la planilla' });
+    }
+    if (resultado.estado === 'pagada') {
+      return res.status(409).json({ mensaje: 'no se puede editar una planilla pagada' });
+    }
+    return res.json({ mensaje: 'detalle de planilla actualizado' });
+  } catch (error) {
+    if (error.code === 'P2034') {
+      return res.status(409).json({ mensaje: 'la planilla cambio durante la edicion; vuelve a intentarlo' });
+    }
+    console.error('Error al editar detalle de planilla:', error);
+    return res.status(500).json({ mensaje: 'no se pudo actualizar el detalle de la planilla' });
   }
 });
 

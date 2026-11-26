@@ -53,8 +53,8 @@
 }
 
 .sales-search input:focus {
-  border-color: #b95136;
-  outline: 2px solid rgba(185, 81, 54, 0.12);
+  border-color: #c53c10;
+  outline: 2px solid rgba(197, 60, 16, 0.12);
 }
 
 .sales-category-list {
@@ -79,9 +79,9 @@
 
 .sales-category:hover,
 .sales-category.is-selected {
-  border-color: #b95136;
+  border-color: #c53c10;
   background: #f8ebe7;
-  color: #99422d;
+  color: #823b0f;
 }
 
 .sales-product-grid {
@@ -114,7 +114,7 @@
 .sales-category:focus-visible,
 .sales-quantity-control button:focus-visible,
 .sales-remove-item:focus-visible {
-  outline: 2px solid #b95136;
+  outline: 2px solid #c53c10;
   outline-offset: 2px;
 }
 
@@ -170,7 +170,7 @@
   place-items: center;
   border-radius: 8px;
   background: #f8ebe7;
-  color: #99422d;
+  color: #823b0f;
   font-size: 19px;
   line-height: 1;
 }
@@ -231,7 +231,7 @@
 
 .sales-modifiers {
   margin-top: 8px;
-  color: #99422d;
+  color: #823b0f;
   font-size: 10px;
 }
 
@@ -262,7 +262,7 @@
 
 .sales-modifier-options input,
 .sales-pending-option input {
-  accent-color: #b95136;
+  accent-color: #c53c10;
 }
 
 .sales-cart-item-controls {
@@ -290,7 +290,7 @@
 
 .sales-quantity-control button:hover {
   background: #f8ebe7;
-  color: #99422d;
+  color: #823b0f;
 }
 
 .sales-quantity-control span {
@@ -303,7 +303,7 @@
 .sales-remove-item {
   border: 0;
   background: transparent;
-  color: #99422d;
+  color: #823b0f;
   font-size: 10px;
 }
 
@@ -383,8 +383,8 @@
 }
 
 .sales-tabs button.is-selected {
-  border-bottom-color: #b95136;
-  color: #99422d;
+  border-bottom-color: #c53c10;
+  color: #823b0f;
 }
 
 .sales-add-modifiers {
@@ -405,7 +405,7 @@
 }
 
 .sales-add-modifiers input {
-  accent-color: #b95136;
+  accent-color: #c53c10;
 }
 
 .sales-visually-hidden {

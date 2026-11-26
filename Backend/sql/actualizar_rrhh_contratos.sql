@@ -37,7 +37,8 @@ INSERT INTO dbo.permisos (codigo, descripcion)
 SELECT v.codigo, v.descripcion
 FROM (VALUES
     ('gestionar_empleados_todas_sucursales', 'Gestiona empleados de cualquier sucursal'),
-    ('ver_caja', 'Consulta caja y sus movimientos sin modificarla')
+    ('ver_caja', 'Consulta caja y sus movimientos sin modificarla'),
+    ('editar_planillas', 'Edita detalles de planillas no pagadas')
 ) AS v(codigo, descripcion)
 WHERE NOT EXISTS (SELECT 1 FROM dbo.permisos p WHERE p.codigo = v.codigo);
 
@@ -81,6 +82,7 @@ INSERT INTO @permisosNivel (nivel, permiso) VALUES
     ('rrhh', 'gestionar_empleados_todas_sucursales'),
     ('rrhh', 'ver_planillas'),
     ('rrhh', 'generar_planillas'),
+    ('rrhh', 'editar_planillas'),
     ('rrhh', 'ver_mi_ficha'),
     ('rrhh', 'ver_mi_planilla'),
     ('cajero', 'ver_menu'),

@@ -40,6 +40,7 @@ function App() {
     const [validandoSesion, setValidandoSesion] = useState(Boolean(leerSesion()?.token));
     const [errorSesion, setErrorSesion] = useState('');
     const [intentoValidacion, setIntentoValidacion] = useState(0);
+    const [cambioPasswordSolicitado, setCambioPasswordSolicitado] = useState(false);
     const items = useMemo(
         () => modulosPermitidos(sesion?.usuario?.permisos),
         [sesion?.usuario?.permisos]
@@ -133,20 +134,26 @@ function App() {
     }
 
     if (!sesion?.usuario) {
-        return <Login onLogin={(nuevaSesion) => {
+        return <Login onLogin={(nuevaSesion, solicitarCambioPassword) => {
+            setCambioPasswordSolicitado(solicitarCambioPassword);
             setValidandoSesion(true);
             setErrorSesion('');
             setSesion(nuevaSesion);
         }} />;
     }
 
-    if (sesion.usuario.debe_cambiar_password) {
+    if (sesion.usuario.debe_cambiar_password || cambioPasswordSolicitado) {
         return (
             <CambiarPasswordPage
-                alCambiar={() => actualizarSesion({
-                    ...sesion,
-                    usuario: { ...sesion.usuario, debe_cambiar_password: false }
-                })}
+                esObligatorio={sesion.usuario.debe_cambiar_password}
+                alCancelar={() => setCambioPasswordSolicitado(false)}
+                alCambiar={() => {
+                    setCambioPasswordSolicitado(false);
+                    actualizarSesion({
+                        ...sesion,
+                        usuario: { ...sesion.usuario, debe_cambiar_password: false }
+                    });
+                }}
             />
         );
     }

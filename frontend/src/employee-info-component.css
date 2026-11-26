@@ -1,9 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-
 :root {
-    background-color: #FDFCF9;
-    --font-family: 'Inter', sans-serif;
+    background-color: #fff8ef;
+    --font-family: 'Quicksand', sans-serif;
 
 }
 
@@ -63,7 +60,7 @@
 
 .employee-status.is-inactive {
     background: #f8ebe7;
-    color: #99422d;
+    color: #823b0f;
 }
 
 .employee-details,
@@ -124,17 +121,17 @@
 }
 
 .employee-card-actions button:last-child {
-    border-color: #b95136;
-    background: #b95136;
+    border-color: #c53c10;
+    background: #c53c10;
     color: #fff;
 }
 
 .employee-card-actions button:hover {
-    border-color: #99422d;
+    border-color: #823b0f;
 }
 
 .employee-card-actions button:last-child:hover {
-    background: #99422d;
+    background: #823b0f;
 }
 
 @media (max-width: 900px) {

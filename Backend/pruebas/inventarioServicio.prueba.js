@@ -226,7 +226,7 @@ test('normalizarProductosVenta rechaza datos inválidos y suma productos repetid
         { id_producto: 1, cantidad: 1 },
         { id_producto: 1, cantidad: 2 }
     ]);
-    assert.deepEqual(consolidado, [{ id_producto: 1, cantidad: 3 }]);
+    assert.deepEqual(consolidado, [{ id_producto: 1, cantidad: 3, modificadores: [] }]);
 });
 
 test('listarInsumos devuelve el estado NORMAL, STOCK_BAJO o AGOTADO de cada insumo, ordenados por nombre', async () => {

@@ -1,9 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-
 :root {
-    background-color: #f7f6f2;
-    --font-family: 'Inter', sans-serif;
+    background-color: #fff8ef;
+    --font-family: 'Quicksand', sans-serif;
 
 }
 
@@ -190,12 +187,12 @@
 }
 
 .employee-form-actions .employee-submit-button{
-    background: #bd4d3b;
+    background: #c53c10;
     color: #fff;
 }
 
 .employee-submit-button:hover{
-    background-color: #99422d;
+    background-color: #823b0f;
 }
 
 .employee-cancel-button:hover{

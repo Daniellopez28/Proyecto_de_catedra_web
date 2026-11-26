@@ -1,49 +1,27 @@
 # Backend
 
-## Requisitos
+## Configuracion
 
-- Node.js y npm.
-- Docker con SQL Server 2022.
+Abrir la base de datos OrigeneSV.sql en sql manager, hacer la conexion a un contenedor de docker con la siguiente linea:
 
-## SQL Server local
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" -p 1432:1433 --name proyecto_web -v sqlserver_data:/var/opt/mssql -d mcr.microsoft.com/mssql/server:2022-latest
 
-Usa una contraseña fuerte y exclusiva para el usuario `sa`. No la guardes en el repositorio ni expongas el puerto de SQL Server en la red:
-Usa al menos 16 caracteres y evita `;` para que no se rompa la cadena de conexión de SQL Server.
+este creara un contenedor de docker, luego en sql server pondras los siguientes datos:
 
-```bash
-read -r -s -p "Contraseña fuerte para SQL Server: " MSSQL_SA_PASSWORD
-printf '\n'
-docker run \
-  -e "ACCEPT_EULA=Y" \
-  -e "MSSQL_SA_PASSWORD=$MSSQL_SA_PASSWORD" \
-  -p 127.0.0.1:1432:1433 \
-  --name proyecto_web \
-  -v sqlserver_data:/var/opt/mssql \
-  -d mcr.microsoft.com/mssql/server:2022-latest
-```
+- Nombre de el servidor: localhost,1432
+- Nombre de usuario: sa
+- contrasenia: ProyectoWeb@2026
 
-Conecta SQL Server Management Studio a `localhost,1432` con el usuario `sa` y la contraseña que acabas de introducir. Ejecuta `OrigeneSV.sql` en ese servidor.
-Si una contraseña anterior se compartió o se utilizó, cámbiala también en SQL Server y en `Backend/.env`; no la reutilices.
+luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo con F5.
 
-## Configuración y ejecución
+En el proyecto: 
+Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
 
-Crea `Backend/.env` (está excluido de Git) con la cadena de conexión. Sustituye `CAMBIA_ESTE_VALOR` por la misma contraseña fuerte usada para SQL Server:
+//Conexion a la database en docker
+DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=ProyectoWeb@2026;encrypt=true;trustServerCertificate=true"
 
-```dotenv
-DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=CAMBIA_ESTE_VALOR;encrypt=true;trustServerCertificate=true"
-```
-
-Desde `Backend/`:
-
-```bash
+abre una terminal en la carpeta de backend y ejecuta lo siguiente:
 npm install
 npx prisma generate
 npm run dev
-```
 
-En otra terminal, desde `frontend/`:
-
-```bash
-npm install
-npm run dev
-```

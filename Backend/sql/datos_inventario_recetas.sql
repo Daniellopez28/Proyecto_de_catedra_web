@@ -1,8 +1,14 @@
-SET NOCOUNT ON;
-BEGIN TRANSACTION;
+--Este .sql lo usamos para poblar la base de datos de una forma rapida.
+USE [origenesv];
 
--- 1. Insumos nuevos (costo_promedio es por unidad de medida: por g, por ml...)
-INSERT INTO insumos (nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+
+BEGIN TRY
+    BEGIN TRANSACTION;
+
+--Insumos nuevos, para datos iniciales.
+INSERT INTO dbo.insumos (nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
 SELECT v.nombre, v.unidad_medida, v.stock_actual, v.stock_minimo, v.costo_promedio
 FROM (VALUES
     (N'Tapadera 16oz', N'unidad', 1000, 100, 0.0300),
@@ -20,10 +26,10 @@ FROM (VALUES
     (N'Botella de agua 500 ml (reventa)', N'unidad', 100, 20, 0.3500),
     (N'Barra de granola (reventa)', N'unidad', 50, 10, 0.7000)
 ) AS v(nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
-WHERE NOT EXISTS (SELECT 1 FROM insumos i WHERE i.nombre = v.nombre);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.insumos i WHERE i.nombre = v.nombre);
 
--- 2. Productos nuevos: 11 elaborados + 2 de reventa (es_reventa: 0 = elaborado, 1 = reventa)
-INSERT INTO productos (nombre, descripcion, precio_venta, categoria, es_reventa)
+--Productos nuevos, para datos iniciales
+INSERT INTO dbo.productos (nombre, descripcion, precio_venta, categoria, es_reventa)
 SELECT v.nombre, v.descripcion, v.precio_venta, v.categoria, v.es_reventa
 FROM (VALUES
     (N'Latte Chico', N'Espresso con leche vaporizada, 12 oz', 2.75, N'Bebida Caliente', 0),
@@ -40,46 +46,99 @@ FROM (VALUES
     (N'Botella de agua 500 ml', N'Agua purificada embotellada', 1.00, N'Reventa', 1),
     (N'Barra de granola', N'Barra de granola empacada', 1.75, N'Reventa', 1)
 ) AS v(nombre, descripcion, precio_venta, categoria, es_reventa)
-WHERE NOT EXISTS (SELECT 1 FROM productos p WHERE p.nombre = v.nombre);
+WHERE NOT EXISTS (SELECT 1 FROM dbo.productos p WHERE p.nombre = v.nombre);
 
--- 3. Recetas: cantidad que se descuenta por UNA unidad vendida, en la unidad del insumo
-INSERT INTO recetas_detalle (id_producto, id_insumo, cantidad_requerida)
+IF NOT EXISTS (SELECT 1 FROM dbo.sucursales WHERE nombre = N'escalon')
+BEGIN
+    ;THROW 51001, 'La sucursal escalon no existe; no se puede asignar inventario inicial.', 1;
+END;
+
+-- Agrega solo saldos iniciales faltantes; nunca reemplaza existencias actuales.
+INSERT INTO dbo.inventario_sucursal (sucursalid, insumoid, stock_actual, stock_minimo)
+SELECT s.sucursalid, i.id_insumo, COALESCE(i.stock_actual, 0), COALESCE(i.stock_minimo, 0)
+FROM dbo.sucursales s
+CROSS JOIN dbo.insumos i
+WHERE s.nombre = N'escalon'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM dbo.inventario_sucursal x
+      WHERE x.sucursalid = s.sucursalid
+        AND x.insumoid = i.id_insumo
+  );
+
+IF EXISTS (
+    SELECT 1
+    FROM (VALUES
+        (N'Latte Grande'), (N'Galleta de Chocolate'),
+        (N'Latte Chico'), (N'Capuchino Grande'), (N'Espresso Doble'),
+        (N'Americano Grande'), (N'Moca Grande'), (N'Caramel Macchiato Grande'),
+        (N'Vainilla Latte Grande'), (N'Chocolate Caliente Grande'), (N'Chai Latte Grande'),
+        (N'Frappé de Café Grande'), (N'Cold Brew Grande'),
+        (N'Botella de agua 500 ml'), (N'Barra de granola')
+    ) AS v(nombre)
+    LEFT JOIN dbo.productos p ON p.nombre = v.nombre
+    WHERE p.id_producto IS NULL
+)
+BEGIN
+    ;THROW 51002, 'Faltan productos requeridos para completar las recetas.', 1;
+END;
+
+IF EXISTS (
+    SELECT 1
+    FROM (VALUES
+        (N'cafe en grano'), (N'Leche entera'), (N'Vaso 16oz'),
+        (N'Galleta de chocolate para reventa'), (N'Tapadera 16oz'), (N'Viñeta'),
+        (N'Vaso 12oz'), (N'Tapadera 12oz'), (N'Agua purificada'), (N'Hielo'),
+        (N'Chocolate en polvo'), (N'Jarabe de caramelo'), (N'Jarabe de vainilla'),
+        (N'Concentrado de té chai'), (N'Crema batida'),
+        (N'Galleta de Chocolate (reventa)'), (N'Botella de agua 500 ml (reventa)'),
+        (N'Barra de granola (reventa)')
+    ) AS v(nombre)
+    LEFT JOIN dbo.insumos i ON i.nombre = v.nombre
+    WHERE i.id_insumo IS NULL
+)
+BEGIN
+    ;THROW 51003, 'Faltan insumos requeridos para completar las recetas.', 1;
+END;
+
+--Recetas que usan insumos y productos
+INSERT INTO dbo.recetas_detalle (id_producto, id_insumo, cantidad_requerida)
 SELECT p.id_producto, i.id_insumo, v.cantidad_requerida
 FROM (VALUES
     (N'Latte Grande', N'Tapadera 16oz', 1.00),
     (N'Latte Grande', N'Viñeta', 1.00),
-    (N'Latte Chico', N'Café en grano', 12.00),
+    (N'Latte Chico', N'cafe en grano', 12.00),
     (N'Latte Chico', N'Leche entera', 180.00),
     (N'Latte Chico', N'Vaso 12oz', 1.00),
     (N'Latte Chico', N'Tapadera 12oz', 1.00),
     (N'Latte Chico', N'Viñeta', 1.00),
-    (N'Capuchino Grande', N'Café en grano', 18.00),
+    (N'Capuchino Grande', N'cafe en grano', 18.00),
     (N'Capuchino Grande', N'Leche entera', 150.00),
     (N'Capuchino Grande', N'Vaso 16oz', 1.00),
     (N'Capuchino Grande', N'Tapadera 16oz', 1.00),
     (N'Capuchino Grande', N'Viñeta', 1.00),
-    (N'Espresso Doble', N'Café en grano', 18.00),
+    (N'Espresso Doble', N'cafe en grano', 18.00),
     (N'Espresso Doble', N'Vaso 12oz', 1.00),
     (N'Espresso Doble', N'Tapadera 12oz', 1.00),
     (N'Espresso Doble', N'Viñeta', 1.00),
-    (N'Americano Grande', N'Café en grano', 18.00),
+    (N'Americano Grande', N'cafe en grano', 18.00),
     (N'Americano Grande', N'Agua purificada', 300.00),
     (N'Americano Grande', N'Vaso 16oz', 1.00),
     (N'Americano Grande', N'Tapadera 16oz', 1.00),
     (N'Americano Grande', N'Viñeta', 1.00),
-    (N'Moca Grande', N'Café en grano', 18.00),
+    (N'Moca Grande', N'cafe en grano', 18.00),
     (N'Moca Grande', N'Leche entera', 200.00),
     (N'Moca Grande', N'Chocolate en polvo', 25.00),
     (N'Moca Grande', N'Vaso 16oz', 1.00),
     (N'Moca Grande', N'Tapadera 16oz', 1.00),
     (N'Moca Grande', N'Viñeta', 1.00),
-    (N'Caramel Macchiato Grande', N'Café en grano', 18.00),
+    (N'Caramel Macchiato Grande', N'cafe en grano', 18.00),
     (N'Caramel Macchiato Grande', N'Leche entera', 220.00),
     (N'Caramel Macchiato Grande', N'Jarabe de caramelo', 30.00),
     (N'Caramel Macchiato Grande', N'Vaso 16oz', 1.00),
     (N'Caramel Macchiato Grande', N'Tapadera 16oz', 1.00),
     (N'Caramel Macchiato Grande', N'Viñeta', 1.00),
-    (N'Vainilla Latte Grande', N'Café en grano', 18.00),
+    (N'Vainilla Latte Grande', N'cafe en grano', 18.00),
     (N'Vainilla Latte Grande', N'Leche entera', 220.00),
     (N'Vainilla Latte Grande', N'Jarabe de vainilla', 30.00),
     (N'Vainilla Latte Grande', N'Vaso 16oz', 1.00),
@@ -95,14 +154,14 @@ FROM (VALUES
     (N'Chai Latte Grande', N'Vaso 16oz', 1.00),
     (N'Chai Latte Grande', N'Tapadera 16oz', 1.00),
     (N'Chai Latte Grande', N'Viñeta', 1.00),
-    (N'Frappé de Café Grande', N'Café en grano', 18.00),
+    (N'Frappé de Café Grande', N'cafe en grano', 18.00),
     (N'Frappé de Café Grande', N'Leche entera', 150.00),
     (N'Frappé de Café Grande', N'Hielo', 200.00),
     (N'Frappé de Café Grande', N'Crema batida', 20.00),
     (N'Frappé de Café Grande', N'Vaso 16oz', 1.00),
     (N'Frappé de Café Grande', N'Tapadera 16oz', 1.00),
     (N'Frappé de Café Grande', N'Viñeta', 1.00),
-    (N'Cold Brew Grande', N'Café en grano', 30.00),
+    (N'Cold Brew Grande', N'cafe en grano', 30.00),
     (N'Cold Brew Grande', N'Agua purificada', 250.00),
     (N'Cold Brew Grande', N'Hielo', 150.00),
     (N'Cold Brew Grande', N'Vaso 16oz', 1.00),
@@ -112,24 +171,52 @@ FROM (VALUES
     (N'Botella de agua 500 ml', N'Botella de agua 500 ml (reventa)', 1.00),
     (N'Barra de granola', N'Barra de granola (reventa)', 1.00)
 ) AS v(producto, insumo, cantidad_requerida)
-JOIN productos p ON p.nombre = v.producto
-JOIN insumos   i ON i.nombre = v.insumo
+JOIN dbo.productos p ON p.nombre = v.producto
+JOIN dbo.insumos i ON i.nombre = v.insumo
 WHERE NOT EXISTS (
-    SELECT 1 FROM recetas_detalle r
+    SELECT 1 FROM dbo.recetas_detalle r
     WHERE r.id_producto = p.id_producto AND r.id_insumo = i.id_insumo
 );
 
-COMMIT TRANSACTION;
+IF EXISTS (
+    SELECT 1
+    FROM (VALUES
+        (N'Latte Grande'), (N'Galleta de Chocolate'),
+        (N'Latte Chico'), (N'Capuchino Grande'), (N'Espresso Doble'),
+        (N'Americano Grande'), (N'Moca Grande'), (N'Caramel Macchiato Grande'),
+        (N'Vainilla Latte Grande'), (N'Chocolate Caliente Grande'), (N'Chai Latte Grande'),
+        (N'Frappé de Café Grande'), (N'Cold Brew Grande'),
+        (N'Botella de agua 500 ml'), (N'Barra de granola')
+    ) AS v(nombre)
+    INNER JOIN dbo.productos p ON p.nombre = v.nombre AND p.activo = 1
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.recetas_detalle r WHERE r.id_producto = p.id_producto
+    )
+)
+BEGIN
+    ;THROW 51004, 'Hay productos del catalogo inicial sin receta; revisa los datos antes de completar la poblacion.', 1;
+END;
 
--- 4. Verificación. Esperado: 12 elaborados, 3 de reventa, 0 sin receta, Latte con 5 ingredientes
+    COMMIT TRANSACTION;
+END TRY
+BEGIN CATCH
+    IF XACT_STATE() <> 0
+        ROLLBACK TRANSACTION;
+    THROW;
+END CATCH;
+
+--Verificacion para ver que se hayan ingersado correctamente.
 SELECT
-    (SELECT COUNT(*) FROM productos WHERE es_reventa = 0 AND activo = 1) AS productos_elaborados,
-    (SELECT COUNT(*) FROM productos WHERE es_reventa = 1 AND activo = 1) AS productos_reventa,
-    (SELECT COUNT(*) FROM productos p WHERE p.activo = 1
-        AND NOT EXISTS (SELECT 1 FROM recetas_detalle r WHERE r.id_producto = p.id_producto)) AS productos_sin_receta;
+    (SELECT COUNT(*) FROM dbo.productos WHERE es_reventa = 0 AND activo = 1) AS productos_elaborados,
+    (SELECT COUNT(*) FROM dbo.productos WHERE es_reventa = 1 AND activo = 1) AS productos_reventa,
+    (SELECT COUNT(*) FROM dbo.productos p WHERE p.activo = 1
+        AND NOT EXISTS (SELECT 1 FROM dbo.recetas_detalle r WHERE r.id_producto = p.id_producto)) AS productos_sin_receta,
+    (SELECT COUNT(*) FROM dbo.inventario_sucursal i
+        JOIN dbo.sucursales s ON s.sucursalid = i.sucursalid
+        WHERE s.nombre = N'escalon') AS insumos_con_saldo_inicial;
 
 SELECT p.nombre AS producto, i.nombre AS insumo, r.cantidad_requerida, i.unidad_medida
-FROM recetas_detalle r
-JOIN productos p ON p.id_producto = r.id_producto
-JOIN insumos   i ON i.id_insumo   = r.id_insumo
+FROM dbo.recetas_detalle r
+JOIN dbo.productos p ON p.id_producto = r.id_producto
+JOIN dbo.insumos i ON i.id_insumo = r.id_insumo
 WHERE p.nombre = N'Latte Grande';

@@ -29,3 +29,5 @@ En components/login.jsx tenemos el formulario para iniciar sesión contra el bac
 Traemos useState para guardar el correo, la contraseña, el mensaje de error y si está cargando, importamos los estilos de Bootstrap y ../src/login.css, y con manejarLogin evitamos que se recargue la página y mandamos los datos por POST a http://localhost:3000/api/login
 ![alt text](login-jsx-1.png)
 ![alt text](login-jsx-2.png)
+![alt text](login-jsx-3.png)
+Lo que toma para avanzar es que el usuario llene los campos requeridos (correo y password) y que el servidor responda bien; si todo sale bien guarda datos.usuario en localStorage bajo 'usuarioLogueado' y llama a onLogin, y si algo falla muestra un mensaje de error en pantalla, complementado con las opciones visuales de sucursal (Escalon, Santa Tecla, Mejicanos) y el estado cargando que desactiva el botón mientras envía.

@@ -240,7 +240,7 @@ function CajaPage({ usuario }) {
                             <input maxLength="50" value={nombreCaja} onChange={(event) => setNombreCaja(event.target.value)} placeholder="Caja principal" />
                         </label>
                         <label className="form-field">
-                            Fondo inicial ($)
+                            Monto inicial del día ($)
                             <input type="number" min="0" max="99999999.99" step="0.01" required value={montoApertura} onChange={(event) => setMontoApertura(event.target.value)} />
                         </label>
                         <button className="primary-button" type="submit" disabled={procesando || (puedeElegirSucursal && !sucursalid)}>{procesando ? 'Abriendo…' : 'Abrir caja'}</button>
@@ -256,12 +256,12 @@ function CajaPage({ usuario }) {
                             <p className="stat-card-note">{caja.usuarios?.nombre_completo || '—'} · {caja.sucursales?.nombre || 'Sucursal'}</p>
                         </article>
                         <article className="stat-card">
-                            <p className="stat-card-label">Fondo inicial</p>
+                            <p className="stat-card-label">Monto inicial del día</p>
                             <p className="stat-card-value">${Number(caja.monto_apertura).toFixed(2)}</p>
                         </article>
                         <article className="stat-card">
-                            <p className="stat-card-label">Movimientos</p>
-                            <p className="stat-card-value">{caja.movimientos_caja.length}</p>
+                            <p className="stat-card-label">Saldo actual en caja</p>
+                            <p className="stat-card-value">${Number(caja.monto_sistema).toFixed(2)}</p>
                         </article>
                     </section>
 

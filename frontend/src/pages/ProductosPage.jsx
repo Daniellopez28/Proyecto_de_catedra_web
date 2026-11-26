@@ -16,12 +16,10 @@ function ProductosPage({ permisos = [] }) {
     const puedeConfigurarRecetas = puedeGestionar &&
         permisos.includes('gestionar_inventario') && permisos.includes('ver_inventario');
     const [productos, setProductos] = useState([]);
-    const [modificadores, setModificadores] = useState([]);
     const [insumos, setInsumos] = useState([]);
     const [producto, setProducto] = useState(productoVacio);
     const [ingredientes, setIngredientes] = useState([]);
     const [recetaCargada, setRecetaCargada] = useState(true);
-    const [modificador, setModificador] = useState({ nombre: '', precio: '' });
     const [productoEditado, setProductoEditado] = useState(null);
     const [cargando, setCargando] = useState(puedeVer);
     const [procesando, setProcesando] = useState(false);
@@ -34,14 +32,9 @@ function ProductosPage({ permisos = [] }) {
         try {
             if (!puedeVer) {
                 setProductos([]);
-                setModificadores([]);
             } else {
-                const [respuestaProductos, respuestaModificadores] = await Promise.all([
-                    solicitudApi('/productos'),
-                    solicitudApi('/modificadores')
-                ]);
+                const respuestaProductos = await solicitudApi('/productos');
                 setProductos(respuestaProductos.productos);
-                setModificadores(respuestaModificadores.modificadores);
             }
             if (puedeConfigurarRecetas) {
                 const respuestaInsumos = await solicitudApi('/inventario/insumos/catalogo');
@@ -57,19 +50,13 @@ function ProductosPage({ permisos = [] }) {
     useEffect(() => {
         let activo = true;
         const solicitudes = [];
-        if (puedeVer) {
-            solicitudes.push(Promise.all([solicitudApi('/productos'), solicitudApi('/modificadores')]));
-        }
+        if (puedeVer) solicitudes.push(solicitudApi('/productos'));
         if (puedeConfigurarRecetas) solicitudes.push(solicitudApi('/inventario/insumos/catalogo'));
         Promise.all(solicitudes)
             .then((respuestas) => {
                 if (!activo) return;
                 let indice = 0;
-                if (puedeVer) {
-                    const [respuestaProductos, respuestaModificadores] = respuestas[indice++];
-                    setProductos(respuestaProductos.productos);
-                    setModificadores(respuestaModificadores.modificadores);
-                }
+                if (puedeVer) setProductos(respuestas[indice++].productos);
                 if (puedeConfigurarRecetas) setInsumos(respuestas[indice].insumos);
             })
             .catch((fallo) => {
@@ -135,41 +122,6 @@ function ProductosPage({ permisos = [] }) {
         lector.readAsDataURL(archivo);
     }
 
-    async function crearModificador(event) {
-        event.preventDefault();
-        setProcesando(true);
-        setError('');
-        setMensaje('');
-        try {
-            const respuesta = await solicitudApi('/modificadores', {
-                method: 'POST',
-                body: { ...modificador, precio: Number(modificador.precio) }
-            });
-            setMensaje(respuesta.mensaje);
-            setModificador({ nombre: '', precio: '' });
-            await cargar();
-        } catch (fallo) {
-            setError(fallo.message);
-        } finally {
-            setProcesando(false);
-        }
-    }
-
-    async function cambiarEstadoModificador(item) {
-        setError('');
-        setMensaje('');
-        try {
-            const respuesta = await solicitudApi(`/modificadores/${item.modificadorid}`, {
-                method: 'PATCH',
-                body: { activo: false }
-            });
-            setMensaje(respuesta.mensaje);
-            await cargar();
-        } catch (fallo) {
-            setError(fallo.message);
-        }
-    }
-
     function editarProducto(item) {
         if (productoEditado) {
             setError('Guarda o cancela la edición actual antes de abrir otro producto.');
@@ -219,7 +171,7 @@ function ProductosPage({ permisos = [] }) {
             <header className="page-heading">
                 <div>
                     <h1>Menú y productos</h1>
-                    <p>Consulta el menú y administra productos y modificadores según tus permisos.</p>
+                    <p>Consulta el menú y administra productos según tus permisos.</p>
                 </div>
                 <button className="secondary-button" type="button" onClick={cargar} disabled={cargando}>Actualizar</button>
             </header>
@@ -227,7 +179,7 @@ function ProductosPage({ permisos = [] }) {
             {mensaje && <div className="notice" role="status">{mensaje}</div>}
 
             {puedeGestionar && (
-                <div className="form-grid">
+                <>
                     <form className="surface-card" onSubmit={enviarProducto}>
                         <h2>{productoEditado ? 'Editar producto' : 'Nuevo producto'}</h2>
                         <div className="form-grid">
@@ -271,15 +223,7 @@ function ProductosPage({ permisos = [] }) {
                         </div>
                     </form>
 
-                    <form className="surface-card" onSubmit={crearModificador}>
-                        <h2>Nuevo modificador</h2>
-                        <div className="form-grid">
-                            <label className="form-field">Nombre<input maxLength="100" required value={modificador.nombre} onChange={(event) => setModificador({ ...modificador, nombre: event.target.value })} /></label>
-                            <label className="form-field">Precio adicional ($)<input type="number" min="0" max="99999999.99" step="0.01" required value={modificador.precio} onChange={(event) => setModificador({ ...modificador, precio: event.target.value })} /></label>
-                        </div>
-                        <button className="primary-button" type="submit" disabled={procesando} style={{ marginTop: 16 }}>Crear modificador</button>
-                    </form>
-                </div>
+                </>
             )}
 
             {puedeVer ? (
@@ -309,25 +253,6 @@ function ProductosPage({ permisos = [] }) {
                                     </table>
                                 </div>
                             )}
-                    </section>
-                    <section className="surface-card">
-                        <h2>Modificadores activos</h2>
-                        {modificadores.length === 0 ? <p className="empty-state">No hay modificadores activos.</p> : (
-                            <div className="data-table-wrap">
-                                <table className="data-table">
-                                    <thead><tr><th>Modificador</th><th>Adicional</th>{puedeGestionar && <th>Acciones</th>}</tr></thead>
-                                    <tbody>
-                                        {modificadores.map((item) => (
-                                            <tr key={item.modificadorid}>
-                                                <td>{item.nombre}</td>
-                                                <td>${Number(item.precio).toFixed(2)}</td>
-                                                {puedeGestionar && <td><button className="danger-button" type="button" onClick={() => cambiarEstadoModificador(item)}>Desactivar</button></td>}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
                     </section>
                 </>
             ) : (

@@ -24,6 +24,24 @@ function enteroPositivo(valor) {
     return Number.isInteger(numero) && numero > 0 ? numero : null;
 }
 
+async function calcularMontoSistema(db, caja) {
+    const [ventasEfectivo] = await db.$queryRaw`
+        SELECT COALESCE(SUM(p.monto), 0) AS monto
+        FROM dbo.ventas v
+        INNER JOIN dbo.pagos p ON p.id_venta = v.id_venta
+        WHERE v.sucursalid = ${caja.sucursalid}
+          AND p.fecha_pago >= ${caja.fecha_apertura}
+          AND LOWER(p.metodo_pago) = 'efectivo'
+    `;
+    const movimientos = caja.movimientos_caja.reduce((total, movimiento) => {
+        const monto = Number(movimiento.monto);
+        return total + (movimiento.tipo_movimiento === 'ingreso_extra' ? monto : -monto);
+    }, 0);
+    return Number((
+        Number(caja.monto_apertura) + Number(ventasEfectivo.monto) + movimientos
+    ).toFixed(2));
+}
+
 router.get('/actual', async (req, res) => {
     const puedeOperar = req.auth.permisos.has('operar_caja');
     const puedeVer = req.auth.permisos.has('ver_caja');
@@ -47,9 +65,11 @@ router.get('/actual', async (req, res) => {
                 sucursales: { select: { nombre: true } }
             }
         });
+        const montoSistema = caja ? await calcularMontoSistema(prisma, caja) : null;
         return res.json({
             caja: caja && {
                 ...caja,
+                monto_sistema: montoSistema,
                 movimientos_caja: caja.movimientos_caja.map((movimiento) => ({
                     ...movimiento,
                     movimientocajaid: String(movimiento.movimientocajaid)
@@ -158,21 +178,7 @@ router.post('/:id/cerrar', requerirPermiso('operar_caja'), async (req, res) => {
             });
             if (!caja) return null;
 
-            const [ventasEfectivo] = await tx.$queryRaw`
-                SELECT COALESCE(SUM(p.monto), 0) AS monto
-                FROM dbo.ventas v
-                INNER JOIN dbo.pagos p ON p.id_venta = v.id_venta
-                WHERE v.sucursalid = ${caja.sucursalid}
-                  AND p.fecha_pago >= ${caja.fecha_apertura}
-                  AND LOWER(p.metodo_pago) = 'efectivo'
-            `;
-            const movimientos = caja.movimientos_caja.reduce((total, movimiento) => {
-                const monto = Number(movimiento.monto);
-                return total + (movimiento.tipo_movimiento === 'ingreso_extra' ? monto : -monto);
-            }, 0);
-            const montoSistema = Number((
-                Number(caja.monto_apertura) + Number(ventasEfectivo.monto) + movimientos
-            ).toFixed(2));
+            const montoSistema = await calcularMontoSistema(tx, caja);
             const actualizada = await tx.cajas.updateMany({
                 where: { id_caja: idCaja, id_usuario: req.auth.usuario.id_usuario, estado: 'abierta' },
                 data: {

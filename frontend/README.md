@@ -27,3 +27,4 @@ Lo que toma para avanzar es el dato guardado en localStorage o que Login le pase
 En components/login.jsx tenemos el formulario para iniciar sesión contra el backend:
 
 Traemos useState para guardar el correo, la contraseña, el mensaje de error y si está cargando, importamos los estilos de Bootstrap y ../src/login.css, y con manejarLogin evitamos que se recargue la página y mandamos los datos por POST a http://localhost:3000/api/login
+![alt text](login-jsx-1.png)

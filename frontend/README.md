@@ -14,3 +14,7 @@ Abrir la dirección que muestra Vite por defecto http://localhost:5173
 1.En el apartado del frontend encontramos el archivo de arranque main.jsx:
 
 Importamos StrictMode y createRoot de React para encender la app, traemos los estilos globales de ./index.css y nuestro componente principal ./App.jsx, y al final montamos todo dentro del elemento root de la página.
+![alt text](main.png)
+Lo que toma para avanzar es que exista ese espacio root en la página y que carguen bien ./index.css y ./App.jsx; lo complementa StrictMode revisando que todo esté limpio en desarrollo, y así arranca la pantalla de la aplicación. 
+
+2.En App.jsx tenemos el componente principal que revisa si ya hay una sesión guardada y decide qué mostrar:

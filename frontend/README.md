@@ -23,3 +23,5 @@ Traemos useState para manejar el estado del usuario, cargamos App.css y llamamos
 ![alt text](App-jsx.png)
 Lo que toma para avanzar es el dato guardado en localStorage o que Login le pase el usuario al entrar; si no hay usuario te manda a <Login/>, y si ya entró te arma la vista con el menú lateral, el encabezado, la sucursal (con 'San Salvador · Escalón' por defecto) y el saludo con usuario.nombre_completo, complementado con onLogout que limpia todo al cerrar sesión y los estilos de App.css.
 
+3.Inicio de sesión (components/login)
+En components/login.jsx tenemos el formulario para iniciar sesión contra el backend:

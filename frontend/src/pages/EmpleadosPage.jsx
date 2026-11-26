@@ -15,13 +15,55 @@ const formularioVacio = {
     sucursalid: '',
     isss_numero: '',
     afp_numero: '',
-    tipo_contrato: 'Indefinido',
+    tipo_contrato: 'indefinido',
+    duracion_anios: '0',
+    duracion_meses: '1',
     jornada: 'Completa',
     forma_pago: 'Quincenal'
 };
 
 function fechaCampo(valor) {
     return valor ? new Date(valor).toISOString().slice(0, 10) : '';
+}
+
+function calcularFechaFinContrato(fechaIngreso, anios, meses) {
+    if (!fechaIngreso) return '';
+    const [anio, mes, dia] = fechaIngreso.split('-').map(Number);
+    const fechaObjetivo = new Date(Date.UTC(anio, mes - 1 + Number(anios) * 12 + Number(meses), 1));
+    const ultimoDia = new Date(Date.UTC(
+        fechaObjetivo.getUTCFullYear(),
+        fechaObjetivo.getUTCMonth() + 1,
+        0
+    )).getUTCDate();
+    const diaFin = Math.min(dia, ultimoDia);
+    return [
+        fechaObjetivo.getUTCFullYear(),
+        String(fechaObjetivo.getUTCMonth() + 1).padStart(2, '0'),
+        String(diaFin).padStart(2, '0')
+    ].join('-');
+}
+
+function obtenerDuracionContrato(fechaIngreso, fechaFin) {
+    const inicio = fechaCampo(fechaIngreso);
+    const fin = fechaCampo(fechaFin);
+    if (!inicio || !fin) return { duracion_anios: '0', duracion_meses: '1' };
+    const [anioInicio, mesInicio] = inicio.split('-').map(Number);
+    const [anioFin, mesFin] = fin.split('-').map(Number);
+    const totalMeses = Math.max(1, (anioFin - anioInicio) * 12 + mesFin - mesInicio);
+    return {
+        duracion_anios: String(Math.floor(totalMeses / 12)),
+        duracion_meses: String(totalMeses % 12)
+    };
+}
+
+function datosEmpleado(formulario) {
+    const { duracion_anios, duracion_meses, ...datos } = formulario;
+    return {
+        ...datos,
+        fecha_fin_contrato: formulario.tipo_contrato === 'definido'
+            ? calcularFechaFinContrato(formulario.fecha_ingreso, duracion_anios, duracion_meses)
+            : null
+    };
 }
 
 function EmpleadosPage({ permisos = [], usuario }) {
@@ -92,6 +134,11 @@ function EmpleadosPage({ permisos = [], usuario }) {
 
     async function registrar(event) {
         event.preventDefault();
+        if (formulario.tipo_contrato === 'definido' &&
+            Number(formulario.duracion_anios) * 12 + Number(formulario.duracion_meses) < 1) {
+            setError('Indica una duración de al menos un mes para el contrato definido.');
+            return;
+        }
         setProcesando(true);
         setError('');
         setMensaje('');
@@ -100,7 +147,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
             const respuesta = await solicitudApi('/empleados', {
                 method: 'POST',
                 body: {
-                    ...formulario,
+                    ...datosEmpleado(formulario),
                     apellido_materno: formulario.apellido_materno || null,
                     salario_base: Number(formulario.salario_base),
                     sucursalid: formulario.sucursalid ? Number(formulario.sucursalid) : null,
@@ -126,6 +173,9 @@ function EmpleadosPage({ permisos = [], usuario }) {
         try {
             const respuesta = await solicitudApi(`/empleados/${empleado.id_empleado}`);
             const ficha = respuesta.empleado;
+            const tipoContrato = ficha.tipo_contrato?.toLowerCase() === 'definido'
+                ? 'definido'
+                : 'indefinido';
             setFormulario({
                 nombres: ficha.nombres,
                 apellido_paterno: ficha.apellido_paterno,
@@ -140,7 +190,8 @@ function EmpleadosPage({ permisos = [], usuario }) {
                 sucursalid: ficha.sucursalid ? String(ficha.sucursalid) : '',
                 isss_numero: ficha.isss_numero || '',
                 afp_numero: ficha.afp_numero || '',
-                tipo_contrato: ficha.tipo_contrato || '',
+                tipo_contrato: tipoContrato,
+                ...obtenerDuracionContrato(ficha.fecha_ingreso, ficha.fecha_fin_contrato),
                 jornada: ficha.jornada || '',
                 forma_pago: ficha.forma_pago || ''
             });
@@ -155,6 +206,11 @@ function EmpleadosPage({ permisos = [], usuario }) {
     async function guardarEdicion(event) {
         event.preventDefault();
         if (!empleadoEnEdicion) return;
+        if (formulario.tipo_contrato === 'definido' &&
+            Number(formulario.duracion_anios) * 12 + Number(formulario.duracion_meses) < 1) {
+            setError('Indica una duración de al menos un mes para el contrato definido.');
+            return;
+        }
         setProcesando(true);
         setError('');
         setMensaje('');
@@ -162,7 +218,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
             const respuesta = await solicitudApi(`/empleados/${empleadoEnEdicion.id_empleado}`, {
                 method: 'PATCH',
                 body: {
-                    ...formulario,
+                    ...datosEmpleado(formulario),
                     apellido_materno: formulario.apellido_materno || null,
                     salario_base: Number(formulario.salario_base),
                     sucursalid: formulario.sucursalid ? Number(formulario.sucursalid) : null,
@@ -249,7 +305,15 @@ function EmpleadosPage({ permisos = [], usuario }) {
                         </select></label>
                         <label className="form-field">Salario base mensual ($)<input name="salario_base" type="number" min="0" max="99999999.99" step="0.01" required value={formulario.salario_base} onChange={cambiarCampo} /></label>
                         <label className="form-field">Fecha de ingreso<input name="fecha_ingreso" type="date" required value={formulario.fecha_ingreso} onChange={cambiarCampo} /></label>
-                        <label className="form-field">Tipo de contrato<input name="tipo_contrato" maxLength="50" value={formulario.tipo_contrato} onChange={cambiarCampo} /></label>
+                        <label className="form-field">Tipo de contrato<select name="tipo_contrato" value={formulario.tipo_contrato} onChange={cambiarCampo}>
+                            <option value="indefinido">Indefinido</option>
+                            <option value="definido">Definido</option>
+                        </select></label>
+                        {formulario.tipo_contrato === 'definido' && <>
+                            <label className="form-field">Duración (años)<input name="duracion_anios" type="number" min="0" max="50" step="1" required value={formulario.duracion_anios} onChange={cambiarCampo} /></label>
+                            <label className="form-field">Duración (meses)<input name="duracion_meses" type="number" min="0" max="11" step="1" required value={formulario.duracion_meses} onChange={cambiarCampo} /></label>
+                            <p className="form-help">Finaliza el {calcularFechaFinContrato(formulario.fecha_ingreso, formulario.duracion_anios, formulario.duracion_meses) || 'selecciona primero la fecha de ingreso'}.</p>
+                        </>}
                         <label className="form-field">Jornada<input name="jornada" maxLength="50" value={formulario.jornada} onChange={cambiarCampo} /></label>
                         <label className="form-field">Forma de pago<input name="forma_pago" maxLength="50" value={formulario.forma_pago} onChange={cambiarCampo} /></label>
                         <label className="form-field">Número ISSS<input name="isss_numero" maxLength="15" value={formulario.isss_numero} onChange={cambiarCampo} /></label>
@@ -294,7 +358,15 @@ function EmpleadosPage({ permisos = [], usuario }) {
                         </select></label>
                         <label className="form-field">Salario base mensual ($)<input name="salario_base" type="number" min="0" max="99999999.99" step="0.01" required value={formulario.salario_base} onChange={cambiarCampo} /></label>
                         <label className="form-field">Fecha de ingreso<input name="fecha_ingreso" type="date" required value={formulario.fecha_ingreso} onChange={cambiarCampo} /></label>
-                        <label className="form-field">Tipo de contrato<input name="tipo_contrato" maxLength="50" value={formulario.tipo_contrato} onChange={cambiarCampo} /></label>
+                        <label className="form-field">Tipo de contrato<select name="tipo_contrato" value={formulario.tipo_contrato} onChange={cambiarCampo}>
+                            <option value="indefinido">Indefinido</option>
+                            <option value="definido">Definido</option>
+                        </select></label>
+                        {formulario.tipo_contrato === 'definido' && <>
+                            <label className="form-field">Duración (años)<input name="duracion_anios" type="number" min="0" max="50" step="1" required value={formulario.duracion_anios} onChange={cambiarCampo} /></label>
+                            <label className="form-field">Duración (meses)<input name="duracion_meses" type="number" min="0" max="11" step="1" required value={formulario.duracion_meses} onChange={cambiarCampo} /></label>
+                            <p className="form-help">Finaliza el {calcularFechaFinContrato(formulario.fecha_ingreso, formulario.duracion_anios, formulario.duracion_meses) || 'selecciona primero la fecha de ingreso'}.</p>
+                        </>}
                         <label className="form-field">Jornada<input name="jornada" maxLength="50" value={formulario.jornada} onChange={cambiarCampo} /></label>
                         <label className="form-field">Forma de pago<input name="forma_pago" maxLength="50" value={formulario.forma_pago} onChange={cambiarCampo} /></label>
                         <label className="form-field">Número ISSS<input name="isss_numero" maxLength="15" value={formulario.isss_numero} onChange={cambiarCampo} /></label>
@@ -316,7 +388,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                             <div className="data-table-wrap">
                                 <table className="data-table">
                                     <thead>
-                                        <tr><th>Empleado</th><th>Código</th><th>Cargo</th><th>Rol</th><th>Sucursal</th><th>Salario base</th>{puedeRegistrar && <th>Acciones</th>}</tr>
+                                        <tr><th>Empleado</th><th>Código</th><th>Cargo</th><th>Rol</th><th>Sucursal</th><th>Salario base</th><th>Contrato</th>{puedeRegistrar && <th>Acciones</th>}</tr>
                                     </thead>
                                     <tbody>
                                         {empleados.map((empleado) => (
@@ -327,6 +399,9 @@ function EmpleadosPage({ permisos = [], usuario }) {
                                                 <td>{empleado.roles.nombre_rol}</td>
                                                 <td>{empleado.sucursales?.nombre || '—'}</td>
                                                 <td>${Number(empleado.salario_base).toFixed(2)}</td>
+                                                <td>{empleado.fecha_fin_contrato
+                                                    ? `Definido · hasta ${fechaCampo(empleado.fecha_fin_contrato)}`
+                                                    : 'Indefinido'}</td>
                                                 {puedeRegistrar && (
                                                     <td>
                                                         <div className="page-actions">

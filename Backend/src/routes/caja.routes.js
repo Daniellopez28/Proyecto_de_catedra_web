@@ -24,12 +24,28 @@ function enteroPositivo(valor) {
     return Number.isInteger(numero) && numero > 0 ? numero : null;
 }
 
-router.get('/actual', requerirPermiso('operar_caja'), async (req, res) => {
+router.get('/actual', async (req, res) => {
+    const puedeOperar = req.auth.permisos.has('operar_caja');
+    const puedeVer = req.auth.permisos.has('ver_caja');
+    if (!puedeOperar && !puedeVer) {
+        return res.status(403).json({ mensaje: 'No tienes permiso para consultar caja' });
+    }
     try {
         const caja = await prisma.cajas.findFirst({
-            where: { id_usuario: req.auth.usuario.id_usuario, estado: 'abierta' },
+            where: {
+                estado: 'abierta',
+                ...(puedeOperar
+                    ? { id_usuario: req.auth.usuario.id_usuario }
+                    : req.auth.usuario.sucursalid
+                        ? { sucursalid: req.auth.usuario.sucursalid }
+                        : {})
+            },
             orderBy: { fecha_apertura: 'desc' },
-            include: { movimientos_caja: { orderBy: { fecha: 'desc' } } }
+            include: {
+                movimientos_caja: { orderBy: { fecha: 'desc' } },
+                usuarios: { select: { nombre_completo: true } },
+                sucursales: { select: { nombre: true } }
+            }
         });
         return res.json({
             caja: caja && {
@@ -146,8 +162,7 @@ router.post('/:id/cerrar', requerirPermiso('operar_caja'), async (req, res) => {
                 SELECT COALESCE(SUM(p.monto), 0) AS monto
                 FROM dbo.ventas v
                 INNER JOIN dbo.pagos p ON p.id_venta = v.id_venta
-                WHERE v.id_usuario = ${req.auth.usuario.id_usuario}
-                  AND v.sucursalid = ${caja.sucursalid}
+                WHERE v.sucursalid = ${caja.sucursalid}
                   AND p.fecha_pago >= ${caja.fecha_apertura}
                   AND LOWER(p.metodo_pago) = 'efectivo'
             `;
@@ -177,7 +192,7 @@ router.post('/:id/cerrar', requerirPermiso('operar_caja'), async (req, res) => {
         return res.json({
             mensaje: 'Caja cerrada',
             caja: resultado,
-            nota: 'El total del sistema considera ventas en efectivo del usuario y movimientos registrados desde la apertura.'
+            nota: 'El total del sistema considera ventas en efectivo de la sucursal y movimientos registrados desde la apertura.'
         });
     } catch (error) {
         console.error('Error al cerrar caja:', error);

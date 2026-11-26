@@ -13,7 +13,6 @@ import empleadosRoutes from './routes/empleados.routes.js';
 import reservasRoutes from './routes/reservas.routes.js';
 import cajaRoutes from './routes/caja.routes.js';
 import productosRoutes from './routes/productos.routes.js';
-import clientesRoutes from './routes/clientes.routes.js';
 import comprasRoutes from './routes/compras.routes.js';
 import proveedoresRoutes from './routes/proveedores.routes.js';
 import reportesRoutes from './routes/reportes.routes.js';
@@ -35,7 +34,7 @@ import {
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 app.use('/api/planillas', planilla_routes);
 app.use('/api/empleados', requerirAutenticacion, empleadosRoutes);
@@ -98,7 +97,12 @@ app.get('/', (req, res) =>{
 app.get('/api/ventas', requerirAutenticacion, async (req, res) => {
     const puedeVerVentas = req.auth.permisos.has('ver_ventas');
     const puedeVerCocina = req.auth.permisos.has('ver_pedidos_cocina');
-    if (!puedeVerVentas && !puedeVerCocina) {
+    const puedeTomarPedidos = req.auth.permisos.has('tomar_pedidos');
+    const puedeOperarCaja = req.auth.permisos.has('operar_caja');
+    const consultaPendientes = req.query.pendientes === 'true';
+    if (consultaPendientes
+        ? !puedeTomarPedidos && !puedeVerCocina && !puedeOperarCaja
+        : !puedeVerVentas && !puedeVerCocina) {
         return res.status(403).json({ mensaje: 'No tienes permiso para consultar ventas' });
     }
     const pagina = Number(req.query.pagina ?? 1);
@@ -110,7 +114,14 @@ app.get('/api/ventas', requerirAutenticacion, async (req, res) => {
     try {
         const where = {
             ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {}),
-            ...(!puedeVerVentas ? { estado_pedido: { in: ['abierto', 'en_cocina', 'servido'] } } : {})
+            ...(consultaPendientes
+                ? {
+                    estado: { in: ['pendiente', 'parcial'] },
+                    estado_pedido: { in: ['abierto', 'en_cocina', 'servido'] }
+                }
+                : !puedeVerVentas
+                    ? { estado_pedido: { in: ['abierto', 'en_cocina', 'servido'] } }
+                    : {})
         };
         const [total, ventas] = await prisma.$transaction([
             prisma.ventas.count({ where }),
@@ -120,7 +131,7 @@ app.get('/api/ventas', requerirAutenticacion, async (req, res) => {
                 skip: (pagina - 1) * limite,
                 take: limite,
                 include: {
-                    clientes: { select: { id_cliente: true, nombre: true } },
+                    clientes: { select: { id_cliente: true, nombre: true, apellido: true } },
                     mesas: { select: { mesaid: true, numero_mesa: true } },
                     pagos: true,
                     venta_detalle: {
@@ -254,7 +265,7 @@ app.patch('/api/ventas/:id/estado-pedido', requerirAutenticacion, async (req, re
 });
 
 app.post('/api/ventas/:id/pagos', requerirAutenticacion, async (req, res) => {
-    if (!req.auth.permisos.has('tomar_pedidos') && !req.auth.permisos.has('operar_caja')) {
+    if (!req.auth.permisos.has('operar_caja')) {
         return res.status(403).json({ mensaje: 'No tienes permiso para registrar pagos de ventas' });
     }
     const idVenta = Number(req.params.id);
@@ -263,7 +274,8 @@ app.post('/api/ventas/:id/pagos', requerirAutenticacion, async (req, res) => {
     const referencia = req.body?.referencia;
     if (!Number.isInteger(idVenta) || idVenta <= 0 || !Number.isFinite(monto) ||
         monto <= 0 || monto > 99999999.99 ||
-        typeof metodoPago !== 'string' || !metodoPago.trim() || metodoPago.length > 50 ||
+        typeof metodoPago !== 'string' ||
+        !['efectivo', 'tarjeta', 'transferencia', 'link de pago', 'wallet'].includes(metodoPago.trim().toLocaleLowerCase('es')) ||
         (referencia !== undefined && referencia !== null &&
             (typeof referencia !== 'string' || referencia.length > 100))) {
         return res.status(400).json({ mensaje: 'Revisa el monto y los datos del pago' });
@@ -286,6 +298,11 @@ app.post('/api/ventas/:id/pagos', requerirAutenticacion, async (req, res) => {
             if (venta.estado === 'cancelada' || venta.estado_pedido === 'cancelado') {
                 return { error: 409 };
             }
+            const cajaAbierta = await tx.cajas.findFirst({
+                where: { sucursalid: venta.sucursalid, estado: 'abierta' },
+                select: { id_caja: true }
+            });
+            if (!cajaAbierta) return { error: 409 };
             const pagos = await tx.pagos.aggregate({
                 where: { id_venta: idVenta },
                 _sum: { monto: true }
@@ -319,7 +336,7 @@ app.post('/api/ventas/:id/pagos', requerirAutenticacion, async (req, res) => {
         }, { isolationLevel: 'Serializable' });
 
         if (resultado.error === 404) return res.status(404).json({ mensaje: 'Venta no encontrada' });
-        if (resultado.error === 409) return res.status(409).json({ mensaje: 'El pago supera el saldo o la venta no acepta pagos' });
+        if (resultado.error === 409) return res.status(409).json({ mensaje: 'Se requiere una caja abierta y el pago no puede superar el saldo' });
         const venta = await prisma.ventas.findUnique({
             where: { id_venta: idVenta },
             include: { pagos: { orderBy: { fecha_pago: 'desc' } } }
@@ -374,13 +391,12 @@ app.post('/api/ventas', requerirAutenticacion, requerirPermiso('tomar_pedidos'),
         const {
             tipoDocumento,
             productos,
-            metodoPago,
-            referenciaPago,
             id_cliente,
+            nombre_cliente,
             mesaid,
             sucursalid: sucursalSolicitada,
             notas_generales,
-            pagoPendiente = false
+            pagoPendiente = true
         } = req.body ?? {};
         const id_usuario = req.auth.usuario.id_usuario;
         const sucursalid = req.auth.usuario.sucursalid ??
@@ -392,17 +408,13 @@ app.post('/api/ventas', requerirAutenticacion, requerirPermiso('tomar_pedidos'),
         if (!Number.isInteger(id_usuario) || id_usuario <= 0) {
             return res.status(400).json({ mensaje: 'id_usuario debe ser un entero positivo' });
         }
-        if (metodoPago !== undefined && (typeof metodoPago !== 'string' || metodoPago.length > 50)) {
-            return res.status(400).json({ mensaje: 'metodoPago debe ser texto de hasta 50 caracteres' });
-        }
-        if (referenciaPago !== undefined && referenciaPago !== null &&
-            (typeof referenciaPago !== 'string' || referenciaPago.length > 100)) {
-            return res.status(400).json({ mensaje: 'referenciaPago debe ser texto de hasta 100 caracteres' });
+        if (typeof nombre_cliente !== 'string' || !nombre_cliente.trim() || nombre_cliente.trim().length > 150) {
+            return res.status(400).json({ mensaje: 'El nombre del cliente es obligatorio y no debe exceder 150 caracteres' });
         }
         if ((id_cliente !== undefined && id_cliente !== null &&
                 (!Number.isInteger(id_cliente) || id_cliente <= 0)) ||
             (mesaid !== undefined && mesaid !== null && (!Number.isInteger(mesaid) || mesaid <= 0)) ||
-            typeof pagoPendiente !== 'boolean' ||
+            pagoPendiente !== true ||
             !Number.isInteger(sucursalid) || sucursalid <= 0 ||
             (notas_generales !== undefined && notas_generales !== null &&
                 (typeof notas_generales !== 'string' || notas_generales.length > 255))) {
@@ -537,28 +549,18 @@ app.post('/api/ventas', requerirAutenticacion, requerirPermiso('tomar_pedidos'),
                     id_usuario,
                     sucursalid,
                     mesaid: mesaid ?? null,
+                    nombre_cliente: nombre_cliente.trim(),
                     tipo_documento: tipoDocumento.trim(),
                     correlativo,
                     subtotal,
                     iva,
                     total: totalBruto,
-                    estado: pagoPendiente ? 'pendiente' : 'pagada',
-                    estado_pedido: pagoPendiente ? 'abierto' : 'pagado',
+                    estado: 'pendiente',
+                    estado_pedido: 'abierto',
                     notas_generales: notas_generales?.trim() || null,
                     venta_detalle: { create: detallesParaGuardar }
                 }
             });
-
-            if (!pagoPendiente) {
-                await tx.pagos.create({
-                    data: {
-                        id_venta: venta.id_venta,
-                        metodo_pago: metodoPago?.trim() || 'Efectivo',
-                        monto: totalBruto,
-                        referencia_transaccion: referenciaPago?.trim() || null
-                    }
-                });
-            }
 
             const resultadoInventario = await ejecutarExplosion(tx, productosNormalizados, {
                 sucursalid,
@@ -588,6 +590,168 @@ app.post('/api/ventas', requerirAutenticacion, requerirPermiso('tomar_pedidos'),
         }
         console.error('Error al registrar venta:', error);
         return res.status(500).json({ mensaje: 'Error interno al registrar la venta' });
+    }
+});
+
+app.post('/api/ventas/:id/productos', requerirAutenticacion, requerirPermiso('tomar_pedidos'), async (req, res) => {
+    const idVenta = Number(req.params.id);
+    if (!Number.isInteger(idVenta) || idVenta <= 0) {
+        return res.status(400).json({ mensaje: 'El id de venta no es válido' });
+    }
+
+    let productosNormalizados;
+    try {
+        productosNormalizados = normalizarProductosVenta(req.body?.productos);
+    } catch (error) {
+        if (error instanceof ErrorInventario) {
+            return res.status(error.codigoHttp).json({ mensaje: error.message, detalle: error.detalle });
+        }
+        throw error;
+    }
+
+    try {
+        const resultado = await prisma.$transaction(async (tx) => {
+            const venta = await tx.ventas.findFirst({
+                where: {
+                    id_venta: idVenta,
+                    ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {})
+                },
+                include: {
+                    venta_detalle: {
+                        include: { detalle_venta_modificadores: { select: { modificadorid: true, precio_aplicado: true } } }
+                    }
+                }
+            });
+            if (!venta) {
+                const error = new Error('Pedido no encontrado');
+                error.codigoHttp = 404;
+                throw error;
+            }
+            if (!['pendiente', 'parcial'].includes(venta.estado) ||
+                !['abierto', 'en_cocina', 'servido'].includes(venta.estado_pedido)) {
+                const error = new Error('El pedido no admite cambios');
+                error.codigoHttp = 409;
+                throw error;
+            }
+
+            const idsProducto = productosNormalizados.map((item) => item.id_producto);
+            const productosDb = await tx.productos.findMany({
+                where: { id_producto: { in: idsProducto }, activo: true },
+                select: { id_producto: true, precio_venta: true }
+            });
+            const productosPorId = new Map(productosDb.map((producto) => [producto.id_producto, producto]));
+            if (productosPorId.size !== idsProducto.length) {
+                const error = new Error('Uno o más productos no existen o están inactivos');
+                error.codigoHttp = 404;
+                throw error;
+            }
+
+            const idsModificador = [...new Set(productosNormalizados.flatMap((item) =>
+                item.modificadores.map(({ modificadorid }) => modificadorid)))];
+            const modificadoresDb = idsModificador.length > 0
+                ? await tx.modificadores.findMany({
+                    where: { modificadorid: { in: idsModificador }, activo: true },
+                    select: { modificadorid: true, precio: true }
+                })
+                : [];
+            const modificadoresPorId = new Map(modificadoresDb.map((item) => [item.modificadorid, item]));
+            if (modificadoresPorId.size !== idsModificador.length) {
+                const error = new Error('Uno o más modificadores no existen o están inactivos');
+                error.codigoHttp = 400;
+                throw error;
+            }
+
+            const detalleExistente = new Map(venta.venta_detalle.map((linea) => [linea.id_producto, linea]));
+            let diferenciaCentavos = 0;
+            for (const item of productosNormalizados) {
+                const lineaExistente = detalleExistente.get(item.id_producto);
+                const idsSolicitados = item.modificadores.map(({ modificadorid }) => modificadorid).sort((a, b) => a - b);
+                let precioUnidadCentavos;
+                let modificadoresLinea;
+
+                if (lineaExistente) {
+                    const idsExistentes = lineaExistente.detalle_venta_modificadores
+                        .map(({ modificadorid }) => modificadorid).sort((a, b) => a - b);
+                    if (idsExistentes.length !== idsSolicitados.length ||
+                        idsExistentes.some((id, indice) => id !== idsSolicitados[indice])) {
+                        const error = new Error('El producto ya está en el pedido con otros modificadores');
+                        error.codigoHttp = 409;
+                        throw error;
+                    }
+                    precioUnidadCentavos = Math.round(Number(lineaExistente.precio_unitario) * 100);
+                    modificadoresLinea = lineaExistente.detalle_venta_modificadores.map((item) =>
+                        Math.round(Number(item.precio_aplicado) * 100));
+                    const nuevoSubtotalCentavos = (precioUnidadCentavos +
+                        modificadoresLinea.reduce((total, precio) => total + precio, 0)) *
+                        (lineaExistente.cantidad + item.cantidad);
+                    diferenciaCentavos += nuevoSubtotalCentavos -
+                        Math.round(Number(lineaExistente.subtotal_linea) * 100);
+                    await tx.venta_detalle.update({
+                        where: { id_venta_id_producto: { id_venta: idVenta, id_producto: item.id_producto } },
+                        data: {
+                            cantidad: { increment: item.cantidad },
+                            subtotal_linea: nuevoSubtotalCentavos / 100
+                        }
+                    });
+                    continue;
+                }
+
+                precioUnidadCentavos = Math.round(Number(productosPorId.get(item.id_producto).precio_venta) * 100);
+                const modificadoresNuevos = item.modificadores.map(({ modificadorid }) => ({
+                    modificadorid,
+                    precio_aplicado: Number(modificadoresPorId.get(modificadorid).precio)
+                }));
+                modificadoresLinea = modificadoresNuevos.map(({ precio_aplicado }) =>
+                    Math.round(precio_aplicado * 100));
+                const subtotalLineaCentavos = (precioUnidadCentavos +
+                    modificadoresLinea.reduce((total, precio) => total + precio, 0)) * item.cantidad;
+                diferenciaCentavos += subtotalLineaCentavos;
+                await tx.venta_detalle.create({
+                    data: {
+                        id_venta: idVenta,
+                        id_producto: item.id_producto,
+                        cantidad: item.cantidad,
+                        precio_unitario: precioUnidadCentavos / 100,
+                        subtotal_linea: subtotalLineaCentavos / 100,
+                        detalle_venta_modificadores: { create: modificadoresNuevos }
+                    }
+                });
+            }
+
+            const totalCentavos = Math.round(Number(venta.total) * 100) + diferenciaCentavos;
+            if (totalCentavos <= 0 || totalCentavos > 9999999999) {
+                const error = new Error('El total excede el límite permitido');
+                error.codigoHttp = 400;
+                throw error;
+            }
+            const total = totalCentavos / 100;
+            const { subtotal, iva } = calcularIVA(total);
+            const pagos = await tx.pagos.aggregate({
+                where: { id_venta: idVenta },
+                _sum: { monto: true }
+            });
+            const estado = Number(pagos._sum.monto ?? 0) > 0 ? 'parcial' : 'pendiente';
+
+            const inventario = await ejecutarExplosion(tx, productosNormalizados, {
+                sucursalid: venta.sucursalid,
+                id_usuario: req.auth.usuario.id_usuario,
+                referencia: `pedido-adicional:${idVenta}`
+            });
+            await tx.ventas.update({
+                where: { id_venta: idVenta },
+                data: { subtotal, iva, total, estado }
+            });
+            return { total, inventario };
+        }, { isolationLevel: 'Serializable' });
+
+        return res.json({ mensaje: 'Productos agregados al pedido', total: resultado.total, inventario: resultado.inventario });
+    } catch (error) {
+        if (error.codigoHttp) return res.status(error.codigoHttp).json({ mensaje: error.message });
+        if (error instanceof ErrorInventario) {
+            return res.status(error.codigoHttp).json({ mensaje: error.message, detalle: error.detalle });
+        }
+        console.error('Error al agregar productos al pedido:', error);
+        return res.status(500).json({ mensaje: 'No se pudieron agregar productos al pedido' });
     }
 });
 
@@ -624,18 +788,6 @@ app.post('/api/login', async (req,res) => {
                 @sucursalid = ${sucursalSeleccionada.sucursalid}
         `;
 
-        const cuentaEmpleado = !usuarioEncontrado && correo.includes('@')
-            ? await prisma.usuarios.findFirst({
-                where: { correo: correo.trim(), id_empleado: { not: null } },
-                select: { id_usuario: true }
-            })
-            : null;
-        if (!usuarioEncontrado && !cuentaEmpleado && correo.includes('@')) {
-            [usuarioEncontrado] = await prisma.$queryRaw`
-                EXEC dbo.sp_login_cliente @correo = ${correo.trim()}, @password = ${password}
-            `;
-        }
-
         if(!usuarioEncontrado){
             return res.status(401).json({
                 mensaje: 'Credenciales incorrectas o usuario no registrado en esta sucursal'
@@ -663,51 +815,6 @@ app.post('/api/logout', requerirAutenticacion, (req, res) => {
     cerrarSesion(req.auth.token);
     return res.json({ mensaje: 'Sesión cerrada' });
 });
-
-app.post('/api/clientes/registro', async (req, res) => {
-    const { nombre, correo, password, telefono } = req.body ?? {};
-    if (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 150 ||
-        typeof correo !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim()) ||
-        correo.trim().length > 150 ||
-        typeof password !== 'string' || password.length < 8 || password.length > 100 ||
-        (telefono !== undefined && telefono !== null &&
-            (typeof telefono !== 'string' || telefono.length > 20))) {
-        return res.status(400).json({ mensaje: 'Revisa nombre, correo, contraseña y teléfono' });
-    }
-
-    try {
-        const [usuario] = await prisma.$queryRaw`
-            EXEC dbo.sp_registrar_cliente_usuario
-                @nombre = ${nombre.trim()},
-                @correo = ${correo.trim()},
-                @password = ${password},
-                @telefono = ${telefono?.trim() || null}
-        `;
-        const filasPermisos = await prisma.$queryRaw`
-            EXEC dbo.sp_permisos_usuario @id_usuario = ${usuario.id_usuario}
-        `;
-        const permisos = filasPermisos.map((permiso) => permiso.codigo);
-        const token = crearSesion(usuario, permisos);
-        return res.status(201).json({
-            mensaje: 'Cuenta creada',
-            token,
-            usuario: { ...usuario, permisos }
-        });
-    } catch (error) {
-        const numeroError = error.originalError?.info?.number ?? error.number;
-        if (numeroError === 50025 || error.code === 'P2002' ||
-            [2601, 2627].includes(numeroError)) {
-            return res.status(409).json({ mensaje: 'El correo ya está registrado' });
-        }
-        if ([50020, 50021, 50022, 50023, 50024].includes(numeroError)) {
-            return res.status(400).json({ mensaje: error.message });
-        }
-        console.error('Error al registrar cliente:', error);
-        return res.status(500).json({ mensaje: 'No se pudo registrar la cuenta' });
-    }
-});
-
-app.use('/api/clientes', requerirAutenticacion, clientesRoutes);
 
 app.get('/api/session', requerirAutenticacion, (req, res) => {
     return res.json({

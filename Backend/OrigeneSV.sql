@@ -1,5 +1,7 @@
 --creamos la base de datos
---si la base ya existe (por una ejecucion anterior) se elimina y se vuelve a crear, para que el script siempre arranque desde cero
+--ATENCION: este script elimina y vuelve a crear origenesv.
+--Ejecutarlo solo para una instalacion limpia; detener el backend antes de correrlo.
+--No ejecutar sobre una base con datos que se quieran conservar.
 use master;
 go
 
@@ -60,6 +62,9 @@ go
         tipo_contrato    varchar(50)  null,
         jornada          varchar(50)  null,
         forma_pago       varchar(50)  null,
+        -- INICIO CAMBIO: fecha de fin para contratos definidos.
+        fecha_fin_contrato date null,
+        -- FIN CAMBIO: fecha de fin para contratos definidos.
         constraint fk_empleados_sucursales foreign key (sucursalid) references dbo.sucursales(sucursalid),
         constraint fk_empleados_roles      foreign key (id_rol)      references dbo.roles(id_rol),
         constraint ck_empleados_salario    check (salario_base >= 0),
@@ -127,6 +132,7 @@ go
 create table dbo.clientes (
         id_cliente       int identity(1,1) not null constraint pk_clientes primary key,
         nombre           varchar(150) not null,
+        apellido         varchar(100) null,
         dui              varchar(10)  null,
         nit              varchar(17)  null,
         nrc              varchar(15)  null,
@@ -178,6 +184,8 @@ create table dbo.productos (
         es_reventa   bit null constraint df_productos_es_reventa default (0),
         activo       bit null constraint df_productos_activo default (1),
         stock_actual decimal(10,2) null constraint df_productos_stock default (0.00),
+        imagen       varbinary(max) null,
+        imagen_mime  varchar(50) null,
         constraint ck_productos_precio check (precio_venta >= 0),
         constraint ck_productos_stock  check (stock_actual is null or stock_actual >= 0)
         );
@@ -267,6 +275,7 @@ create table dbo.ventas (
         id_usuario      int not null,
         sucursalid      int null,
         mesaid          int null,
+        nombre_cliente  varchar(150) null,
         fecha_hora      datetime null constraint df_ventas_fecha default (getdate()),
         tipo_documento  varchar(30) not null,
         correlativo     varchar(50) not null constraint uq_ventas_correlativo unique,
@@ -518,9 +527,10 @@ if not exists (
 go
 
 --------Niveles de acceso y permisos--------
+-- INICIO CAMBIOS: niveles y permisos separados por funcion y alcance de RR. HH.
 create table dbo.niveles_acceso (
     id_nivel    int identity(1,1) not null constraint pk_niveles_acceso primary key,
-    codigo      varchar(20)  not null constraint uq_niveles_acceso_codigo unique,  -- administrador | gerente | empleado | cliente
+    codigo      varchar(20)  not null constraint uq_niveles_acceso_codigo unique,  -- administrador | gerente | rrhh | empleado | cliente
     descripcion varchar(255) null
 );
 go
@@ -550,7 +560,7 @@ go
 alter table dbo.roles add constraint fk_roles_nivel foreign key (id_nivel) references dbo.niveles_acceso(id_nivel);
 go
 
---usuarios: un cliente tambien tiene cuenta (columna nueva id_cliente). una cuenta es de un empleado o de un cliente, nunca de ambos
+--usuarios conserva id_cliente solo para compatibilidad con datos historicos; la aplicacion no crea cuentas de cliente
 alter table dbo.usuarios add id_cliente int null;
 go
 
@@ -563,7 +573,7 @@ if not exists (select 1 from sys.indexes where name = N'ux_usuarios_cliente' and
     create unique index ux_usuarios_cliente on dbo.usuarios (id_cliente) where id_cliente is not null;
 go
 
---reservas: necesaria para que el cliente y el empleado puedan consultar reservas
+--reservas: los empleados registran las reservas y los clientes se guardan como contactos
 create table dbo.reservas (
     id_reserva        int identity(1,1) not null constraint pk_reservas primary key,
     mesaid            int not null,                  -- la sucursal se obtiene de la mesa
@@ -588,15 +598,18 @@ if not exists (select 1 from sys.indexes where name = N'ix_reservas_mesa_fecha' 
 go
 
 --------seccion de datos de referencias--------
---rol de pantalla_inicio, para que lso roles tengan la pantalla de inicio
+--roles de pantalla_inicio, con RR. HH. separado de administracion del sistema
 insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
 select v.nombre, v.descripcion, v.es_admin, v.pantalla
 from (values
     ('administrador', 'administracion del sistema',            1, 'panel_principal'),
-    ('rrhh',          'personal y planillas',                  1, 'empleados'),
+    ('rrhh',          'personal y planillas',                  0, 'empleados'),
     ('cajero',        'ventas y operaciones de caja',          0, 'caja'),
     ('mesero',        'pedidos y atencion en salon',           0, 'toma_pedidos'),
-    ('cocinero',      'consulta y preparacion de pedidos',     0, 'cocina')
+    ('cocinero',      'consulta y preparacion de pedidos',     0, 'cocina'),
+    ('barista',       'preparacion de bebidas y toma de pedidos', 0, 'toma_pedidos'),
+    ('contabilidad',  'consulta de caja y planillas',          0, 'caja'),
+    ('compras',       'compras, proveedores e inventario',     0, 'compras')
 ) as v(nombre, descripcion, es_admin, pantalla)
 where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
 go
@@ -669,8 +682,14 @@ select v.codigo, v.descripcion
 from (values
     ('administrador', 'puede ver y hacer todo en el sistema'),
     ('gerente',       'hace las tareas de gerente: operacion, compras, inventario, personal y reportes'),
-    ('empleado',      've reservas y lo relacionado a su trabajo y su propia informacion'),
-    ('cliente',       'solo ve el menu, las reservas disponibles y sus propias reservas')
+    ('rrhh',          'gestiona personal y planillas en todas las sucursales, sin funciones operativas'),
+    ('cajero',        'registra ventas y opera caja'),
+    ('mesero',        'toma pedidos y consulta mesas y reservas'),
+    ('cocinero',      'consulta y actualiza pedidos de cocina'),
+    ('barista',       'toma pedidos y consulta menu, mesas y reservas'),
+    ('contabilidad',  'consulta caja y planillas'),
+    ('compras',       'gestiona compras, proveedores e inventario'),
+    ('empleado',      've reservas y lo relacionado a su trabajo y su propia informacion')
 ) as v(codigo, descripcion)
 where not exists (select 1 from dbo.niveles_acceso n where n.codigo = v.codigo);
 go
@@ -680,11 +699,8 @@ insert into dbo.permisos (codigo, descripcion)
 select v.codigo, v.descripcion
 from (values
 
-    --lo que puede ver un cliente
     ('ver_menu',                 'consultar el menu de productos'),
     ('ver_reservas_disponibles', 'consultar mesas y horarios disponibles para reservar'),
-    ('ver_mis_reservas',         'ver las reservas propias del cliente'),
-    ('ver_mi_perfil',            'ver los datos propios de la cuenta'),
 
     --lo que puede hacer un empleado
     ('ver_reservas',             'ver todas las reservas de la sucursal'),
@@ -698,6 +714,7 @@ from (values
     ('gestionar_reservas',       'crear, confirmar y cancelar reservas'),
     ('ver_empleados',            'ver el listado y las fichas de los empleados'),
     ('registrar_empleados',      'registrar nuevos empleados'),
+    ('gestionar_empleados_todas_sucursales', 'gestionar empleados de cualquier sucursal'),
     ('ver_planillas',            'ver las planillas generadas'),
     ('generar_planillas',        'generar la planilla de un periodo'),
     ('ver_inventario',           'ver el inventario de insumos'),
@@ -707,6 +724,7 @@ from (values
     ('ver_proveedores',          'ver el listado de proveedores'),
     ('ver_ventas',               'ver las ventas realizadas'),
     ('operar_caja',              'abrir y cerrar caja y registrar movimientos'),
+    ('ver_caja',                 'consultar caja y sus movimientos sin modificarla'),
     ('ver_reportes',             'ver los reportes del negocio'),
     ('gestionar_productos',      'crear y editar productos del menu y sus recetas'),
 
@@ -718,15 +736,17 @@ from (values
 where not exists (select 1 from dbo.permisos p where p.codigo = v.codigo);
 go
 
---permisos del cliente (usuario normal): solo ver menu, reservas disponibles y lo suyo
---(para que el cliente tambien pueda reservar, crear un permiso 'crear_reserva' y asignarlo aqui)
+--permisos de recursos humanos: personal y planillas, sin pedidos ni operaciones de sucursal
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
 select n.id_nivel, p.id_permiso
 from (values
-    ('cliente', 'ver_menu'),
-    ('cliente', 'ver_reservas_disponibles'),
-    ('cliente', 'ver_mis_reservas'),
-    ('cliente', 'ver_mi_perfil')
+    ('rrhh', 'ver_empleados'),
+    ('rrhh', 'registrar_empleados'),
+    ('rrhh', 'gestionar_empleados_todas_sucursales'),
+    ('rrhh', 'ver_planillas'),
+    ('rrhh', 'generar_planillas'),
+    ('rrhh', 'ver_mi_ficha'),
+    ('rrhh', 'ver_mi_planilla')
 ) as v(nivel, permiso)
 join dbo.niveles_acceso n on n.codigo = v.nivel
 join dbo.permisos       p on p.codigo = v.permiso
@@ -744,11 +764,95 @@ from (values
     ('empleado', 'tomar_pedidos'),
     ('empleado', 'ver_pedidos_cocina'),
     ('empleado', 'ver_mi_ficha'),
-    ('empleado', 'ver_mi_planilla'),
-    ('empleado', 'ver_mi_perfil')
+    ('empleado', 'ver_mi_planilla')
 ) as v(nivel, permiso)
 join dbo.niveles_acceso n on n.codigo = v.nivel
 join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del cajero: ventas, menu, mesas y caja; sin cocina ni recursos humanos
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('cajero', 'ver_menu'),
+    ('cajero', 'ver_mesas'),
+    ('cajero', 'ver_reservas'),
+    ('cajero', 'ver_reservas_disponibles'),
+    ('cajero', 'gestionar_reservas'),
+    ('cajero', 'tomar_pedidos'),
+    ('cajero', 'ver_ventas'),
+    ('cajero', 'operar_caja'),
+    ('cajero', 'ver_mi_ficha'),
+    ('cajero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del mesero: toma pedidos y atiende mesas, sin caja ni cocina
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('mesero', 'ver_menu'),
+    ('mesero', 'ver_reservas'),
+    ('mesero', 'ver_reservas_disponibles'),
+    ('mesero', 'gestionar_reservas'),
+    ('mesero', 'ver_mesas'),
+    ('mesero', 'tomar_pedidos'),
+    ('mesero', 'ver_mi_ficha'),
+    ('mesero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+--permisos del cocinero: solo pedidos de cocina y datos laborales propios
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('cocinero', 'ver_menu'),
+    ('cocinero', 'ver_mesas'),
+    ('cocinero', 'ver_reservas'),
+    ('cocinero', 'ver_reservas_disponibles'),
+    ('cocinero', 'tomar_pedidos'),
+    ('cocinero', 'ver_pedidos_cocina'),
+    ('cocinero', 'ver_mi_ficha'),
+    ('cocinero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('barista', 'ver_menu'),
+    ('barista', 'ver_reservas'),
+    ('barista', 'ver_reservas_disponibles'),
+    ('barista', 'ver_mesas'),
+    ('barista', 'tomar_pedidos'),
+    ('barista', 'ver_pedidos_cocina'),
+    ('barista', 'ver_mi_ficha'),
+    ('barista', 'ver_mi_planilla'),
+    ('contabilidad', 'ver_caja'),
+    ('contabilidad', 'ver_planillas'),
+    ('contabilidad', 'ver_mi_ficha'),
+    ('contabilidad', 'ver_mi_planilla'),
+    ('compras', 'ver_menu'),
+    ('compras', 'ver_inventario'),
+    ('compras', 'gestionar_inventario'),
+    ('compras', 'ver_compras'),
+    ('compras', 'registrar_compras'),
+    ('compras', 'ver_proveedores'),
+    ('compras', 'ver_mi_ficha'),
+    ('compras', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos p on p.codigo = v.permiso
 where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
 go
 
@@ -794,28 +898,29 @@ where a.codigo = 'administrador'
   and not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = a.id_nivel and x.id_permiso = p.id_permiso);
 go
 
---roles nuevos: gerente y cliente (los nombres van en minuscula para coincidir con los roles ya existentes)
+--rol nuevo de gerente
 insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
 select v.nombre, v.descripcion, v.es_admin, v.pantalla
 from (values
-    ('gerente', 'gerente de sucursal: operacion, compras, inventario y personal', 1, 'panel_gerente'),
-    ('cliente', 'cliente: consulta el menu y las reservas disponibles',           0, 'menu_reservas')
+    ('gerente', 'gerente de sucursal: operacion, compras, inventario y personal', 1, 'panel_gerente')
 ) as v(nombre, descripcion, es_admin, pantalla)
 where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
 go
 
---a que nivel pertenece cada rol (rrhh queda en el nivel gerente; se puede cambiar con un update)
+--a que nivel pertenece cada rol
 update r
 set r.id_nivel = n.id_nivel
 from dbo.roles r
 join (values
     ('administrador', 'administrador'),
     ('gerente',       'gerente'),
-    ('rrhh',          'gerente'),
-    ('cajero',        'empleado'),
-    ('mesero',        'empleado'),
-    ('cocinero',      'empleado'),
-    ('cliente',       'cliente')
+    ('rrhh',          'rrhh'),
+    ('cajero',        'cajero'),
+    ('mesero',        'mesero'),
+    ('cocinero',      'cocinero'),
+    ('barista',       'barista'),
+    ('contabilidad',  'contabilidad'),
+    ('compras',       'compras')
 ) as m(rol, nivel) on m.rol = r.nombre_rol
 join dbo.niveles_acceso n on n.codigo = m.nivel
 where r.id_nivel is null;
@@ -825,6 +930,7 @@ go
 if not exists (select 1 from dbo.roles where id_nivel is null)
     alter table dbo.roles alter column id_nivel int not null;
 go
+-- FIN CAMBIOS: niveles y permisos separados por funcion y alcance de RR. HH.
 
 --------sentencias para el login y registro de los empleados--------
 --normalizamos el texto que se ingrese:
@@ -1103,103 +1209,6 @@ begin
 end;
 go
 
---registro de un cliente (usuario normal): crea el cliente y su cuenta en una sola transaccion
-create or alter procedure dbo.sp_registrar_cliente_usuario
-    @nombre   nvarchar(150),
-    @correo   varchar(150),
-    @password varchar(100),
-    @telefono varchar(20) = null
-as
-begin
-    set nocount on;
-    set xact_abort on;
-    set @nombre   = ltrim(rtrim(isnull(@nombre, N'')));
-    set @correo   = lower(ltrim(rtrim(isnull(@correo, ''))));
-    set @telefono = nullif(ltrim(rtrim(isnull(@telefono, ''))), '');
-    if @nombre = N''
-        throw 50020, 'el nombre es obligatorio.', 1;
-    if @correo not like '_%@_%._%' or @correo like '% %'
-        throw 50021, 'el correo no tiene un formato valido.', 1;
-    if len(isnull(@password, '')) < 8
-        throw 50022, 'la contrasena debe tener al menos 8 caracteres.', 1;
-
-    --los correos @origene.sv se generan solo para empleados: un cliente no puede usarlos
-    if @correo like '%@origene.sv'
-        throw 50023, 'los correos @origene.sv son solo para empleados.', 1;
-    declare @id_rol int;
-    select @id_rol = id_rol from dbo.roles where nombre_rol = 'cliente';
-    if @id_rol is null
-        throw 50024, 'no existe el rol cliente.', 1;
-    begin try
-        begin tran;
-        if exists (select 1 from dbo.usuarios with (updlock, holdlock) where correo = @correo)
-            throw 50025, 'ese correo ya esta registrado.', 1;
-        insert into dbo.clientes (nombre, telefono, correo)
-        values (@nombre, @telefono, @correo);
-        declare @id_cliente int = scope_identity();
-        declare @salt varchar(32) = convert(varchar(32), crypt_gen_random(16), 2);
-
-        --el cliente elige su propia contrasena, por eso no se exige cambiarla (debe_cambiar_password = 0)
-        insert into dbo.usuarios
-            (id_rol, id_cliente, nombre_completo, correo, password_hash, password_salt, debe_cambiar_password)
-        values
-            (@id_rol, @id_cliente, @nombre, @correo, dbo.fn_hash_password(@password, @salt), @salt, 0);
-        declare @id_usuario int = scope_identity();
-        commit tran;
-        select @id_usuario as id_usuario,
-               @id_cliente as id_cliente,
-               @nombre     as nombre_completo,
-               @correo     as correo,
-               'cliente'   as rol,
-               'cliente'   as nivel_acceso;
-    end try
-    begin catch
-        if xact_state() <> 0 rollback tran;
-        throw;
-    end catch;
-end;
-go
-
---login del cliente: devuelve una fila si el correo y la contrasena son correctos; cero filas si no
-create or alter procedure dbo.sp_login_cliente
-    @correo   varchar(150),
-    @password varchar(100)
-as
-begin
-    set nocount on;
-    declare @id_usuario int, @salt varchar(32), @hash varchar(255), @ok bit = 0;
-    set @correo = lower(ltrim(rtrim(isnull(@correo, ''))));
-
-    --solo cuentas de cliente (id_cliente no nulo): un empleado no entra por aqui
-    select top (1)
-           @id_usuario = u.id_usuario,
-           @salt       = u.password_salt,
-           @hash       = u.password_hash
-    from dbo.usuarios u
-    where u.activo = 1
-      and u.id_cliente is not null
-      and u.correo = @correo;
-    if @id_usuario is not null and @hash = dbo.fn_hash_password(isnull(@password, ''), @salt)
-        set @ok = 1;
-    if @ok = 0
-        return;
-    update dbo.usuarios set ultimo_acceso = getdate() where id_usuario = @id_usuario;
-    select u.id_usuario,
-           c.id_cliente,
-           c.nombre          as nombre_completo,
-           u.correo,
-           r.nombre_rol      as rol,
-           n.codigo          as nivel_acceso,
-           r.pantalla_inicio,
-           u.debe_cambiar_password
-    from dbo.usuarios u
-    join dbo.clientes c       on c.id_cliente = u.id_cliente
-    join dbo.roles r          on r.id_rol = u.id_rol
-    join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
-    where u.id_usuario = @id_usuario;
-end;
-go
-
 --funcion para ver si un usuario tiene un permiso (el administrador siempre tiene todos)
 create or alter function dbo.fn_tiene_permiso (@id_usuario int, @codigo_permiso varchar(50))
 returns bit
@@ -1314,6 +1323,7 @@ if exists (
 go
 
 --------vistas de consulta--------
+-- INICIO CAMBIOS DE VISTAS: vistas de reportes, ficha de empleados y menu publico.
 --consulta cuando este por debajo de el minimo o en el minimo.
 create or alter view dbo.v_reporte_alertas_stock
 as
@@ -1379,6 +1389,7 @@ as
            e.tipo_planilla,
            e.salario_base,
            e.fecha_ingreso,
+           e.fecha_fin_contrato,
            e.isss_numero,
            e.afp_numero,
            u.correo as correo_login,
@@ -1400,6 +1411,7 @@ as
     from dbo.productos p
     where p.activo = 1;
 go
+-- FIN CAMBIOS DE VISTAS.
 
 --------datos de prueba utilizados para la bd--------
 set nocount on;
@@ -1488,11 +1500,10 @@ if not exists (select 1 from dbo.empleados where dui = '00000006-6')
 select * from #credenciales order by id_empleado;
 drop table #credenciales;
 
--------- cliente de prueba -> cliente.prueba@correo.com / cliente2026 --------
-if not exists (select 1 from dbo.usuarios where correo = 'cliente.prueba@correo.com')
-    exec dbo.sp_registrar_cliente_usuario
-        @nombre = N'cliente de prueba', @correo = 'cliente.prueba@correo.com',
-        @password = 'cliente2026', @telefono = '7000-0000';
+-------- contacto de prueba (no crea cuenta ni contrasena) --------
+if not exists (select 1 from dbo.clientes where telefono = '7000-0000')
+    insert into dbo.clientes (nombre, telefono)
+    values (N'cliente de prueba', '7000-0000');
 go
 
 -- conteo basico para confirmar que la instalacion termino bien.
@@ -1634,30 +1645,18 @@ exec dbo.sp_registrar_empleado
     @sucursalid = @sucursalid,
         @codigo_empleado = '100012';
 
---registramos clientes
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'juan perez',
-    @correo = 'juan.perez@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000001';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'lucia ramirez',
-    @correo = 'lucia.ramirez@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000002';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'andres flores',
-    @correo = 'andres.flores@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000003';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'sofia castillo',
-    @correo = 'sofia.castillo@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000004';
+--registramos contactos para reservas, sin crear cuentas de usuario
+insert into dbo.clientes (nombre, telefono)
+select v.nombre, v.telefono
+from (values
+    ('juan', '70000001'),
+    ('lucia', '70000002'),
+    ('andres', '70000003'),
+    ('sofia', '70000004')
+) v(nombre, telefono)
+where not exists (
+    select 1 from dbo.clientes c where c.telefono = v.telefono
+);
 
 --consultamos apra ver el usuario registrado
 select

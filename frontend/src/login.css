@@ -59,6 +59,27 @@ body {
     background-color: #99422d !important;
 }
 
+.login-password-help {
+    margin: -12px 0 16px;
+    color: #6b6f68;
+    font-size: 13px;
+}
+
+.login-password-help button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #99422d;
+    font: inherit;
+    text-decoration: underline;
+}
+
+.login-password-help p {
+    margin: 8px 0 0;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
 
 input[type="radio"]:focus,
 input[type="radio"]:active,

@@ -11,6 +11,7 @@ function Login({ onLogin }) {
     const [cargandoSucursales, setCargandoSucursales] = useState(true);
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
+    const [mostrarAyudaPassword, setMostrarAyudaPassword] = useState(false);
 
     useEffect(() => {
         let activo = true;
@@ -118,6 +119,20 @@ function Login({ onLogin }) {
                                                     autoComplete="current-password"
                                                     required
                                                 />
+                                            </div>
+                                            <div className="login-password-help">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMostrarAyudaPassword((actual) => !actual)}
+                                                >
+                                                    ¿Perdiste tu contraseña?
+                                                </button>
+                                                {mostrarAyudaPassword && (
+                                                    <p role="status">
+                                                        Solicita un restablecimiento a RR. HH. o a un administrador.
+                                                        Por seguridad, no se puede cambiar una contraseña sin verificar la identidad.
+                                                    </p>
+                                                )}
                                             </div>
                                             {error && <div className="alert alert-danger" role="alert">{error}</div>}
                                             <button

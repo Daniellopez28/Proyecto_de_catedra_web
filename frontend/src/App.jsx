@@ -17,7 +17,6 @@ import ProductosPage from './pages/ProductosPage.jsx';
 import UsuariosPage from './pages/UsuariosPage.jsx';
 import AdministracionPage from './pages/AdministracionPage.jsx';
 import ReportesPage from './pages/ReportesPage.jsx';
-import PerfilPage from './pages/PerfilPage.jsx';
 
 const titulos = {
     inicio: 'Inicio',
@@ -31,8 +30,7 @@ const titulos = {
     planillas: 'Planillas',
     usuarios: 'Usuarios',
     administracion: 'Administración',
-    reportes: 'Reportes',
-    perfil: 'Mi perfil'
+    reportes: 'Reportes'
 };
 
 function App() {
@@ -157,7 +155,13 @@ function App() {
         const permisos = sesion.usuario.permisos;
         switch (paginaActual) {
             case 'ventas':
-                return <VentasPage permisos={permisos} />;
+                return (
+                    <VentasPage
+                        permisos={permisos}
+                        usuario={sesion.usuario}
+                        onGestionarMenu={() => setPagina('productos')}
+                    />
+                );
             case 'reservas':
                 return <ReservasPage permisos={permisos} usuario={sesion.usuario} />;
             case 'caja':
@@ -178,8 +182,6 @@ function App() {
                 return <AdministracionPage permisos={permisos} />;
             case 'reportes':
                 return <ReportesPage />;
-            case 'perfil':
-                return <PerfilPage />;
             default:
                 return (
                     <InicioPage

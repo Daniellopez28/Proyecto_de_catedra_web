@@ -53,17 +53,14 @@ function Login({ onLogin }) {
             <div className='mainContainer'>
                 <div className="px-4 py-5 px-md-5 text-center text-lg-start" >
                     <div className="container" >
-                        <div className="row gx-lg-5 align-items-center" >
-                            <div className="col-lg-6 mb-5 mb-lg-5">
-                                <img className="login-brand-logo" src="/brand/origenes-logo.png" alt="Orígenes SV" />
+                        <div className="row gx-lg-1 align-items-center" >
+                            <div className="col-lg-6 mb-5 mb-lg-1">
+                                <img className="login-brand-logo mx-auto mx-lg-0" src="/brand/origenes-logo.png" alt="Orígenes SV" />
                                 <h1 className="my-5 display-3 fw-bold ls-tight">
                                     Todo listo <br />
                                     <span>para un buen servicio</span>
                                 </h1>
-                                <p className="login-intro">
-                                    Ingresa a tu espacio de trabajo para continuar la
-                                    operación de tu sucursal.
-                                </p>
+                                
                             </div>
 
                             <div className="col-lg-6 mb-5 mb-lg-0" >

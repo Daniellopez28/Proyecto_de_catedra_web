@@ -46,6 +46,12 @@ function App() {
         [sesion?.usuario?.permisos]
     );
 
+     const capitalizar = (texto) => {
+        if (!texto) return '';
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    };
+
+
     useEffect(() => {
         function expirarSesion() {
             borrarSesion();
@@ -229,7 +235,7 @@ function App() {
                         <div>
                             <div className="workspace-user-name">{sesion.usuario.nombre_completo}</div>
                             <div className="workspace-user-detail">
-                                {sesion.usuario.rol} · {sesion.usuario.sucursal || 'Acceso general'}
+                                {(sesion.usuario.rol).toUpperCase()} · {capitalizar(sesion.usuario.sucursal || 'Acceso general')}
                             </div>
                         </div>
                         <button className="workspace-logout" type="button" onClick={cerrar}>Cerrar sesión</button>

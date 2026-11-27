@@ -151,7 +151,7 @@ h6,
 }
 
 .dashboard-welcome {
-  background: linear-gradient(110deg, var(--brand-paper) 0%, var(--brand-cream) 68%, rgba(242, 195, 153, 0.45) 100%);
+  background: var(--brand-paper);
 }
 
 .dashboard-art {

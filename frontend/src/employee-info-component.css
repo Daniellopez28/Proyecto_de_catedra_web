@@ -1,10 +1,4 @@
 
-:root {
-    background-color: #fff8ef;
-    --font-family: 'Quicksand', sans-serif;
-
-}
-
 .employee-card {
     box-sizing: border-box;
     width: 100%;
@@ -87,12 +81,12 @@
     color: #292d29;
 }
 
-.employee-details .employee-detail-row:nth-child(4) {
+.employee-details .employee-detail-row:nth-child(5) {
     color: #292d29;
     font-size: 15px;
 }
 
-.employee-details .employee-detail-row:nth-child(4) strong {
+.employee-details .employee-detail-row:nth-child(5) strong {
     font-size: 18px;
 }
 
@@ -103,36 +97,21 @@
 
 .employee-card-actions {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
     margin-top: 16px;
 }
 
 .employee-card-actions button {
-    padding: 10px 13px;
-    border: 1px solid #e7e6e4;
-    border-radius: 8px;
-    background: #fff;
-    color: #292d29;
-    font: inherit;
+    min-height: 36px;
+    padding: 8px 11px;
     font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
 }
 
-.employee-card-actions button:last-child {
-    border-color: #c53c10;
-    background: #c53c10;
-    color: #fff;
-}
-
-.employee-card-actions button:hover {
-    border-color: #823b0f;
-}
-
-.employee-card-actions button:last-child:hover {
-    background: #823b0f;
+.employee-card-actions button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 @media (max-width: 900px) {

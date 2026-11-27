@@ -169,3 +169,39 @@ En components/success.jsx tenemos un mensaje genérico de confirmación que se u
 La lógica es muy simple: el componente recibe una propiedad isOpen para saber si debe mostrarse o no, y una propiedad onClose para cerrarlo. Si isOpen es falso, el componente no dibuja nada en pantalla.
 
 Lo que toma para avanzar es que el proceso haya sido exitoso. Al darle clic al botón "Aceptar", se ejecuta onClose, la ventana desaparece y el sistema continúa con su flujo normal.
+
+## 13. Vista de Menú y Productos (components/MenuProductosView.jsx)
+
+En components/MenuProductosView.jsx tenemos la pantalla para consultar y administrar el catálogo de platillos y bebidas. Al inicio del archivo hay un arreglo llamado CATALOGO_PRODUCTOS con 14 productos de prueba (Hamburguesa Brasa, Pizza margarita, Latte Grande, etc.) que incluyen su categoría, precio, tipo (elaborado o reventa) y disponibilidad. También traemos un arreglo con las sucursales (Escalón, Santa Tecla, Mejicanos).
+
+![alt text](menu-productos-1.png)
+
+La pantalla tiene una barra superior (topbar) que muestra la marca "Brasa Cocina", la sucursal seleccionada, la fecha y los datos del usuario. Más abajo está el título con el botón "+ Nuevo producto", los filtros por tipo (Todos, Elaborados, Reventa) y un buscador.
+
+![alt text](menu-productos-2.png)
+
+La lógica de los filtros funciona con estados: el usuario selecciona una pestaña o escribe en el buscador, y la lista se actualiza al instante mostrando solo los productos que coinciden. Si un producto tiene "Stock bajo", la fila se pinta de un color diferente para llamar la atención.
+
+![alt text](menu-productos-3.png)
+
+En la tabla, si el producto es de tipo "Elaborado", el botón de "Ver receta" permite seleccionarlo. Al hacer clic en ese botón o en el botón grande de abajo ("Abrir receta"), se ejecuta la función onAbrirReceta que viene desde el componente padre, para que se abra la ventana con los detalles de la preparación. Los productos de "Reventa" (como el café en bolsa) muestran "No aplica" porque no tienen receta.
+
+Lo que toma para avanzar es que el usuario seleccione un filtro o haga una búsqueda. Al final de la tabla hay un pie de página que indica cuántos productos se están mostrando de la lista total, y unas etiquetas que recuerdan las reglas del inventario (los elaborados descuentan insumos, los de reventa descuentan una unidad del producto).
+
+## 14. Vista de Proveedores y Cuentas por Pagar (components/ProveedoresView.jsx)
+
+En components/ProveedoresView.jsx tenemos la pantalla para gestionar los proveedores y llevar el control de las facturas pendientes de pago. Al inicio del archivo definimos tres arreglos: KPI_TARJETAS (con los totales de deudas vencidas, próximas y pendientes), PROVEEDORES_DATA (con los datos de cada proveedor, su contacto y saldo) y FACTURAS_PENDIENTES_DATA (con los detalles de las facturas por pagar).
+
+![alt text](proveedores-1.png)
+
+La pantalla está dividida en varios bloques. Arriba tenemos la barra superior con la marca y el usuario, luego el título "Proveedores y cuentas por pagar" con el botón "+ Nuevo proveedor". Debajo hay cuatro tarjetas de resumen (KPI) que muestran los montos totales pendientes, vencidos y próximos a vencer.
+
+![alt text](proveedores-2.png)
+
+Los filtros (Todos, Con saldo, Vencidos) funcionan igual que en la vista de productos: al seleccionar uno, la tabla de proveedores se filtra. Si el usuario hace clic en una fila de la tabla, se selecciona ese proveedor y el panel de la derecha cambia para mostrar los detalles.
+
+![alt text](proveedores-3.png)
+
+En el panel derecho se muestra el nombre del proveedor, su estado de cuenta (si tiene un pago parcial o si la factura está vencida) y los detalles de la compra: fecha de vencimiento, clasificación (costo o gasto), base más IVA, total de la factura y el abono que se ha hecho.
+
+Lo que toma para avanzar es que el usuario seleccione un proveedor para ver su estado de cuenta. El botón "Preparar abono" ejecuta la función onPrepararAbono que viene desde el componente padre, para que se abra el formulario de pago. En la parte de abajo hay una tarjeta con el historial de pago y el pie de página con las etiquetas de la operación.

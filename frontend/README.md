@@ -80,3 +80,5 @@ Lo que toma para avanzar es que los permisos que envía el backend coincidan con
 
 ## 6. Inicio de sesión (components/login.jsx)
 En components/login.jsx tenemos el formulario para iniciar sesión contra el backend. Traemos useState para guardar el correo (o código de empleado), la contraseña, el mensaje de error y el estado de carga. También importamos los estilos de Bootstrap y los estilos propios de ../src/login.css.
+
+![alt text](login-jsx-1.png)

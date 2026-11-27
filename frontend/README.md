@@ -323,3 +323,54 @@ La pantalla se divide en tres grandes bloques. El primero permite crear un rol n
 El tercer bloque es para registrar y editar sucursales, donde se piden el nombre, la dirección, el teléfono y el estado (activa o inactiva). 
 
 Lo que toma para avanzar es que el usuario tenga los permisos 'gestionar_roles_permisos' o 'gestionar_sucursales'. Como un cambio en los permisos puede afectar la seguridad, al guardar los permisos de un rol, el sistema cierra la sesión de todos los usuarios activos para que vuelvan a entrar con los permisos actualizados.
+
+## 23. Página de Inicio (pages/InicioPage.jsx)
+
+En pages/InicioPage.jsx tenemos el panel de bienvenida que ve el usuario apenas inicia sesión. Traemos useEffect para consultar el estado de la API (la ruta /health) y mostrar si el sistema está conectado o si hay problemas de red. 
+
+![alt text](inicio-page-1.png)
+
+La pantalla muestra un saludo personalizado con el nombre del usuario, su rol y la sucursal en la que está trabajando. Más abajo hay tarjetas con el estado de la sesión, la cantidad de módulos a los que tiene acceso y el estado de conexión con el servidor. Al final de la pantalla se listan todos los módulos permitidos para que el usuario sepa a dónde puede ir.
+
+Lo que toma para avanzar es que el backend esté encendido. Si la API responde bien, la tarjeta de conexión se pinta de verde; si falla, se muestra una alerta amarilla indicando que no hay conexión.
+
+![alt text](inicio-page-2.png)
+
+## 24. Página de Reportes (pages/ReportesPage.jsx)
+
+En pages/ReportesPage.jsx tenemos la vista para consultar los reportes de ventas, inventario y planillas. Traemos useState para controlar qué pestaña está activa (Ventas, Inventario o Planillas) y cargar los datos correspondientes desde el backend.
+
+![alt text](reportes-page-1.png)
+
+La pantalla muestra una tabla con los datos del reporte seleccionado. En ventas, por ejemplo, se muestra el total vendido por sucursal, la cantidad de transacciones y el tipo de documento. En inventario se muestran los insumos con su stock y costo, y en planillas los pagos realizados. 
+
+Lo que toma para avanzar es que el usuario tenga el permiso 'ver_reportes'. Si no hay datos en el período seleccionado, la pantalla muestra un mensaje indicando que no se encontraron registros.
+
+## 25. Página de Reservas (pages/ReservasPage.jsx)
+
+En pages/ReservasPage.jsx tenemos la vista para gestionar las mesas y las reservas del restaurante. Traemos useState para manejar la fecha y hora de la reserva, la cantidad de personas y la sucursal. También cargamos la lista de mesas disponibles desde el backend.
+
+![alt text](reservas-page-1.png)
+
+La pantalla tiene una sección para buscar disponibilidad, donde el usuario ingresa la fecha, la hora y cuántas personas van a llegar. Al buscar, el sistema consulta qué mesas están libres y las muestra en una lista. Luego se puede crear la reserva asignando un cliente a esa mesa.
+
+![alt text](reservas-page-2.png)
+
+Si el usuario tiene permisos de gestión, también puede ver la lista de todas las reservas (confirmadas, pendientes o canceladas) y cambiar su estado. Para las mesas, hay una sección donde se pueden crear nuevas, marcarlas como ocupadas o liberarlas.
+
+Lo que toma para avanzar es que el usuario elija una sucursal y una fecha válida. Al crear una reserva, el backend valida que la mesa no esté ocupada y que el cliente no tenga otra reserva a la misma hora.
+
+## 26. Archivos de estilos globales y la identidad visual
+
+Todo el sistema utiliza un diseño unificado basado en la identidad de Orígenes SV. En la carpeta src/ encontramos varios archivos .css que se encargan de esto:
+
+- **brand.css**: Define los colores de la marca (el marrón, el naranja y los tonos crema), las fuentes oficiales (Manrope para los títulos y Quicksand para el texto) y las reglas globales para botones, menús y formularios.
+- **index.css**: Contiene los estilos base del navegador, resetea los márgenes y define la tipografía por defecto.
+- **workspace.css**: Se encarga de la estructura del layout principal (la barra lateral, el encabezado y el área de contenido).
+- **login.css, employee-add.css, success.css, MenuProductosView.css, ProveedoresView.css, etc.**: Cada componente o página importante tiene su propio archivo de estilos para que el código sea más fácil de mantener.
+
+![alt text](brand-css-1.png)
+
+También tenemos la carpeta **assets/**, que guarda los íconos en formato SVG (como las cajas, la calculadora, el carrito, el usuario, etc.) que se usan en el menú lateral y en los formularios. Y la carpeta **public/brand/** guarda los logos oficiales de la empresa (el isotipo y el logo completo).
+
+Lo que toma para avanzar es que estos archivos se importen en los componentes correctos. Si la marca cambia en el futuro, solo hay que modificar las variables en brand.css y todo el sistema se actualizará automáticamente.

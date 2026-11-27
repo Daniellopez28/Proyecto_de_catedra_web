@@ -29,8 +29,6 @@ docker run --name origenesv-sqlserver `
   -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
-Reemplaza la contraseña de ejemplo por una clave propia y utiliza esa misma clave en `DATABASE_URL`. No publiques contraseñas reales en el repositorio.
-
 Abre `Backend/OrigeneSV.sql` en SQL Server Management Studio y ejecútalo contra la instancia. **El script elimina la base `OrigeneSV` si ya existe y la crea de nuevo.** Esto borra sus datos anteriores; haz una copia de seguridad antes de ejecutarlo si necesitas conservarlos.
 
 Para cargar los datos de ejemplo de recetas e inventario, ejecuta después `Backend/sql/datos_inventario_recetas.sql`.
@@ -40,7 +38,7 @@ Para cargar los datos de ejemplo de recetas e inventario, ejecuta después `Back
 Crea `Backend/.env` con la URL de conexión. El ejemplo utiliza el puerto local `1432` publicado por Docker:
 
 ```env
-DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=TU_CLAVE;encrypt=true;trustServerCertificate=true"
+DATABASE_URL=sqlserver://localhost:1432;database=origenesv;user=sa;password=ProyectoWeb@2026;encrypt=true;trustServerCertificate=true
 ```
 
 Desde una terminal ubicada en la raíz del repositorio:
@@ -99,7 +97,6 @@ Backend/
 │   └── routes/
 │       ├── administracion.routes.js
 │       ├── caja.routes.js
-│       ├── clientes.routes.js
 │       ├── compras.routes.js
 │       ├── empleados.routes.js
 │       ├── mesas.routes.js
@@ -109,11 +106,16 @@ Backend/
 │       ├── proveedores.routes.js
 │       ├── reportes.routes.js
 │       ├── reservas.routes.js
-│       └── usuarios.routes.js
+│       ├── usuarios.routes.js
+│       └── ventas.routes.js
 ├── prisma/
 │   └── schema.prisma
 ├── sql/
-│   └── datos_inventario_recetas.sql
+│   ├── actualizar_productos_imagen.sql
+│   ├── actualizar_rrhh_contratos.sql
+│   ├── consultas.sql
+│   ├── datos_inventario_recetas.sql
+│   └── sembrar_datos_demo.sql
 ├── pruebas/
 │   ├── autenticacion.prueba.js
 │   ├── inventarioServicio.prueba.js
@@ -137,7 +139,7 @@ Está construido con Node.js y Express. La mayoría de las rutas empieza con `/a
 
 Los módulos principales son:
 
-- **Sesiones y cuentas:** inicio y cierre de sesión, registro de clientes y cambio de contraseña.
+- **Sesiones y cuentas:** inicio y cierre de sesión de empleados y cambio de contraseña.
 - **Ventas y pedidos:** registro de ventas, pagos, consulta de pedidos y transiciones de estado.
 - **Inventario y recetas:** existencias globales o por sucursal, movimientos, alertas, recetas y consumo de ingredientes.
 - **Compras y proveedores:** registro de compras, abonos y actualización del inventario recibido.
@@ -257,20 +259,14 @@ El estado de un pedido solo puede cambiar mediante las transiciones previstas. A
 
 ## 5. Sucursales y alcance de los datos
 
-El backend aplica el ámbito de sucursal en módulos que operan con existencias, ventas, usuarios, mesas o compras:
-
-- Si la sesión tiene una sucursal asignada, el usuario solo puede operar en ella.
-- Una cuenta sin sucursal debe tener el permiso `gestionar_sucursales` y especificar la sucursal cuando el endpoint lo permita.
-- Los handlers comprueban que la sucursal exista y esté activa antes de operar.
-
-La regla concreta también depende del permiso de cada endpoint. No todos los módulos aceptan los mismos filtros.
+Varios handlers limitan consultas y operaciones a la sucursal de la sesión cuando esta está asignada. El comportamiento de cuentas sin sucursal y la validación de que una sede esté activa varían por endpoint; consulta la descripción de cada ruta antes de asumir un alcance global.
 
 ## 6. Errores y concurrencia
 
 Los handlers validan primero los datos recibidos y responden con códigos HTTP adecuados. Entre los más comunes están:
 
 - `400`: datos o filtros inválidos.
-- `401`: token ausente, inválido o expirado.
+- `401`: sesión ausente, inválida o expirada.
 - `403`: falta permiso o se intenta salir del ámbito permitido.
 - `404`: recurso inexistente o no visible dentro del ámbito.
 - `409`: conflicto con el estado actual, falta de existencias o cambio concurrente.
@@ -287,7 +283,7 @@ Las explicaciones siguen el recorrido desde el punto de entrada hasta los módul
 
 ### `src/index.js`
 
-**Propósito:** configura Express, conecta Prisma, monta los routers de cada módulo y contiene directamente los endpoints de salud, sucursales, ventas, login y sesión.
+**Propósito:** configura Express, conecta Prisma, monta los routers de cada módulo y contiene los endpoints de salud, sucursales, login, sesión y cambio de contraseña. Las rutas de ventas están en `src/routes/ventas.routes.js`.
 
 #### Configuración de Express y routers
 
@@ -303,7 +299,7 @@ Lee cuerpos JSON y los deja disponibles en `req.body`. Si el JSON está mal form
 
 Los módulos generales se montan en su prefijo `/api/...`. Empleados, reservas, caja, productos, compras, proveedores, reportes, usuarios, mesas, modificadores, administración e inventario requieren autenticación en el montaje.
 
-El router de planillas instala `requerirAutenticacion` dentro de `planilla.routes.js`. El registro de cliente y el login son públicos; el resto de rutas de clientes se monta con autenticación.
+El router de planillas instala `requerirAutenticacion` dentro de `planilla.routes.js`. Las rutas públicas incluyen salud, sucursales y login; las operaciones protegidas requieren una sesión válida.
 
 #### Funciones auxiliares
 
@@ -337,7 +333,7 @@ Devuelve texto que indica que la API de ventas está funcionando. Es la excepci�
 
 **`GET /api/ventas`**
 
-Requiere sesión y al menos uno de los permisos `ver_ventas` o `ver_pedidos_cocina`. La paginación comienza en la página `1`, usa `25` registros por defecto y limita el tamaño de página a `100`. Si el usuario tiene sucursal asignada, la consulta queda restringida a esa sede. Cuando solo tiene acceso de cocina, muestra pedidos en estado `abierto`, `en_cocina` o `servido`. Consulta el total y la página solicitada, e incluye pagos, detalles, modificadores, cliente y mesa.
+Requiere sesión. En la consulta general exige `ver_ventas` o `ver_pedidos_cocina`; con `?pendientes=true` también admite `tomar_pedidos` u `operar_caja` y devuelve ventas pendientes o parciales con pedidos abiertos, en cocina o servidos. La paginación comienza en la página `1`, usa `25` registros por defecto y limita el tamaño de página a `100`. Si el usuario tiene sucursal asignada, la consulta queda restringida a esa sede. Cuando solo tiene acceso de cocina, muestra pedidos en estado `abierto`, `en_cocina` o `servido`. Consulta el total y la página solicitada, e incluye pagos, detalles, modificadores, cliente y mesa.
 
 **`GET /api/ventas/:id`**
 
@@ -349,11 +345,15 @@ Requiere `tomar_pedidos` o `ver_pedidos_cocina` y acepta únicamente los estados
 
 **`POST /api/ventas/:id/pagos`**
 
-Requiere `tomar_pedidos` u `operar_caja`. Valida el identificador, que el monto sea positivo y no exceda el máximo permitido, el método de pago y la referencia opcional. Convierte el monto a centavos para comparar el saldo sin depender de redondeos de punto flotante. No permite pagar una venta cancelada ni exceder el total pendiente. En una transacción serializable registra el pago y cambia el estado de la venta a `parcial` o `pagada`; cuando queda pagada, también marca el pedido como `pagado`.
+Requiere `operar_caja`. Valida el identificador, que el monto sea positivo y no exceda el máximo permitido, el método de pago y la referencia opcional. Convierte el monto a centavos para comparar el saldo sin depender de redondeos de punto flotante. No permite pagar una venta cancelada ni exceder el total pendiente. En una transacción serializable registra el pago y cambia el estado de la venta a `parcial` o `pagada`; cuando queda pagada, también marca el pedido como `pagado`.
 
 **`POST /api/ventas`**
 
 Requiere `tomar_pedidos`. Primero valida los campos generales, la sucursal que puede usar la cuenta y la lista de productos; `normalizarProductosVenta` combina líneas repetidas compatibles y comprueba sus modificadores. Dentro de una transacción serializable confirma que usuario, sucursal, productos, modificadores, cliente y mesa existan y estén disponibles. Calcula los precios de productos y modificadores en centavos, obtiene subtotal e IVA, y genera el correlativo del documento. Después crea la venta y sus detalles. Si `pagoPendiente` es falso, también registra el pago completo; si es verdadero, deja la venta pendiente y el pedido abierto. Por último ejecuta `ejecutarExplosion` para descontar los ingredientes de las recetas en el inventario de la sucursal, actualizar el total global y registrar los movimientos. Si falla cualquier paso, la transacción revierte también los registros ya preparados.
+
+**`POST /api/ventas/:id/productos`**
+
+Requiere `tomar_pedidos`. Agrega productos a un pedido pendiente o parcial que todavía admite cambios, valida productos y modificadores activos y actualiza inventario y totales dentro de una transacción.
 
 #### Endpoints de autenticación
 
@@ -364,10 +364,6 @@ Valida que se reciban identificador, contraseña y una sucursal activa permitida
 **`POST /api/logout`**
 
 Revoca la sesión identificada por la cookie (o por un encabezado Bearer heredado) y elimina la cookie. La operación también elimina la cookie si la sesión ya no existe.
-
-**`POST /api/clientes/registro`**
-
-Valida nombre, formato y longitud del correo, longitud de contraseña y teléfono opcional. Llama a `dbo.sp_registrar_cliente_usuario`, obtiene los permisos de la cuenta recién creada y abre una sesión automáticamente. Devuelve `201` con el token y los datos del usuario; responde `409` si el correo ya está registrado y `400` ante errores de validación reconocidos por el procedimiento almacenado.
 
 **`GET /api/session`**
 
@@ -401,7 +397,7 @@ Ejecuta `node src/index.js` una vez.
 
 **`npm run dev`**
 
-Ejecuta `node --watch src/index.js` y reinicia el proceso cuando Node detecta cambios.
+Ejecuta `node --watch-path=src src/index.js` y reinicia el proceso cuando detecta cambios dentro de `src`.
 
 **`postinstall`**
 
@@ -767,6 +763,10 @@ Requiere `ver_mi_planilla`. Busca la ficha laboral asociada a la sesión y devue
 
 Requiere `ver_planillas`. Valida el identificador y devuelve la planilla con los empleados y montos de cada detalle.
 
+**`PUT /api/planillas/:id/detalles/:id_empleado`**
+
+Requiere `editar_planillas`. Valida y normaliza los montos editados, rechaza planillas pagadas y recalcula el total de la planilla dentro de una transacción.
+
 **`PUT /api/planillas/:id/pagar`**
 
 Requiere `generar_planillas`. Comprueba que la planilla exista y no esté pagada; la marca como pagada de forma condicionada para detectar actualizaciones concurrentes.
@@ -849,9 +849,9 @@ Valida un identificador de ruta y devuelve el número entero positivo o `null`.
 
 Valida un entero positivo usado en los campos recibidos.
 
-**`GET /api/caja/actual` — `operar_caja`**
+**`GET /api/caja/actual` — `operar_caja` o `ver_caja`**
 
-Consulta la caja abierta del usuario y sus movimientos recientes.
+Requiere `operar_caja` o `ver_caja`. Con `operar_caja`, consulta la caja abierta del usuario; con `ver_caja`, consulta la caja abierta más reciente de su sucursal, o de cualquier sucursal si no tiene una asignada. Devuelve también movimientos recientes y el monto esperado.
 
 **`POST /api/caja/abrir` — `operar_caja`**
 
@@ -864,22 +864,6 @@ Registra retiros, ingresos extra o pagos a proveedores en una caja abierta del u
 **`POST /api/caja/:id/cerrar` — `operar_caja`**
 
 En una transacción calcula el efectivo esperado con el monto de apertura, las ventas en efectivo y los movimientos. Guarda el monto contado, la diferencia y el estado cerrado.
-
-### `src/routes/clientes.routes.js`
-
-Gestiona el perfil del cliente autenticado y la búsqueda de clientes para operaciones autorizadas.
-
-**`GET /api/clientes/yo` — `ver_mi_perfil`**
-
-Devuelve el perfil de cliente relacionado con la sesión actual.
-
-**`PATCH /api/clientes/yo` — `ver_mi_perfil`**
-
-Valida y actualiza nombre, teléfono o dirección sin permitir cambiar otros datos del perfil.
-
-**`GET /api/clientes?busqueda=...`**
-
-Requiere al menos uno de estos permisos: `ver_ventas`, `tomar_pedidos` o `gestionar_reservas`. Busca por nombre, correo, DUI o NIT, limita la respuesta a 25 registros y ajusta los campos devueltos según los permisos.
 
 ### `src/routes/compras.routes.js`
 
@@ -973,7 +957,7 @@ Conserva el expediente, desactiva empleado y cuenta de usuario en una transacci�
 
 ### `src/routes/mesas.routes.js`
 
-Consulta y administra mesas y sus estados. Los handlers restringen los datos a la sucursal de la sesión salvo que el usuario tenga permiso de gestionar sucursales.
+Consulta y administra mesas y sus estados. El alcance de sucursal depende del endpoint: algunos requieren seleccionar una sede, mientras que otros limitan por la sede de la sesión solo cuando esta está asignada.
 
 **`GET /api/mesas/sucursales`**
 
@@ -989,7 +973,7 @@ Valida sucursal, número y capacidad, confirma que la sede esté activa y crea u
 
 **`PATCH /api/mesas/:id` — `gestionar_reservas`**
 
-Actualiza número o capacidad después de comprobar el ID y el ámbito de sucursal.
+Actualiza número o capacidad. Si la cuenta tiene una sucursal asignada, solo permite modificar mesas de esa sede; para cuentas sin sede no aplica ese filtro.
 
 **`PATCH /api/mesas/:id/estado`**
 
@@ -1081,15 +1065,11 @@ Lista reservas ordenadas por hora de inicio y limita los resultados a la sucursa
 
 **`GET /api/reservas/disponibles` — `ver_reservas_disponibles`**
 
-Valida fecha, cantidad de personas, duración y sucursal. Después consulta `dbo.fn_mesas_disponibles` para devolver las mesas libres para ese horario.
-
-**`GET /api/reservas/mis` — `ver_mis_reservas`**
-
-Lista las reservas vinculadas al cliente autenticado.
+Valida fecha, cantidad de personas y sucursal. La duración es fija de 90 minutos; consulta `dbo.fn_mesas_disponibles` para devolver las mesas libres para ese horario.
 
 **`POST /api/reservas` — `gestionar_reservas`**
 
-Valida mesa, cliente, fecha futura y duración. Dentro de una transacción serializable vuelve a comprobar la disponibilidad de la mesa antes de crear la reserva.
+Valida mesa, cantidad de personas, datos de contacto y fecha futura. La duración de cada reserva es fija de 90 minutos. Dentro de una transacción serializable vuelve a comprobar la disponibilidad de la mesa antes de crear la reserva.
 
 **`PATCH /api/reservas/:id/estado` — `gestionar_reservas`**
 
@@ -1101,7 +1081,7 @@ El endpoint de disponibilidad informa qué mesas están libres. Al crear la rese
 
 ```mermaid
 flowchart TD
-    REQUEST["Consultar o crear una reserva"] --> INPUT["Validar fecha, personas, duración y sucursal"]
+    REQUEST["Consultar o crear una reserva"] --> INPUT["Validar fecha, personas y sucursal"]
     INPUT --> VALID{"¿Datos válidos?"}
     VALID -->|No| BAD_REQUEST["Responder HTTP 400"]
     VALID -->|Sí| ACTION{"¿Solo consultar disponibilidad?"}
@@ -1158,13 +1138,11 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 - **`POST /api/logout`** — revoca la sesión actual.
 
-- **`POST /api/clientes/registro`** — registra una cuenta de cliente y crea su sesión.
-
 - **`GET /api/session`** — devuelve los datos del usuario y los permisos de la sesión.
 
 - **`POST /api/cambiar-password`** — cambia la contraseña de la cuenta autenticada.
 
-- **`GET /api/ventas`** — lista ventas permitidas para `ver_ventas` o `ver_pedidos_cocina`.
+- **`GET /api/ventas`** — lista ventas con `ver_ventas` o `ver_pedidos_cocina`; con `?pendientes=true` también admite `tomar_pedidos` u `operar_caja`.
 
 - **`GET /api/ventas/:id`** — consulta una venta específica dentro del ámbito autorizado; requiere `ver_ventas` o `ver_pedidos_cocina`.
 
@@ -1172,7 +1150,9 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 - **`PATCH /api/ventas/:id/estado-pedido`** — cambia el estado de un pedido; requiere `tomar_pedidos` o `ver_pedidos_cocina`.
 
-- **`POST /api/ventas/:id/pagos`** — registra un pago de venta; requiere `tomar_pedidos` u `operar_caja`.
+- **`POST /api/ventas/:id/pagos`** — registra un pago de venta; requiere `operar_caja`.
+
+- **`POST /api/ventas/:id/productos`** — agrega productos a un pedido abierto; requiere `tomar_pedidos`.
 
 ### Inventario
 
@@ -1198,7 +1178,7 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 - **`GET /api/inventario/movimientos`** — consulta movimientos recientes; requiere `ver_inventario`.
 
-### Productos, clientes, empleados y usuarios
+### Productos, empleados y usuarios
 
 - **`GET /api/productos`** — consulta el menú; requiere `ver_menu`.
 
@@ -1211,12 +1191,6 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 - **`POST /api/modificadores`** — registra un modificador; requiere `gestionar_productos`.
 
 - **`PATCH /api/modificadores/:id`** — actualiza un modificador; requiere `gestionar_productos`.
-
-- **`GET /api/clientes?busqueda=...`** — busca clientes para operaciones autorizadas; requiere `ver_ventas`, `tomar_pedidos` o `gestionar_reservas`.
-
-- **`GET /api/clientes/yo`** — consulta el perfil propio; requiere `ver_mi_perfil`.
-
-- **`PATCH /api/clientes/yo`** — actualiza el perfil propio; requiere `ver_mi_perfil`.
 
 - **`GET /api/empleados/roles`** — consulta roles que se pueden asignar; requiere `registrar_empleados`.
 
@@ -1258,7 +1232,7 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 - **`PATCH /api/administracion/sucursales/:id`** — actualiza una sucursal; requiere `gestionar_sucursales`.
 
-- **`GET /api/caja/actual`** — consulta la caja abierta; requiere `operar_caja`.
+- **`GET /api/caja/actual`** — consulta la caja abierta; requiere `operar_caja` o `ver_caja`.
 
 - **`POST /api/caja/abrir`** — abre una caja; requiere `operar_caja`.
 
@@ -1290,6 +1264,8 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 - **`GET /api/planillas/:id`** — consulta el detalle de una planilla; requiere `ver_planillas`.
 
+- **`PUT /api/planillas/:id/detalles/:id_empleado`** — edita un detalle y recalcula el total de una planilla no pagada; requiere `editar_planillas`.
+
 - **`PUT /api/planillas/:id/pagar`** — marca una planilla como pagada; requiere `generar_planillas`.
 
 - **`GET /api/mesas/sucursales`** — consulta sucursales visibles; requiere `ver_reservas_disponibles`, `ver_mesas` o `gestionar_reservas`.
@@ -1305,8 +1281,6 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 - **`GET /api/reservas`** — lista reservas; requiere `ver_reservas`.
 
 - **`GET /api/reservas/disponibles`** — consulta mesas disponibles; requiere `ver_reservas_disponibles`.
-
-- **`GET /api/reservas/mis`** — lista reservas del cliente autenticado; requiere `ver_mis_reservas`.
 
 - **`POST /api/reservas`** — crea una reserva; requiere `gestionar_reservas`.
 
@@ -1354,24 +1328,6 @@ Las pruebas verifican que el servicio:
 
 ## Configuracion
 
-Abrir la base de datos OrigeneSV.sql en sql manager, hacer la conexion a un contenedor de docker con la siguiente linea:
+Sigue los pasos de [Ejecutar el proyecto](#ejecutar-el-proyecto). La contraseña asignada a `MSSQL_SA_PASSWORD` al crear el contenedor debe coincidir con `password` en `Backend/.env`; el nombre de la base de datos es `OrigeneSV`.
 
-docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" -p 1432:1433 --name proyecto_web -v sqlserver_data:/var/opt/mssql -d mcr.microsoft.com/mssql/server:2022-latest
-
-este creara un contenedor de docker, luego en sql server pondras los siguientes datos:
-
-Nombre de el servidor: localhost,1432
-Nombre de usuario: sa
-contrasenia: ProyectoWeb@2026
-luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo con F5.
-
-Si la base de datos ya existía antes de agregar las columnas de imagen de productos, ejecuta una vez `sql/actualizar_productos_imagen.sql` conectado a `OrigeneSV`. El script solo agrega las columnas que falten y conserva los datos existentes.
-
-En el proyecto: 
-Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
-
-//Conexion a la database en docker DATABASE_URL="sqlserver://localhost:1432;database=OrigeneSV;user=sa;password=ProyectoWeb@2026;encrypt=true;trustServerCertificate=true"
-
-abre una terminal en la carpeta de backend y ejecuta lo siguiente: npm install npx prisma generate npm run dev
-
-abre una terminal en la carpeta de frontend y ejecuta lo siguiente: npom install npm run dev
+Antes de ejecutar `OrigeneSV.sql`, revisa la advertencia del apartado de preparación: el script elimina y vuelve a crear esa base de datos. Para instalar y ejecutar los proyectos, usa los comandos separados que aparecen en los pasos 2 y 3; para probar el backend, ejecuta `npm test` desde `Backend`.

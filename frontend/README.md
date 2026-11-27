@@ -44,3 +44,5 @@ También tenemos el package.json, que define las dependencias del proyecto (como
 ![alt text](vite-config.png)
 
 Lo que toma para avanzar es tener las dependencias instaladas (con npm install) y que la configuración del proxy apunte al puerto correcto donde está corriendo el backend.
+
+## 3. El componente principal App.jsx

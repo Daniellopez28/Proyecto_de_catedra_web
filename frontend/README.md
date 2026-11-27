@@ -84,3 +84,5 @@ En components/login.jsx tenemos el formulario para iniciar sesión contra el bac
 ![alt text](login-jsx-1.png)
 
 ![alt text](login-jsx-2.png)
+
+![alt text](login-jsx-3.png)

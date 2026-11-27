@@ -109,3 +109,8 @@ Lo que toma para avanzar es que el usuario haga clic en un botón. Al hacerlo, s
 ## 8. Encabezado superior (components/top-header.jsx)
 
 En components/top-header.jsx tenemos la barra superior que muestra la ubicación, la fecha actual y los datos del usuario conectado. Traemos useMemo para calcular la fecha una sola vez cuando carga la pantalla, y la formateamos en español (por ejemplo: "lun, 03 nov 2026").
+
+![alt text](top-header-jsx-1.png)
+
+![alt text](top-header-jsx-2.png)
+

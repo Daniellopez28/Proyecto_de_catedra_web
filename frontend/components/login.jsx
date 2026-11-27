@@ -1,12 +1,32 @@
 import '../src/login.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { guardarSesion, solicitudApi } from '../src/api.js';
 
 function Login({ onLogin }) {
     const [correo, setCorreo] = useState('');
     const [password, setPassword] = useState('');
+    const [sucursalid, setSucursalid] = useState('');
+    const [sucursales, setSucursales] = useState([]);
+    const [cargandoSucursales, setCargandoSucursales] = useState(true);
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
+    const [solicitarCambioPassword, setSolicitarCambioPassword] = useState(false);
+
+    useEffect(() => {
+        let activo = true;
+        solicitudApi('/sucursales')
+            .then((respuesta) => {
+                if (activo) setSucursales(respuesta.sucursales);
+            })
+            .catch((fallo) => {
+                if (activo) setError(fallo.message);
+            })
+            .finally(() => {
+                if (activo) setCargandoSucursales(false);
+            });
+        return () => { activo = false; };
+    }, []);
 
     //funcion que se ejecuta cuadno se da clic en el boton 'ACCEDER'
     const manejarLogin = async (e) => {
@@ -15,25 +35,14 @@ function Login({ onLogin }) {
         setCargando(true);
 
         try {
-            // cambio: hacemos la petición a tu Backend
-            const respuesta = await fetch('http://localhost:3000/api/login', {
+            const sesion = await solicitudApi('/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ correo, password })
+                body: { correo: correo.trim(), password, sucursalid: Number(sucursalid) }
             });
-
-            const datos = await respuesta.json();
-
-            if (respuesta.ok) {
-                localStorage.setItem('usuarioLogueado', JSON.stringify(datos.usuario));
-                onLogin(datos.usuario);
-            } else {
-                setError(datos.mensaje || 'Correo o contraseña incorrectos');
-            }
+            guardarSesion(sesion);
+            onLogin(sesion, solicitarCambioPassword);
         } catch (error) {
-            setError('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.');
+            setError(error.message || 'No se pudo iniciar sesión.');
         } finally {
             setCargando(false);
         }
@@ -46,11 +55,12 @@ function Login({ onLogin }) {
                     <div className="container" >
                         <div className="row gx-lg-5 align-items-center" >
                             <div className="col-lg-6 mb-5 mb-lg-5">
+                                <img className="login-brand-logo" src="/brand/origenes-logo.png" alt="Orígenes SV" />
                                 <h1 className="my-5 display-3 fw-bold ls-tight">
                                     Todo listo <br />
-                                    <span className=" " style={{ color: '#B95136' }}>para un buen servicio</span>
+                                    <span>para un buen servicio</span>
                                 </h1>
-                                <p style={{ color: '#7A7D75' }}>
+                                <p className="login-intro">
                                     Ingresa a tu espacio de trabajo para continuar la
                                     operación de tu sucursal.
                                 </p>
@@ -63,16 +73,39 @@ function Login({ onLogin }) {
                                         <span style={{ color: '#7A7D75', fontSize: '16px' }}>Usa las credenciales de tu cuenta para iniciar sesión.</span>
                                         <form onSubmit={manejarLogin}>
                                             <div data-mdb-input-init className="form-outline mb-4" style={{ marginTop: '20px' }}>
-                                                <label className="form-label fw-bold" htmlFor="form3Example3" style={{ fontSize: '16px' }}>Usuario</label>
+                                                <label className="form-label fw-bold" htmlFor="form3Example3" style={{ fontSize: '16px' }}>Correo o código de empleado</label>
                                                 <input
-                                                    type="email"
+                                                    type="text"
                                                     id="form3Example3"
                                                     className="form-control"
                                                     value={correo}
                                                     onChange={(event) => setCorreo(event.target.value)}
                                                     autoComplete="username"
+                                                    maxLength={150}
                                                     required
                                                 />
+                                            </div>
+
+                                            <div className="form-outline mb-4">
+                                                <label className="form-label fw-bold" htmlFor="sucursal-login" style={{ fontSize: '16px' }}>Sucursal</label>
+                                                <select
+                                                    id="sucursal-login"
+                                                    className="form-select"
+                                                    value={sucursalid}
+                                                    onChange={(event) => setSucursalid(event.target.value)}
+                                                    autoComplete="organization"
+                                                    required
+                                                    disabled={cargandoSucursales || sucursales.length === 0}
+                                                >
+                                                    <option value="">
+                                                        {cargandoSucursales ? 'Cargando sucursales…' : 'Selecciona tu sucursal'}
+                                                    </option>
+                                                    {sucursales.map((sucursal) => (
+                                                        <option key={sucursal.sucursalid} value={sucursal.sucursalid}>
+                                                            {sucursal.nombre}
+                                                        </option>
+                                                    ))}
+                                                </select>
                                             </div>
 
                                             <div data-mdb-input-init className="form-outline mb-4">
@@ -87,54 +120,38 @@ function Login({ onLogin }) {
                                                     required
                                                 />
                                             </div>
+                                            <div className="login-password-help">
+                                                <button
+                                                    type="button"
+                                                    aria-expanded={solicitarCambioPassword}
+                                                    onClick={() => setSolicitarCambioPassword((actual) => !actual)}
+                                                >
+                                                    ¿Perdiste tu contraseña?
+                                                </button>
+                                                {solicitarCambioPassword && (
+                                                    <p role="status">
+                                                        Al iniciar sesión se abrirá el formulario protegido de cambio.
+                                                        Necesitas tu contraseña actual; si la olvidaste, solicita un
+                                                        restablecimiento a RR. HH. o a un administrador.
+                                                    </p>
+                                                )}
+                                            </div>
                                             {error && <div className="alert alert-danger" role="alert">{error}</div>}
                                             <button
                                                 type="submit"
                                                 data-mdb-button-init
                                                 data-mdb-ripple-init
                                                 className="button-custom btn btn-block mb-4 p"
-                                                disabled={cargando}
+                                                disabled={cargando || cargandoSucursales || !sucursalid}
                                             >
                                                 
                                                 {/*flecha para acceder*/}
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrow-right-short mb-1" viewBox="0 0 16 16">
-                                                    <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8" />
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-arrow-right-short mb-1" viewBox="0 0 16 16">
+                                                    <path fillRule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8" />
                                                 </svg>
 
                                                 <span className="m-1">{cargando ? 'Ingresando...' : 'Acceder'}</span>
                                             </button>
-
-                                            <div data-mdb-input-init className="form-outline mb-4">
-                                                {/*OJO FALTA PROGRAMAR BIEN LOS VALUE Y LA LOGICA */}
-                                                <label className="form-label fw-bold" htmlFor="form3Example4" style={{ fontSize: '14px' }}>Sucursal de acceso</label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Escalon
-                                                        </span>
-                                                    </div>
-                                                </label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Santa Tecla
-                                                        </span>
-                                                    </div>
-                                                </label>
-
-                                                <label className="form-check mb-3 radio-options w-100" style={{ display: 'flex', alignItems: 'left' }}>
-                                                    <div style={{ paddingLeft: '20px' }}>
-                                                        <input className="form-check-input" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-                                                        <span classnName='radio-span' style={{ color: 'black', fontSize: '16px' }} >
-                                                            Mejicanos
-                                                        </span>
-                                                    </div>
-                                                </label>
-                                            </div>
 
                                         </form>
                                     </div>

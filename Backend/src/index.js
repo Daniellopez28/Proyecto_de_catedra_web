@@ -3,194 +3,214 @@ import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
 import planilla_routes from './routes/planilla.routes.js';
+import ventasRoutes from './routes/ventas.routes.js';
+import empleadosRoutes from './routes/empleados.routes.js';
+import reservasRoutes from './routes/reservas.routes.js';
+import cajaRoutes from './routes/caja.routes.js';
+import productosRoutes from './routes/productos.routes.js';
+import comprasRoutes from './routes/compras.routes.js';
+import proveedoresRoutes from './routes/proveedores.routes.js';
+import reportesRoutes from './routes/reportes.routes.js';
+import usuariosRoutes from './routes/usuarios.routes.js';
+import mesasRoutes from './routes/mesas.routes.js';
+import modificadoresRoutes from './routes/modificadores.routes.js';
+import administracionRoutes from './routes/administracion.routes.js';
+import {
+    etiquetaSucursalEmpleado,
+    nombresBaseSucursalesEmpleados,
+    sucursalesEmpleados
+} from './constants/sucursalesEmpleados.js';
+import {
+    cerrarSesion,
+    crearSesion,
+    requerirAutenticacion
+} from './middleware/autenticacion.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 app.use('/api/planillas', planilla_routes);
+app.use('/api/ventas', requerirAutenticacion, ventasRoutes);
+app.use('/api/empleados', requerirAutenticacion, empleadosRoutes);
+app.use('/api/reservas', requerirAutenticacion, reservasRoutes);
+app.use('/api/caja', requerirAutenticacion, cajaRoutes);
+app.use('/api/productos', requerirAutenticacion, productosRoutes);
+app.use('/api/compras', requerirAutenticacion, comprasRoutes);
+app.use('/api/proveedores', requerirAutenticacion, proveedoresRoutes);
+app.use('/api/reportes', requerirAutenticacion, reportesRoutes);
+app.use('/api/usuarios', requerirAutenticacion, usuariosRoutes);
+app.use('/api/mesas', requerirAutenticacion, mesasRoutes);
+app.use('/api/modificadores', requerirAutenticacion, modificadoresRoutes);
+app.use('/api/administracion', requerirAutenticacion, administracionRoutes);
 
-//Rutas de ventas
-app.get('/', (req, res) =>{
+app.get('/', (_req, res) => {
     res.send('API del Restaurante Orígenes SV - Módulo de Ventas funcionando');
 });
 
-// Módulo Inventario y Recetas (Carlos)
-app.use('/api/inventario', enrutadorInventario);
-
-const PORT = 3000;
-app.listen(PORT,() => {
-    console.log(`Servidor POS corriendo en http://localhost:${PORT}`);
-});
-
-/*Función para calcular el IVA hacia atras (porque ya viene en el precio)*/
-function calcularIVA(totalConIva){
-//Redondeamosa  2 decimales para evitar problemas con decimales flotantes
-const subtotal = Number((totalConIva / 1.13).toFixed(2));
-const iva = Number((totalConIva - subtotal).toFixed(2));
-
-return {subtotal, iva};
-}
-
-/*Función para generar el siguiente correlativo (Ej: F-001)*/
-async function generarCorrelativo(tipoDocumento){
-//Buscamos la última venta de este tipo de documento
-const ultimaVenta = await prisma.ventas.findFirst({
-    where: {tipo_documento : tipoDocumento},
-    orderBy : {id_venta: 'desc'}
-});
-
-if(!ultimaVenta){
-    //si no hay ventas, empezamos en 1
-    return tipoDocumento === 'CCF' ? 'CCF-0001' : 'F-0001';
-}
-
-/*Si ya hay, extraemos el número, le sumamos 1 y lo volvemos a armar
-Ejemplo: si es "F-0005", sacamos el 5, lo volvemos 6 y queda "F-0006" */
-const partes = ultimaVenta.correlativo.split('-');
-const numero = parseInt(partes[1], 10) + 1;
-const numeroFormateado = numero.toString().padStart(4, '0');
-
-return `${tipoDocumento}-${numeroFormateado}`;
-}
-
-/*Endpoint de ventas*/
-app.post('/api/ventas', async (req, res) => {
-
-    try{
-        /*1. Recibimos los datos del Frontend (cajero)
-        tipoDocumento: "Factura o CCF"
-        productos: arreglo con {id_producto, cantidad}*/
-        const {tipoDocumento, id_usuario, productos, metodoPago, referenciaPago} = req.body;
-
-        /*2. Validamos que manden datos (ni modo que aceptemos a si vacio)*/
-        if(!productos || productos.length === 0){
-            return res.status(400).json({mensaje: "No hay productos en la venta"});
-        }
-
-        /*3. Calculamos el total bruto (sumando precio * cantidad)*/
-        let totalBruto = 0;
-        const detallesParaGuardar = [];
-        //arreglo para guardar los detalles calculados
-        for(const item of productos){
-            const productoDB = await prisma.productos.findUnique({
-                where: {id_producto: item.id_producto}
-            });
-
-            if(!productoDB){
-                return res.status(404).json({mensaje: `Producto ${item.id_producto} no existe`});
-            }
-
-            /*Convertimos el Decimal de SQL Server a Número para operar*/
-            const precio = Number(productoDB.precio_venta);
-            const subtotalLinea = precio * item.cantidad;
-            totalBruto += subtotalLinea;
-
-            /*Guardamos temporalmente el detalle con su precio real y subtotal*/
-            detallesParaGuardar.push({
-                id_producto: item.id_producto,
-                cantidad: item.cantidad,
-                precio_unitario: precio,
-                subtotal_linea: subtotalLinea
-            });
-        }
-      
-        /*4. calculamos el desglose del IVA*/
-        const {subtotal, iva} = calcularIVA(totalBruto);
-
-        /*5. Generamos el correlativo (Factura o CCF)*/
-        const correlativo = await generarCorrelativo(tipoDocumento);
-
-        /*6. Guardamos la venta en la Base de datos con prisma*/
-        const nuevaVenta = await prisma.ventas.create({
-            data: {
-                id_usuario: id_usuario,
-                tipo_documento: tipoDocumento,
-                correlativo: correlativo,
-                subtotal: subtotal,
-                iva: iva,
-                total: totalBruto,
-                estado: 'Pagada',
-                venta_detalle: {
-                    create: detallesParaGuardar
-                }
-            }
-        });
-    /*Guardamos el pago asociado a esta venta*/
-    await prisma.pagos.create({
-        data: {
-            id_venta: nuevaVenta.id_venta, /*Lo vinculamos a la venta que acabamos de crear*/
-
-            metodo_pago: metodoPago || 'Efectivo', /*Si no mandan método, por defecto
-            es Efectivo*/
-
-            monto: totalBruto,
-            referencia_transaccion: referenciaPago || null /*Para el número de voucher
-            o Chivo*/
-        }
-    });
-    
-    /*Desconectamis inventario (El código)*/
-for(const item of productos){
-const receta = await prisma.recetas_detalle.findMany({
-    where: {id_producto: item.id_producto}
-});
-
-if(receta.length > 0){
-for(const ingrediente of receta){
-const cantidadUsada = Number(ingrediente.cantidad_requerida)* item.cantidad;
-
-await prisma.insumos.update({
-where: {id_insumo: ingrediente.id_insumo},
-data: {stock_actual: {decrement: cantidadUsada}}
-});
-}
-}
-}
-
-/*7. Respondemos al Frontend*/
-res.status(201).json({
-    mensaje: "Venta registrada exitosamente",
-    correlativo: nuevaVenta.correlativo,
-    total: nuevaVenta.total
-});
-    }catch(error){
-        console.error(error);
-        res.status(500).json({mensaje: "Error interno al registrar la venta"});
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1 AS disponible`;
+        return res.status(200).json({ estado: 'ok', base_datos: 'conectada' });
+    } catch (error) {
+        console.error('No se pudo consultar la base de datos:', error);
+        return res.status(503).json({ estado: 'error', base_datos: 'no disponible' });
     }
-
 });
+
+app.get('/api/sucursales', async (_req, res) => {
+    try {
+        const sucursales = await prisma.sucursales.findMany({
+            where: {
+                activo: true,
+                nombre: { in: nombresBaseSucursalesEmpleados }
+            },
+            select: { sucursalid: true, nombre: true }
+        });
+        const porNombre = new Map(sucursales.map((sucursal) => [
+            sucursal.nombre.trim().toLocaleLowerCase('es-SV'),
+            sucursal
+        ]));
+        return res.json({
+            sucursales: sucursalesEmpleados.flatMap((sucursal) => {
+                const encontrada = porNombre.get(sucursal.nombreBase);
+                return encontrada
+                    ? [{
+                        sucursalid: encontrada.sucursalid,
+                        nombre: etiquetaSucursalEmpleado(encontrada.nombre)
+                    }]
+                    : [];
+            })
+        });
+    } catch (error) {
+        console.error('Error al consultar sucursales para iniciar sesión:', error);
+        return res.status(500).json({ mensaje: 'No se pudieron consultar las sucursales' });
+    }
+});
+
+// Módulo Inventario y Recetas (Carlos)
+app.use('/api/inventario', requerirAutenticacion, enrutadorInventario);
 
 /*Endpoint para iniciar sesión*/
 app.post('/api/login', async (req,res) => {
     try{
         /*1. Recibir el correo y la contraseña que manda React*/
-        const {correo, password }= req.body;
+        const {correo, password, sucursalid }= req.body ?? {};
+        const idSucursal = Number(sucursalid);
 
         /*2.Validamos que no venga vacío*/
-        if(!correo || !password){
-return res.status(400).json({mensaje: "El correo y la constraseña son obligatorios"});
+        if(typeof correo !== 'string' || !correo.trim() || typeof password !== 'string' || !password ||
+            !Number.isInteger(idSucursal) || idSucursal <= 0){
+            return res.status(400).json({mensaje: 'El usuario, la contraseña y una sucursal válida son obligatorios'});
         }
 
-        /*3. Buscamos al usuario en la base de datos por su correo*/
-        const usuarioEncontrado = await prisma.usuarios.findUnique({where: {correo: correo}});
-
-        /*4. Si no existe el usuario o la contraseña no coincide,rebotamos*/
-        if(!usuarioEncontrado || usuarioEncontrado.password_hash !== password){
-            return res.status(401).json({mensaje: "Credenciales incorrectas"});
+        const sucursalSeleccionada = await prisma.sucursales.findFirst({
+            where: {
+                sucursalid: idSucursal,
+                activo: true,
+                nombre: { in: nombresBaseSucursalesEmpleados }
+            },
+            select: { sucursalid: true }
+        });
+        if (!sucursalSeleccionada) {
+            return res.status(400).json({ mensaje: 'Selecciona una de las sucursales disponibles' });
         }
 
-        /*5. Si todo esta bien, quitamos la contraseña de la respuesta 
-        por seguridad*/
-        const {password_hash, ...usuarioSeguro} = usuarioEncontrado;
+        /*3. El procedimiento valida el hash con salt y registra el ultimo acceso*/
+        let [usuarioEncontrado] = await prisma.$queryRaw`
+            EXEC dbo.sp_login_empleado
+                @identificador = ${correo.trim()},
+                @password = ${password},
+                @sucursalid = ${sucursalSeleccionada.sucursalid}
+        `;
 
-        /*6. Respondemos con exito y los datos del usuario*/
+        if(!usuarioEncontrado){
+            return res.status(401).json({
+                mensaje: 'Credenciales incorrectas o usuario no registrado en esta sucursal'
+            });
+        }
+
+        const filasPermisos = await prisma.$queryRaw`
+            EXEC dbo.sp_permisos_usuario @id_usuario = ${usuarioEncontrado.id_usuario}
+        `;
+        const permisos = filasPermisos.map((permiso) => permiso.codigo);
+        const token = crearSesion(usuarioEncontrado, permisos);
+
         res.status(200).json({
           mensaje: "Inicio de sesión exitoso",
-          usuario: usuarioSeguro
+          token,
+          usuario: { ...usuarioEncontrado, permisos }
         });
     }catch(error){
         console.error(error);
         res.status(500).json({mensaje: "Error interno del servidor"});
     }
+});
+
+app.post('/api/logout', requerirAutenticacion, (req, res) => {
+    cerrarSesion(req.auth.token);
+    return res.json({ mensaje: 'Sesión cerrada' });
+});
+
+app.get('/api/session', requerirAutenticacion, (req, res) => {
+    return res.json({
+        token: req.auth.token,
+        usuario: { ...req.auth.usuario, permisos: [...req.auth.permisos] }
+    });
+});
+
+app.post('/api/cambiar-password', requerirAutenticacion, async (req, res) => {
+    const { password_actual, password_nueva } = req.body ?? {};
+    if (typeof password_actual !== 'string' || !password_actual ||
+        typeof password_nueva !== 'string' || password_nueva.length < 8 || password_nueva.length > 100) {
+        return res.status(400).json({ mensaje: 'La nueva contraseña debe tener entre 8 y 100 caracteres' });
+    }
+
+    try {
+        await prisma.$queryRaw`
+            EXEC dbo.sp_cambiar_password
+                @id_usuario = ${req.auth.usuario.id_usuario},
+                @password_actual = ${password_actual},
+                @password_nueva = ${password_nueva}
+        `;
+        req.auth.usuario.debe_cambiar_password = false;
+        return res.json({ mensaje: 'Contraseña actualizada' });
+    } catch (error) {
+        const numeroError = error.originalError?.info?.number ?? error.number;
+        if (numeroError === 50011) {
+            return res.status(401).json({ mensaje: 'La contraseña actual no es correcta' });
+        }
+        console.error('Error al cambiar contraseña:', error);
+        return res.status(500).json({ mensaje: 'No se pudo cambiar la contraseña' });
+    }
+});
+
+app.use((req, res) => {
+    return res.status(404).json({ mensaje: 'Ruta no encontrada' });
+});
+
+app.use((error, req, res, next) => {
+    if (error?.type === 'entity.parse.failed') {
+        return res.status(400).json({ mensaje: 'El cuerpo de la solicitud debe ser JSON válido' });
+    }
+    console.error('Error no controlado en la API:', error);
+    return res.status(500).json({ mensaje: 'Error interno del servidor' });
+});
+
+const PORT = Number(process.env.PORT ?? 3000);
+if (!Number.isInteger(PORT) || PORT < 1 || PORT > 65535) {
+    throw new Error('PORT debe ser un número entero entre 1 y 65535');
+}
+
+async function iniciarServidor() {
+    await prisma.$connect();
+    app.listen(PORT, () => {
+        console.log(`Servidor POS corriendo en http://localhost:${PORT}`);
+    });
+}
+
+iniciarServidor().catch(async (error) => {
+    console.error('No se pudo iniciar el servidor o conectar con la base de datos:', error);
+    await prisma.$disconnect();
+    process.exitCode = 1;
 });

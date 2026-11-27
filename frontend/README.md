@@ -1,16 +1,24 @@
-# React + Vite
+# Orígenes SV · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Ejecutar para probar
 
-Currently, two official plugins are available:
+1. Inicia SQL Server y verifica la configuración `DATABASE_URL` del backend.
+2. En una terminal, desde `Backend`, ejecuta `npm run dev`.
+3. En otra terminal, desde `frontend`, ejecuta `npm run dev`.
+4. Abre la dirección que muestra Vite (por defecto `http://localhost:5173`).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Vite reenvía `/api` al servidor local en `http://localhost:3000`. Si cambias el puerto del backend, actualiza el destino del proxy en `vite.config.js`. Para producción, configura `VITE_API_BASE_URL` con la URL base de la API (por ejemplo, `https://servidor.example/api`); si no se define, se usa `/api`.
 
-## React Compiler
+El inicio de sesión usa el correo o código de empleado. La sesión obtiene del backend los permisos asignados en la base de datos; la interfaz oculta las opciones no autorizadas y el backend valida el token y el permiso en cada ruta protegida. Las sesiones de desarrollo viven en memoria y se invalidan al reiniciar el backend: vuelve a iniciar sesión.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Módulos conectados
 
-## Expanding the ESLint configuration
+El menú y las acciones se derivan de los permisos entregados por `/api/session`. El backend sigue siendo la autoridad y vuelve a comprobar cada permiso; ocultar una acción en la interfaz no sustituye esa validación.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- El inventario y las compras administrativas requieren elegir una sucursal; las cuentas con sucursal asignada quedan limitadas a ella.
+- La administración de usuarios permite filtrar por sucursal y muestra la asignación del empleado. Los cambios de sucursal se realizan desde la ficha del empleado y se aplican también a su cuenta.
+- Ventas y pedidos, reservas y mesas, caja e inventario.
+- Compras y proveedores, menú/productos y recetas.
+- Empleados, planillas, usuarios, administración de roles/sucursales, reportes y perfil.
+
+Las pantallas consultan la API real, muestran errores y estados vacíos, y no sustituyen los datos por registros ficticios.

@@ -98,3 +98,4 @@ Lo que toma para avanzar es que el usuario seleccione una sucursal y llene sus d
 ![alt text](login-jsx-5.png)
 
 ## 7. Menú lateral (components/side-navbar.jsx)
+En components/side-navbar.jsx tenemos el menú que aparece a la izquierda de la pantalla una vez que el usuario ya inició sesión. Traemos los íconos de la carpeta de assets, y mostramos el logo principal de Orígenes SV en la parte de arriba.

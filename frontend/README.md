@@ -114,3 +114,6 @@ En components/top-header.jsx tenemos la barra superior que muestra la ubicación
 
 ![alt text](top-header-jsx-2.png)
 
+La lógica es tomar el nombre completo del usuario (que viene en las propiedades) y sacar sus iniciales para mostrarlas en un círculo. También mostramos su rol (por ejemplo, Gerente) y el nombre de la sucursal.
+
+Lo que toma para avanzar es que haya un usuario en la sesión. A la derecha hay un botón para "Cerrar sesión", que al darle clic le avisa a App.jsx para que borre la sesión y devuelva a la persona a la pantalla de Login.

@@ -24,7 +24,7 @@ El proyecto utiliza SQL Server. Si vas a ejecutarlo en Docker, puedes crear un c
 ```powershell
 docker run --name origenesv-sqlserver `
   -e "ACCEPT_EULA=Y" `
-  -e "MSSQL_SA_PASSWORD=TuClaveSegura_2026!" `
+  -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" `
   -p 1432:1433 `
   -d mcr.microsoft.com/mssql/server:2022-latest
 ```

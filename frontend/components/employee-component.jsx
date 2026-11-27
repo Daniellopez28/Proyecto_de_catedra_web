@@ -8,7 +8,7 @@ function EmployeeComponent() {
     //Falta ver la logica para sql
     const [showSuccess, setShowSuccess] = useState(false)
 
-    const employeeTest = [
+    const [employeeTest, setEmployeeTest] = useState([
         {
             name: 'Sergio Perez',
             recordCode: 'DEMO-SP',
@@ -129,7 +129,16 @@ function EmployeeComponent() {
             afp: 'Afiliación de muestra',
             deductionNote: 'ISSS laboral: 3% · $17.25 mensuales. AFP laboral: 7.25% · $41.69 mensuales.',
         }
-    ]
+    ]);
+
+    //almacena los datos del formulario de inscripcion
+    const addEmployee = (newEmployee)=> {
+        setEmployeeTest((currentEmployees) => [
+            ...currentEmployees,
+            newEmployee,
+        ]);
+        setSelectedEmployee(newEmployee.name);
+    };
     //esta variable sirve para guardar el boton seleccionado
     const [selectedBranch, setSelectedBranch] = useState('Todos')
     const [selectedEmployee, setSelectedEmployee] = useState(employeeTest[0].name)
@@ -300,7 +309,7 @@ function EmployeeComponent() {
                     )}
                 </section>
             </div>
-            <RegisterEmployee open={showSuccess} closed={() => setShowSuccess(false)} />
+            <RegisterEmployee open={showSuccess} closed={() => setShowSuccess(false)} onEmployeeAdded={addEmployee}/>
         </main>
     )
 }

@@ -183,3 +183,22 @@
     border-right-color: var(--border);
   }
 }
+
+.app-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.app-workspace {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  padding: 40px;
+}

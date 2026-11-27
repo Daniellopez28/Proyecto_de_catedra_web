@@ -6,7 +6,7 @@ import cardTextIcon from '../src/assets/card-text.svg'
 import Success from './success.jsx'
 import { useState } from 'react'
 
-function EmployeeAdd({ open, closed }) {
+function EmployeeAdd({ open, closed, onEmployeeAdded }) {
     const [showSuccess, setShowSuccess] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -22,11 +22,25 @@ function EmployeeAdd({ open, closed }) {
         const employeeData = Object.fromEntries(new FormData(form).entries())
 
         window.setTimeout(() => {
-            console.log('Simulación de registro:', employeeData)
-            form.reset()
-            setIsSubmitting(false)
-            setShowSuccess(true)
-        }, 500)
+            const newEmployee = {
+                name: employeeData.nombre,
+                position: employeeData.position,
+                branch: employeeData.branch,
+                monthlySalary: Number(employeeData.salario_base),
+                contractDate: employeeData.fecha_ingreso,
+                contractType: employeeData.contractType,
+                schedule: employeeData.workSchedule,
+                paymentFrequency: employeeData.paymentFrequency,
+                isss: employeeData.isss,
+                afp: employeeData.afp,
+                status: 'Activo',
+            };
+
+            onEmployeeAdded(newEmployee);
+            form.reset();
+            setIsSubmitting(false);
+            setShowSuccess(true);
+        }, 500);
     }
 
     const closeSuccessAndForm = () => {
@@ -58,7 +72,7 @@ function EmployeeAdd({ open, closed }) {
         { format: 'Por Horas' }
     ]
 
-    
+
 
     return (
         <main className='employee-form-main'>
@@ -76,23 +90,23 @@ function EmployeeAdd({ open, closed }) {
                         <div className='employee-personal-information employee-personal-information--personal'>
                             <div className='employee-field employee-field--personal-full'>
                                 <label htmlFor='employee-name' >Nombre completo</label>
-                                <input id='employee-name' type="text" placeholder='Ej. Ricardo Ernesto Iglesias Flores' required/>
+                                <input id='employee-name' name='nombre' type="text" placeholder='Ej. Ricardo Ernesto Iglesias Flores' required />
                             </div>
                             <div className='employee-field employee-field--personal-full'>
                                 <label htmlFor='employee-document'>Documento de identidad (DUI/Pasaporte)</label>
-                                <input id='employee-document' type="text" placeholder='Ej. 00000000-0' required/>
+                                <input id='employee-document' name='dui' type="text" placeholder='Ej. 00000000-0' required />
                             </div>
                             <div className='employee-field employee-field--personal-date'>
                                 <label htmlFor='employee-birth-date'>Fecha de nacimiento</label>
-                                <input id='employee-birth-date' type="date" required/>
+                                <input id='employee-birth-date' name='birthDate' type="date" required />
                             </div>
                             <div className='employee-field employee-field--personal-email'>
                                 <label htmlFor='employee-email'>Correo electrónico</label>
-                                <input id='employee-email' type="email" placeholder='Ej. empleado@origenes.com' required/>
+                                <input id='employee-email' name='email' type="email" placeholder='Ej. empleado@origenes.com' required />
                             </div>
                             <div className='employee-field employee-field--personal-phone'>
                                 <label htmlFor='employee-phone'>Teléfono</label>
-                                <input id='employee-phone' type="tel" placeholder='Ej. 61619506' required/>
+                                <input id='employee-phone' name='phone' type="tel" placeholder='Ej. 61619506' required />
                             </div>
                         </div>
                     </section>
@@ -125,7 +139,7 @@ function EmployeeAdd({ open, closed }) {
                             </div>
                             <div className='employee-field employee-field--third'>
                                 <label htmlFor='employee-hire-date'>Fecha de contratación</label>
-                                <input id='employee-hire-date' type="date" required/>
+                                <input id='employee-hire-date' name='fecha_ingreso' type="date" required />
                             </div>
                             <div className='employee-field employee-field--third'>
                                 <label htmlFor='employee-contract-type'>Tipo de contrato</label>
@@ -160,7 +174,7 @@ function EmployeeAdd({ open, closed }) {
                         <div className='employee-personal-information employee-personal-information--six-columns'>
                             <div className='employee-field employee-field--half'>
                                 <label htmlFor='employee-salary'>Salario mensual ($)</label>
-                                <input id='employee-salary' name='salary' type="number" placeholder='Ej. 400.95' required/>
+                                <input id='employee-salary' name='salario_base' type="number" placeholder='Ej. 400.95' required />
                             </div>
                             <div className='employee-field employee-field--half'>
                                 <label htmlFor='employee-payment-frequency'>Forma de pago</label>
@@ -188,7 +202,7 @@ function EmployeeAdd({ open, closed }) {
                             </div>
                             <div className='employee-field employee-field--half'>
                                 <label htmlFor='employee-afp'>Número de AFP</label>
-                                <input id='employee-afp' name='afp' type="text" placeholder='Ej. 129867354290'required />
+                                <input id='employee-afp' name='afp' type="text" placeholder='Ej. 129867354290' required />
                                 <small>AFP laboral: 7.25%</small>
                             </div>
                         </div>
@@ -199,7 +213,7 @@ function EmployeeAdd({ open, closed }) {
                         <button className='employee-submit-button' type='submit' disabled={isSubmitting}>
                             {isSubmitting ? 'Registrando...' : 'Registrar Empleado'}
                         </button>
-                        
+
                     </div>
                 </div>
             </form>

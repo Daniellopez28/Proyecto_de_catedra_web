@@ -23,11 +23,34 @@ import {
 import {
     cerrarSesion,
     crearSesion,
+    extraerTokenSesion,
+    nombreCookieSesion,
+    opcionesBorrarCookieSesion,
+    opcionesCookieSesion,
     requerirAutenticacion
 } from './middleware/autenticacion.js';
 
 const app = express();
-app.use(cors());
+const origenesPermitidos = new Set(
+    (process.env.FRONTEND_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+        .split(',')
+        .map((origen) => origen.trim())
+        .filter(Boolean)
+);
+app.use(cors({
+    origin(origen, siguiente) {
+        siguiente(null, !origen || origenesPermitidos.has(origen));
+    },
+    credentials: true
+}));
+app.use((req, res, siguiente) => {
+    const metodosDeLectura = ['GET', 'HEAD', 'OPTIONS'];
+    const origen = req.get('Origin');
+    if (!metodosDeLectura.includes(req.method) && origen && !origenesPermitidos.has(origen)) {
+        return res.status(403).json({ mensaje: 'El origen de la solicitud no está permitido' });
+    }
+    return siguiente();
+});
 app.use(express.json({ limit: '2mb' }));
 
 app.use('/api/planillas', planilla_routes);
@@ -135,10 +158,10 @@ app.post('/api/login', async (req,res) => {
         `;
         const permisos = filasPermisos.map((permiso) => permiso.codigo);
         const token = crearSesion(usuarioEncontrado, permisos);
+        res.cookie(nombreCookieSesion, token, opcionesCookieSesion);
 
         res.status(200).json({
           mensaje: "Inicio de sesión exitoso",
-          token,
           usuario: { ...usuarioEncontrado, permisos }
         });
     }catch(error){
@@ -147,14 +170,14 @@ app.post('/api/login', async (req,res) => {
     }
 });
 
-app.post('/api/logout', requerirAutenticacion, (req, res) => {
-    cerrarSesion(req.auth.token);
+app.post('/api/logout', (req, res) => {
+    cerrarSesion(extraerTokenSesion(req));
+    res.clearCookie(nombreCookieSesion, opcionesBorrarCookieSesion);
     return res.json({ mensaje: 'Sesión cerrada' });
 });
 
 app.get('/api/session', requerirAutenticacion, (req, res) => {
     return res.json({
-        token: req.auth.token,
         usuario: { ...req.auth.usuario, permisos: [...req.auth.permisos] }
     });
 });

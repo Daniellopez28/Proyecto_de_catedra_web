@@ -19,7 +19,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test pruebas/inventarioServicio.prueba.js pruebas/planillaServicio.prueba.js",
+    "test": "node --test pruebas/autenticacion.prueba.js pruebas/inventarioServicio.prueba.js pruebas/planillaServicio.prueba.js",
     "postinstall": "prisma generate"
   }
 }

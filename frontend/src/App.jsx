@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import './workspace.css';
 import Login from '../components/login.jsx';
 import SideNavbar from '../components/side-navbar.jsx';
-import { borrarSesion, leerSesion, guardarSesion, solicitudApi } from './api.js';
+import { solicitudApi } from './api.js';
 import { modulosPermitidos } from './navigation.js';
 import InicioPage from './pages/InicioPage.jsx';
 import VentasPage from './pages/VentasPage.jsx';
@@ -34,10 +34,10 @@ const titulos = {
 };
 
 function App() {
-    const [sesion, setSesion] = useState(leerSesion);
+    const [sesion, setSesion] = useState(null);
     const [pagina, setPagina] = useState('inicio');
     const [menuAbierto, setMenuAbierto] = useState(false);
-    const [validandoSesion, setValidandoSesion] = useState(Boolean(leerSesion()?.token));
+    const [validandoSesion, setValidandoSesion] = useState(true);
     const [errorSesion, setErrorSesion] = useState('');
     const [intentoValidacion, setIntentoValidacion] = useState(0);
     const [cambioPasswordSolicitado, setCambioPasswordSolicitado] = useState(false);
@@ -54,7 +54,6 @@ function App() {
 
     useEffect(() => {
         function expirarSesion() {
-            borrarSesion();
             setSesion(null);
             setPagina('inicio');
         }
@@ -63,22 +62,16 @@ function App() {
     }, []);
 
     useEffect(() => {
-        if (!sesion?.token) {
-            return undefined;
-        }
-
         let activo = true;
         solicitudApi('/session')
             .then((sesionActual) => {
                 if (!activo) return;
-                guardarSesion(sesionActual);
                 setErrorSesion('');
                 setSesion(sesionActual);
             })
             .catch((fallo) => {
                 if (!activo) return;
                 if (fallo.status === 401) {
-                    borrarSesion();
                     setSesion(null);
                 } else {
                     setErrorSesion(fallo.message);
@@ -88,7 +81,7 @@ function App() {
                 if (activo) setValidandoSesion(false);
             });
         return () => { activo = false; };
-    }, [sesion?.token, intentoValidacion]);
+    }, [intentoValidacion]);
 
     const paginaActual = items.some((item) => item.id === pagina) ? pagina : 'inicio';
 
@@ -98,14 +91,12 @@ function App() {
         } catch {
             // La sesión local se elimina incluso si el servidor dejó de estar disponible.
         } finally {
-            borrarSesion();
             setSesion(null);
             setPagina('inicio');
         }
     }
 
     function actualizarSesion(actualizada) {
-        guardarSesion(actualizada);
         setSesion(actualizada);
     }
 
@@ -127,7 +118,6 @@ function App() {
                             Reintentar
                         </button>
                         <button className="secondary-button" type="button" onClick={() => {
-                            borrarSesion();
                             setSesion(null);
                             setErrorSesion('');
                         }}>
@@ -142,7 +132,6 @@ function App() {
     if (!sesion?.usuario) {
         return <Login onLogin={(nuevaSesion, solicitarCambioPassword) => {
             setCambioPasswordSolicitado(solicitarCambioPassword);
-            setValidandoSesion(true);
             setErrorSesion('');
             setSesion(nuevaSesion);
         }} />;

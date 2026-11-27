@@ -66,15 +66,15 @@ npm run dev
 
 Abre la dirección que indique Vite, normalmente `http://localhost:5173`.
 
-### 4. Ejecutar las pruebas del servicio de inventario
+### 4. Ejecutar las pruebas
 
 Desde `Backend`:
 
 ```powershell
-node --test pruebas/inventarioServicio.prueba.js
+npm test
 ```
 
-Estas pruebas utilizan un cliente Prisma falso; no necesitan conectarse a SQL Server.
+Las pruebas de autenticación, inventario y planillas no necesitan conectarse a SQL Server.
 
 ## Estructura del backend
 
@@ -115,7 +115,9 @@ Backend/
 ├── sql/
 │   └── datos_inventario_recetas.sql
 ├── pruebas/
-│   └── inventarioServicio.prueba.js
+│   ├── autenticacion.prueba.js
+│   ├── inventarioServicio.prueba.js
+│   └── planillaServicio.prueba.js
 ├── OrigeneSV.sql
 ├── package.json
 ├── package-lock.json
@@ -199,26 +201,21 @@ flowchart TD
 
 ## 3. Inicio de sesión, autenticación y permisos
 
-`POST /api/login` valida las credenciales y la sucursal. Para una cuenta de empleado consulta `dbo.sp_login_empleado`; si corresponde, intenta el procedimiento `dbo.sp_login_cliente`. Cuando las credenciales son válidas, consulta los permisos con `dbo.sp_permisos_usuario`, crea una sesión en memoria y devuelve un token.
+`POST /api/login` valida las credenciales de empleado y la sucursal. Cuando son válidas, consulta los permisos con `dbo.sp_permisos_usuario`, crea una sesión en memoria y envía el token en la cookie `origenes-sesion`. La respuesta JSON incluye el usuario y sus permisos, pero no el token.
 
-Las rutas protegidas reciben ese token en el encabezado `Authorization`. El middleware comprueba la sesión y, después, el permiso específico que requiere la ruta.
+El navegador envía la cookie automáticamente en las solicitudes. El middleware comprueba la sesión y, después, el permiso específico que requiere la ruta. También se conserva la autenticación por `Authorization: Bearer` para clientes que ya la usen.
 
 ```mermaid
 flowchart TD
     LOGIN["POST /api/login"] --> VALIDATE["Validar identificador, contraseña y sucursal"]
     VALIDATE --> EMPLOYEE["Intentar dbo.sp_login_empleado"]
-    EMPLOYEE --> EMPLOYEE_FOUND{"¿Se encontró una cuenta de empleado?"}
+    EMPLOYEE --> EMPLOYEE_FOUND{"¿Se encontró una cuenta válida?"}
+    EMPLOYEE_FOUND -->|No| ELOGIN["Responder error de inicio de sesión"]
     EMPLOYEE_FOUND -->|Sí| FOUND["Continuar con el usuario encontrado"]
-    EMPLOYEE_FOUND -->|No| CLIENT_ALLOWED{"¿No hay cuenta de empleado y el identificador es correo?"}
-    CLIENT_ALLOWED -->|No| ELOGIN["Responder error de inicio de sesión"]
-    CLIENT_ALLOWED -->|Sí| CLIENT["Intentar dbo.sp_login_cliente"]
-    CLIENT --> CLIENT_FOUND{"¿Se encontraron credenciales válidas?"}
-    CLIENT_FOUND -->|No| ELOGIN
-    CLIENT_FOUND -->|Sí| FOUND
     FOUND --> PERMS["Consultar dbo.sp_permisos_usuario"]
     PERMS --> CREATE["crearSesion(usuario, permisos)"]
-    CREATE --> TOKEN["Devolver token, usuario y permisos"]
-    TOKEN --> REQUEST["Solicitud protegida<br/>Authorization: Bearer token"]
+    CREATE --> COOKIE["Enviar cookie HttpOnly"]
+    COOKIE --> REQUEST["Solicitud protegida<br/>Cookie: origenes-sesion"]
     REQUEST --> AUTH["requerirAutenticacion"]
     AUTH --> VALID{"¿Sesión vigente?"}
     VALID -->|No| E401["HTTP 401"]
@@ -228,7 +225,9 @@ flowchart TD
     HAS -->|Sí| HANDLER["Ejecutar handler"]
 ```
 
-El middleware mantiene las sesiones en memoria durante ocho horas. Por eso, un reinicio del proceso elimina las sesiones activas y requiere iniciar sesión de nuevo. Los permisos se representan como un `Set` en el servidor.
+El middleware mantiene las sesiones en memoria durante ocho horas. La cookie tiene la misma duración, `HttpOnly`, `SameSite=Lax`, ruta `/` y el atributo `Secure` cuando `NODE_ENV=production`. El cierre de sesión revoca la sesión y elimina la cookie; una cookie inválida o expirada también se elimina. Un reinicio del proceso elimina las sesiones activas y requiere iniciar sesión de nuevo. Los permisos se representan como un `Set` en el servidor.
+
+El frontend ofrece una pantalla para guardar la preferencia de cookies. Actualmente la cookie de autenticación es la única cookie utilizada; no se cargan cookies de analítica ni publicidad. Consulta [la documentación del frontend](../frontend/README.md).
 
 ## 4. Registro de ventas y transacciones
 
@@ -292,9 +291,9 @@ Las explicaciones siguen el recorrido desde el punto de entrada hasta los módul
 
 #### Configuración de Express y routers
 
-**`app.use(cors())`**
+**CORS y validación de origen**
 
-Agrega el middleware CORS para que el frontend pueda realizar solicitudes a la API desde su origen.
+Permite solicitudes con credenciales desde los orígenes indicados en `FRONTEND_ORIGINS`, una lista separada por comas. Si no se configura, permite `http://localhost:5173` y `http://127.0.0.1:5173` para desarrollo. Las solicitudes que modifican datos y contienen un encabezado `Origin` se rechazan si el origen no está permitido. En producción, configura los orígenes explícitamente y sirve frontend y API bajo el mismo sitio para que funcione `SameSite=Lax`.
 
 **`app.use(express.json())`**
 
@@ -360,11 +359,11 @@ Requiere `tomar_pedidos`. Primero valida los campos generales, la sucursal que p
 
 **`POST /api/login`**
 
-Valida que se reciban identificador, contraseña y una sucursal activa permitida. Primero intenta autenticar una cuenta de empleado con `dbo.sp_login_empleado`. Si no se encuentra y el identificador tiene formato de correo, comprueba que no exista una cuenta de empleado asociada a ese correo antes de intentar `dbo.sp_login_cliente`. Cuando la autenticación funciona, consulta los permisos con `dbo.sp_permisos_usuario`, crea una sesión en memoria y devuelve el token, los datos del usuario y sus permisos. Si las credenciales no coinciden, responde `401`.
+Valida que se reciban identificador, contraseña y una sucursal activa permitida. Autentica la cuenta de empleado con `dbo.sp_login_empleado`. Cuando la autenticación funciona, consulta los permisos con `dbo.sp_permisos_usuario`, crea una sesión en memoria, envía el token como cookie `HttpOnly` y devuelve los datos del usuario y sus permisos sin incluir el token. Si las credenciales no coinciden, responde `401`.
 
 **`POST /api/logout`**
 
-Requiere una sesión válida y revoca el token actual mediante `cerrarSesion`.
+Revoca la sesión identificada por la cookie (o por un encabezado Bearer heredado) y elimina la cookie. La operación también elimina la cookie si la sesión ya no existe.
 
 **`POST /api/clientes/registro`**
 
@@ -372,7 +371,7 @@ Valida nombre, formato y longitud del correo, longitud de contraseña y teléfon
 
 **`GET /api/session`**
 
-Requiere una sesión vigente. Devuelve el token asociado a la solicitud, los datos guardados del usuario y los permisos convertidos a una lista para incluirlos en el JSON.
+Requiere una sesión vigente. Devuelve los datos guardados del usuario y los permisos convertidos a una lista; no devuelve el token de sesión.
 
 **`POST /api/cambiar-password`**
 
@@ -470,9 +469,13 @@ Recorre las sesiones y elimina las que pertenecen a la cuenta indicada. Se utili
 
 Vacía el `Map`. Se usa al modificar permisos que afectan sesiones existentes.
 
+**`extraerTokenSesion(peticion)`**
+
+Busca el token en la cookie `origenes-sesion` y, si no está presente, acepta el formato heredado `Authorization: Bearer <token>`.
+
 **`requerirAutenticacion(peticion, respuesta, siguiente)`**
 
-Lee `Authorization`, exige el formato `Bearer <token>`, busca la sesión y comprueba su vencimiento. Si no es válida responde `401`; si lo es, agrega token, usuario y permisos a `peticion.auth` y continúa.
+Extrae el token de la cookie o del encabezado Bearer, busca la sesión y comprueba su vencimiento. Si no es válida responde `401` y elimina una cookie de sesión presente; si lo es, agrega token, usuario y permisos a `peticion.auth` y continúa.
 
 **`requerirPermiso(codigo)`**
 
@@ -1317,6 +1320,10 @@ Esta lista sirve como índice rápido. Las funciones, validaciones y lógica de 
 
 ## Pruebas
 
+### `pruebas/autenticacion.prueba.js`
+
+Comprueba los atributos de la cookie de sesión, la autenticación mediante cookie, el rechazo y eliminación de cookies inválidas y la compatibilidad con encabezados Bearer.
+
 ### `pruebas/inventarioServicio.prueba.js`
 
 **Propósito:** prueba reglas del servicio de inventario sin conectarse a SQL Server. Usa el módulo nativo `node:test`, aserciones de `node:assert/strict` y un cliente Prisma falso.
@@ -1343,7 +1350,7 @@ Las pruebas verifican que el servicio:
 - Simule consumos sin modificar existencias.
 - Normalice productos repetidos, liste insumos y calcule costos de recetas.
 
-Para ejecutarlas, usa `node --test pruebas/inventarioServicio.prueba.js` desde la carpeta `Backend`.
+`npm test` ejecuta las pruebas de autenticación, inventario y planillas desde la carpeta `Backend`. No requieren SQL Server.
 
 ## Configuracion
 

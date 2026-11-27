@@ -10,6 +10,8 @@ Este documento explica cómo preparar y ejecutar el backend, cómo recorre una s
 - [Apartado 2 — Explicación archivo por archivo](#apartado-2--explicación-archivo-por-archivo)
 - [Endpoints de la API](#endpoints-de-la-api)
 - [Pruebas](#pruebas)
+- [configuración](#configuracion)
+
 
 Los diagramas Mermaid de este documento se muestran como gráficos en GitHub. En VS Code, abre la vista previa de Markdown con **Ctrl+Shift+V**; si Mermaid aparece como texto, instala una extensión de vista previa compatible con Mermaid.
 
@@ -1343,8 +1345,8 @@ Las pruebas verifican que el servicio:
 
 Para ejecutarlas, usa `node --test pruebas/inventarioServicio.prueba.js` desde la carpeta `Backend`.
 
-Backend
-Configuracion
+## Configuracion
+
 Abrir la base de datos OrigeneSV.sql en sql manager, hacer la conexion a un contenedor de docker con la siguiente linea:
 
 docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=ProyectoWeb@2026" -p 1432:1433 --name proyecto_web -v sqlserver_data:/var/opt/mssql -d mcr.microsoft.com/mssql/server:2022-latest

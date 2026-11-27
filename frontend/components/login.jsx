@@ -11,6 +11,7 @@ function Login({ onLogin }) {
     const [cargandoSucursales, setCargandoSucursales] = useState(true);
     const [error, setError] = useState('');
     const [cargando, setCargando] = useState(false);
+    const [solicitarCambioPassword, setSolicitarCambioPassword] = useState(false);
 
     useEffect(() => {
         let activo = true;
@@ -39,7 +40,7 @@ function Login({ onLogin }) {
                 body: { correo: correo.trim(), password, sucursalid: Number(sucursalid) }
             });
             guardarSesion(sesion);
-            onLogin(sesion);
+            onLogin(sesion, solicitarCambioPassword);
         } catch (error) {
             setError(error.message || 'No se pudo iniciar sesión.');
         } finally {
@@ -52,17 +53,14 @@ function Login({ onLogin }) {
             <div className='mainContainer'>
                 <div className="px-4 py-5 px-md-5 text-center text-lg-start" >
                     <div className="container" >
-                        <div className="row gx-lg-5 align-items-center" >
-                            <div className="col-lg-6 mb-5 mb-lg-5">
-                                <img className="login-brand-logo" src="/brand/origenes-logo.png" alt="Orígenes SV" />
+                        <div className="row gx-lg-1 align-items-center" >
+                            <div className="col-lg-6 mb-5 mb-lg-1">
+                                <img className="login-brand-logo mx-auto mx-lg-0" src="/brand/origenes-logo.png" alt="Orígenes SV" />
                                 <h1 className="my-5 display-3 fw-bold ls-tight">
                                     Todo listo <br />
-                                    <span className=" " style={{ color: '#B95136' }}>para un buen servicio</span>
+                                    <span>para un buen servicio</span>
                                 </h1>
-                                <p style={{ color: '#7A7D75' }}>
-                                    Ingresa a tu espacio de trabajo para continuar la
-                                    operación de tu sucursal.
-                                </p>
+                                
                             </div>
 
                             <div className="col-lg-6 mb-5 mb-lg-0" >
@@ -118,6 +116,22 @@ function Login({ onLogin }) {
                                                     autoComplete="current-password"
                                                     required
                                                 />
+                                            </div>
+                                            <div className="login-password-help">
+                                                <button
+                                                    type="button"
+                                                    aria-expanded={solicitarCambioPassword}
+                                                    onClick={() => setSolicitarCambioPassword((actual) => !actual)}
+                                                >
+                                                    ¿Perdiste tu contraseña?
+                                                </button>
+                                                {solicitarCambioPassword && (
+                                                    <p role="status">
+                                                        Al iniciar sesión se abrirá el formulario protegido de cambio.
+                                                        Necesitas tu contraseña actual; si la olvidaste, solicita un
+                                                        restablecimiento a RR. HH. o a un administrador.
+                                                    </p>
+                                                )}
                                             </div>
                                             {error && <div className="alert alert-danger" role="alert">{error}</div>}
                                             <button

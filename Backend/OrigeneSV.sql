@@ -1,21 +1,44 @@
---creamos la base de datos
---si la base ya existe (por una ejecucion anterior) se elimina y se vuelve a crear, para que el script siempre arranque desde cero
+-- Crea origenesv solo cuando no existe. Al reejecutarse conserva los datos y
+-- omite la creacion del esquema y los datos de prueba.
 use master;
+declare @omitir_instalacion bit = case when db_id(N'origenesv') is null then 0 else 1 end;
+exec sys.sp_set_session_context @key = N'origenesv_omitir_instalacion', @value = @omitir_instalacion;
+if @omitir_instalacion = 1
+    print N'La base origenesv ya existe. Se conservaran sus datos; use las migraciones para actualizarla.';
 go
 
-if db_id(N'origenesv') is not null
-begin
-    alter database origenesv set single_user with rollback immediate;
-    drop database origenesv;
-end;
-go
-
-create database origenesv;
+if try_convert(bit, session_context(N'origenesv_omitir_instalacion')) = 0
+    exec(N'create database origenesv;');
 go
 
 use origenesv;
 go
 
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1
+   AND OBJECT_ID(N'dbo.permisos', N'U') IS NOT NULL
+   AND OBJECT_ID(N'dbo.niveles_acceso', N'U') IS NOT NULL
+   AND OBJECT_ID(N'dbo.nivel_permiso', N'U') IS NOT NULL
+BEGIN
+    EXEC sys.sp_executesql N'
+        IF NOT EXISTS (SELECT 1 FROM dbo.permisos WHERE codigo = ''editar_planillas'')
+            INSERT INTO dbo.permisos (codigo, descripcion)
+            VALUES (''editar_planillas'', ''editar detalles de planillas no pagadas'');
+
+        INSERT INTO dbo.nivel_permiso (id_nivel, id_permiso)
+        SELECT n.id_nivel, p.id_permiso
+        FROM dbo.niveles_acceso n
+        CROSS JOIN dbo.permisos p
+        WHERE n.codigo = ''rrhh''
+          AND p.codigo = ''editar_planillas''
+          AND NOT EXISTS (
+              SELECT 1 FROM dbo.nivel_permiso np
+              WHERE np.id_nivel = n.id_nivel AND np.id_permiso = p.id_permiso
+          );
+    ';
+END;
+go
+
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 --generamos las tablas de la base de datos:
 --tabla para almacenar los roles de los usuarios del sistema 
 create table dbo.roles (
@@ -26,6 +49,8 @@ create table dbo.roles (
         pantalla_inicio   varchar(50) not null constraint df_roles_pantalla default ('panel_principal')
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tablaa de sucursales, aca estan las sedes de los restaurantes
 create table dbo.sucursales (
@@ -36,6 +61,8 @@ create table dbo.sucursales (
     activo bit not null constraint df_sucursales_activo default (1)
     );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de empleados, donde se gaurdara la ficha de el empleado (su informacion)
   create table dbo.empleados (
@@ -60,12 +87,17 @@ go
         tipo_contrato    varchar(50)  null,
         jornada          varchar(50)  null,
         forma_pago       varchar(50)  null,
+        -- INICIO CAMBIO: fecha de fin para contratos definidos.
+        fecha_fin_contrato date null,
+        -- FIN CAMBIO: fecha de fin para contratos definidos.
         constraint fk_empleados_sucursales foreign key (sucursalid) references dbo.sucursales(sucursalid),
         constraint fk_empleados_roles      foreign key (id_rol)      references dbo.roles(id_rol),
         constraint ck_empleados_salario    check (salario_base >= 0),
         constraint ck_empleados_planilla   check (tipo_planilla in ('quincenal', 'mensual'))
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de usuarios, aca estan las credenciales de ingreso o acceso
 create table dbo.usuarios (
@@ -86,6 +118,8 @@ create table dbo.usuarios (
         constraint fk_usuarios_empleados  foreign key (id_empleado) references dbo.empleados(id_empleado)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------seguimos con las tablas pero con plantillas para otras funciones--------
 --tabla para almacenar las planillas de los empleados
@@ -100,6 +134,8 @@ create table dbo.planillas (
         constraint ck_planillas_total   check (total_pagar >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de planilla de detalle, que guarda los detalles de cada empleado
 create table dbo.planilla_detalle (
@@ -121,12 +157,15 @@ create table dbo.planilla_detalle (
         )
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------continuamos con las tablas pero ahora para otro publico--------
 --tabla de clientes para guardar la informacion de los clientes
 create table dbo.clientes (
         id_cliente       int identity(1,1) not null constraint pk_clientes primary key,
         nombre           varchar(150) not null,
+        apellido         varchar(100) null,
         dui              varchar(10)  null,
         nit              varchar(17)  null,
         nrc              varchar(15)  null,
@@ -138,6 +177,8 @@ create table dbo.clientes (
         creado_en        datetime null constraint df_clientes_creado_en default (getdate())
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla para proveedores para guardar la informacion 
 create table dbo.proveedores (
@@ -151,6 +192,8 @@ create table dbo.proveedores (
         activo          bit null constraint df_proveedores_activo default (1)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------ahora continuamos con las tablas de gestion de el local--------
 --tabla de insumos para guaradar los insumos que se van a utilizar
@@ -167,6 +210,8 @@ create table dbo.insumos (
         constraint ck_insumos_costo        check (costo_promedio is null or costo_promedio >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de gestion de productos para guardar los productos que se venden en el local
 create table dbo.productos (
@@ -178,10 +223,14 @@ create table dbo.productos (
         es_reventa   bit null constraint df_productos_es_reventa default (0),
         activo       bit null constraint df_productos_activo default (1),
         stock_actual decimal(10,2) null constraint df_productos_stock default (0.00),
+        imagen       varbinary(max) null,
+        imagen_mime  varchar(50) null,
         constraint ck_productos_precio check (precio_venta >= 0),
         constraint ck_productos_stock  check (stock_actual is null or stock_actual >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de recetas a detalle de el menu, para saber los insumos que se utilizan
 create table dbo.recetas_detalle (
@@ -196,6 +245,8 @@ create table dbo.recetas_detalle (
         constraint ck_recetas_cantidad check (cantidad_requerida > 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de gestion de inventario dependiendo la sucrusal (esto puede variar en base a su sucrsal)
 create table dbo.inventario_sucursal (
@@ -212,6 +263,8 @@ create table dbo.inventario_sucursal (
         constraint ck_inventario_sucursal_stock check (stock_actual >= 0 and stock_minimo >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Tabla de movimiento o historial de el inventario
 create table dbo.movimientos_inventario (
@@ -233,6 +286,8 @@ create table dbo.movimientos_inventario (
         constraint ck_movimientos_inventario_cantidad check (cantidad > 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------tablas para los servicios de el restaurante--------
 --tabla de mesas por sucrusal(esto tabien puede variar en base al tamanio de el local)
@@ -248,6 +303,8 @@ create table dbo.mesas (
         constraint ck_mesas_estado    check (estado in ('libre', 'ocupada', 'reservada', 'inactiva'))
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de modificaciones de productos (si se agrega o algo un producto pasara por esta tabla)
 create table dbo.modificadores (
@@ -258,6 +315,8 @@ create table dbo.modificadores (
         constraint ck_modificadores_precio check (precio >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------tablas dedicadas a la gestion de ventas y de pagos--------
 --tabla de gestion de ventas que se realizan
@@ -267,6 +326,7 @@ create table dbo.ventas (
         id_usuario      int not null,
         sucursalid      int null,
         mesaid          int null,
+        nombre_cliente  varchar(150) null,
         fecha_hora      datetime null constraint df_ventas_fecha default (getdate()),
         tipo_documento  varchar(30) not null,
         correlativo     varchar(50) not null constraint uq_ventas_correlativo unique,
@@ -286,6 +346,8 @@ create table dbo.ventas (
         constraint ck_ventas_pedido  check (estado_pedido in ('abierto', 'en_cocina', 'servido', 'pagado', 'cancelado'))
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de los detalles de la venta
 create table dbo.venta_detalle (
@@ -303,6 +365,8 @@ create table dbo.venta_detalle (
         constraint ck_venta_detalle_montos check (cantidad > 0 and precio_unitario >= 0 and subtotal_linea >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla por si sucede una modificacion en la venta (si se aplica algun extra que no se habia agregado previamente):
 create table dbo.detalle_venta_modificadores (
@@ -318,6 +382,8 @@ create table dbo.detalle_venta_modificadores (
         constraint ck_dvm_precio check (precio_aplicado >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de pago (el cobro de cada venta, si es en tarjeta o efectivo)
 create table dbo.pagos (
@@ -332,6 +398,8 @@ create table dbo.pagos (
     constraint ck_pagos_montos check (monto > 0)
     );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------continuamos con las tablas de cajas--------
 --tabla de caja para la gestion de aperturas y cierres de turno de los empleados.
@@ -357,6 +425,8 @@ create table dbo.cajas (
     constraint ck_cajas_estado  check (estado in ('abierta', 'cerrada'))
     );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de movimientos de la caja, sean retiros, ingresos extra y pagos a proveedores con efectivo, esto ayuda a la gestion de cuanto ingresa y cuanto sale
 create table dbo.movimientos_caja (
@@ -374,6 +444,8 @@ create table dbo.movimientos_caja (
         constraint ck_movimientos_caja_monto check (monto > 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------continuamos con las tablas de compras, pagos a proveedores--------
 --tabla de compras (es la factura para los proveedores)
@@ -396,6 +468,8 @@ go
         constraint ck_compras_montos   check (subtotal >= 0 and iva >= 0 and total_compra >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de detalles de la compra (osea el inventario que se compro)
 create table dbo.compra_detalle (
@@ -411,6 +485,8 @@ create table dbo.compra_detalle (
         constraint ck_compra_detalle_montos check (cantidad > 0 and costo_unitario >= 0 and subtotal >= 0)
         );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --tabla de pagos para la compra (el abono o pago de una compra dada)
 create table dbo.pagos_compra (
@@ -426,6 +502,7 @@ create table dbo.pagos_compra (
         constraint ck_pagos_compra_monto   check (monto > 0)
         );
 go
+
 
 --------desarrollo de indices para encontrar datos especificos, los dejare comentados para que funciona cada uno--------
 --ajustes de sesion requeridos para crear indices filtrados
@@ -447,6 +524,8 @@ if not exists (
     create unique index ux_planillas_periodo_tipo
     on dbo.planillas (tipo_planilla, periodo_inicio, periodo_fin);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --indice que acelera reportes de ventas por sucursal (enetrega la sucursal y la fecha en la que se realiza)
 if not exists (
@@ -458,6 +537,8 @@ if not exists (
     create index ix_ventas_fecha_sucursal
     on dbo.ventas (sucursalid, fecha_hora);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --indice que acelera el historial de movimientos de un insumo
 if not exists (
@@ -469,6 +550,8 @@ if not exists (
     create index ix_movimientos_inventario_insumo_fecha
     on dbo.movimientos_inventario (insumoid, fecha desc);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --indice que sa una caja por sucursal (esto significa que solo puede haber una sesion de caja abierta por sucursal)
 if not exists (
@@ -481,6 +564,8 @@ if not exists (
     on dbo.cajas (sucursalid)
         where estado = 'abierta' and sucursalid is not null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --indice de empleado que tiene solo un usuario (este busca de que un empleado tiene un usuario y ya, no mas para evitar duplicidad)
 if not exists (
@@ -493,6 +578,8 @@ if not exists (
     on dbo.usuarios (id_empleado)
         where id_empleado is not null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --indice de dui y nit , evita duplicidad (no pueden haber dos usuarios con el mismo dui o nit)
 if not exists (
@@ -505,6 +592,8 @@ if not exists (
     on dbo.clientes (dui)
         where dui is not null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 if not exists (
     select 1
@@ -516,14 +605,19 @@ if not exists (
     on dbo.clientes (nit)
         where nit is not null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------Niveles de acceso y permisos--------
+-- INICIO CAMBIOS: niveles y permisos separados por funcion y alcance de RR. HH.
 create table dbo.niveles_acceso (
     id_nivel    int identity(1,1) not null constraint pk_niveles_acceso primary key,
-    codigo      varchar(20)  not null constraint uq_niveles_acceso_codigo unique,  -- administrador | gerente | empleado | cliente
+    codigo      varchar(20)  not null constraint uq_niveles_acceso_codigo unique,  -- administrador | gerente | rrhh | empleado | cliente
     descripcion varchar(255) null
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --permisos: cada accion que se puede controlar (ej. ver_menu, generar_planillas)
 create table dbo.permisos (
@@ -532,6 +626,8 @@ create table dbo.permisos (
     descripcion varchar(255) null
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --nivel_permiso: que permisos tiene cada nivel
 create table dbo.nivel_permiso (
@@ -542,28 +638,40 @@ create table dbo.nivel_permiso (
     constraint fk_nivel_permiso_permiso foreign key (id_permiso) references dbo.permisos(id_permiso)     on delete cascade
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --roles: cada rol de puesto pertenece a un nivel (columna nueva, se llena mas abajo con el update de roles)
 alter table dbo.roles add id_nivel int null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 alter table dbo.roles add constraint fk_roles_nivel foreign key (id_nivel) references dbo.niveles_acceso(id_nivel);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 
---usuarios: un cliente tambien tiene cuenta (columna nueva id_cliente). una cuenta es de un empleado o de un cliente, nunca de ambos
+
+--usuarios conserva id_cliente solo para compatibilidad con datos historicos; la aplicacion no crea cuentas de cliente
 alter table dbo.usuarios add id_cliente int null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 alter table dbo.usuarios add constraint fk_usuarios_clientes foreign key (id_cliente) references dbo.clientes(id_cliente);
 alter table dbo.usuarios add constraint ck_usuarios_un_solo_origen check (id_empleado is null or id_cliente is null);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --un cliente tiene una sola cuenta (filtrado: permite varios usuarios sin cliente)
 if not exists (select 1 from sys.indexes where name = N'ux_usuarios_cliente' and object_id = object_id(N'dbo.usuarios'))
     create unique index ux_usuarios_cliente on dbo.usuarios (id_cliente) where id_cliente is not null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 
---reservas: necesaria para que el cliente y el empleado puedan consultar reservas
+
+--reservas: los empleados registran las reservas y los clientes se guardan como contactos
 create table dbo.reservas (
     id_reserva        int identity(1,1) not null constraint pk_reservas primary key,
     mesaid            int not null,                  -- la sucursal se obtiene de la mesa
@@ -581,25 +689,34 @@ create table dbo.reservas (
     constraint ck_reservas_duracion  check (duracion_minutos between 30 and 480)
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --acelera la busqueda de disponibilidad por mesa y hora
 if not exists (select 1 from sys.indexes where name = N'ix_reservas_mesa_fecha' and object_id = object_id(N'dbo.reservas'))
     create index ix_reservas_mesa_fecha on dbo.reservas (mesaid, fecha_hora_inicio);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------seccion de datos de referencias--------
---rol de pantalla_inicio, para que lso roles tengan la pantalla de inicio
+--roles de pantalla_inicio, con RR. HH. separado de administracion del sistema
 insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
 select v.nombre, v.descripcion, v.es_admin, v.pantalla
 from (values
     ('administrador', 'administracion del sistema',            1, 'panel_principal'),
-    ('rrhh',          'personal y planillas',                  1, 'empleados'),
+    ('rrhh',          'personal y planillas',                  0, 'empleados'),
     ('cajero',        'ventas y operaciones de caja',          0, 'caja'),
     ('mesero',        'pedidos y atencion en salon',           0, 'toma_pedidos'),
-    ('cocinero',      'consulta y preparacion de pedidos',     0, 'cocina')
+    ('cocinero',      'consulta y preparacion de pedidos',     0, 'cocina'),
+    ('barista',       'preparacion de bebidas y toma de pedidos', 0, 'toma_pedidos'),
+    ('contabilidad',  'consulta de caja y planillas',          0, 'caja'),
+    ('compras',       'compras, proveedores e inventario',     0, 'compras')
 ) as v(nombre, descripcion, es_admin, pantalla)
 where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Sucursales, son 3, escalon, mejicanos y santa elena 
 insert into dbo.sucursales (nombre, direccion)
@@ -607,6 +724,8 @@ select v.nombre, 'direccion pendiente'
 from (values ('escalon'), ('mejicanos'), ('santa elena')) as v(nombre)
 where not exists (select 1 from dbo.sucursales s where s.nombre = v.nombre);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Insumos, estos son los que usaremos para el menu
 insert into dbo.insumos (nombre, unidad_medida, stock_actual, stock_minimo, costo_promedio)
@@ -619,6 +738,8 @@ from (values
 ) as v(nombre, unidad, stock, minimo, costo)
 where not exists (select 1 from dbo.insumos i where i.nombre = v.nombre);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Productos de el menu
 insert into dbo.productos (nombre, descripcion, precio_venta, categoria, es_reventa)
@@ -629,6 +750,8 @@ from (values
 ) as v(nombre, descripcion, precio, categoria, reventa)
 where not exists (select 1 from dbo.productos p where p.nombre = v.nombre);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Recetas y su consumo
 insert into dbo.recetas_detalle (id_producto, id_insumo, cantidad_requerida)
@@ -648,6 +771,8 @@ where not exists (
       and rd.id_insumo   = i.id_insumo
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Saldo inicial de el inventario por sucursal
 insert into dbo.inventario_sucursal (sucursalid, insumoid, stock_actual, stock_minimo)
@@ -662,6 +787,8 @@ where s.nombre = 'escalon'
         and x.insumoid   = i.id_insumo
   );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --Los niveles de acceso con sus permisos y desc
 insert into dbo.niveles_acceso (codigo, descripcion)
@@ -669,22 +796,27 @@ select v.codigo, v.descripcion
 from (values
     ('administrador', 'puede ver y hacer todo en el sistema'),
     ('gerente',       'hace las tareas de gerente: operacion, compras, inventario, personal y reportes'),
-    ('empleado',      've reservas y lo relacionado a su trabajo y su propia informacion'),
-    ('cliente',       'solo ve el menu, las reservas disponibles y sus propias reservas')
+    ('rrhh',          'gestiona personal y planillas en todas las sucursales, sin funciones operativas'),
+    ('cajero',        'registra ventas y opera caja'),
+    ('mesero',        'toma pedidos y consulta mesas y reservas'),
+    ('cocinero',      'consulta y actualiza pedidos de cocina'),
+    ('barista',       'toma pedidos y consulta menu, mesas y reservas'),
+    ('contabilidad',  'consulta caja y planillas'),
+    ('compras',       'gestiona compras, proveedores e inventario'),
+    ('empleado',      've reservas y lo relacionado a su trabajo y su propia informacion')
 ) as v(codigo, descripcion)
 where not exists (select 1 from dbo.niveles_acceso n where n.codigo = v.codigo);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --catalogo de permisos (para agregar uno nuevo: insertarlo aqui y asignarlo a un nivel mas abajo)
 insert into dbo.permisos (codigo, descripcion)
 select v.codigo, v.descripcion
 from (values
 
-    --lo que puede ver un cliente
     ('ver_menu',                 'consultar el menu de productos'),
     ('ver_reservas_disponibles', 'consultar mesas y horarios disponibles para reservar'),
-    ('ver_mis_reservas',         'ver las reservas propias del cliente'),
-    ('ver_mi_perfil',            'ver los datos propios de la cuenta'),
 
     --lo que puede hacer un empleado
     ('ver_reservas',             'ver todas las reservas de la sucursal'),
@@ -698,8 +830,10 @@ from (values
     ('gestionar_reservas',       'crear, confirmar y cancelar reservas'),
     ('ver_empleados',            'ver el listado y las fichas de los empleados'),
     ('registrar_empleados',      'registrar nuevos empleados'),
+    ('gestionar_empleados_todas_sucursales', 'gestionar empleados de cualquier sucursal'),
     ('ver_planillas',            'ver las planillas generadas'),
     ('generar_planillas',        'generar la planilla de un periodo'),
+    ('editar_planillas',         'editar detalles de planillas no pagadas'),
     ('ver_inventario',           'ver el inventario de insumos'),
     ('gestionar_inventario',     'ajustar y administrar el inventario'),
     ('ver_compras',              'ver las compras a proveedores'),
@@ -707,6 +841,7 @@ from (values
     ('ver_proveedores',          'ver el listado de proveedores'),
     ('ver_ventas',               'ver las ventas realizadas'),
     ('operar_caja',              'abrir y cerrar caja y registrar movimientos'),
+    ('ver_caja',                 'consultar caja y sus movimientos sin modificarla'),
     ('ver_reportes',             'ver los reportes del negocio'),
     ('gestionar_productos',      'crear y editar productos del menu y sus recetas'),
 
@@ -717,21 +852,28 @@ from (values
 ) as v(codigo, descripcion)
 where not exists (select 1 from dbo.permisos p where p.codigo = v.codigo);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 
---permisos del cliente (usuario normal): solo ver menu, reservas disponibles y lo suyo
---(para que el cliente tambien pueda reservar, crear un permiso 'crear_reserva' y asignarlo aqui)
+
+--permisos de recursos humanos: personal y planillas, sin pedidos ni operaciones de sucursal
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
 select n.id_nivel, p.id_permiso
 from (values
-    ('cliente', 'ver_menu'),
-    ('cliente', 'ver_reservas_disponibles'),
-    ('cliente', 'ver_mis_reservas'),
-    ('cliente', 'ver_mi_perfil')
+    ('rrhh', 'ver_empleados'),
+    ('rrhh', 'registrar_empleados'),
+    ('rrhh', 'gestionar_empleados_todas_sucursales'),
+    ('rrhh', 'ver_planillas'),
+    ('rrhh', 'generar_planillas'),
+    ('rrhh', 'editar_planillas'),
+    ('rrhh', 'ver_mi_ficha'),
+    ('rrhh', 'ver_mi_planilla')
 ) as v(nivel, permiso)
 join dbo.niveles_acceso n on n.codigo = v.nivel
 join dbo.permisos       p on p.codigo = v.permiso
 where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --permisos del empleado: ver reservas y cosas relacionadas a el empleado
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
@@ -744,13 +886,107 @@ from (values
     ('empleado', 'tomar_pedidos'),
     ('empleado', 'ver_pedidos_cocina'),
     ('empleado', 'ver_mi_ficha'),
-    ('empleado', 'ver_mi_planilla'),
-    ('empleado', 'ver_mi_perfil')
+    ('empleado', 'ver_mi_planilla')
 ) as v(nivel, permiso)
 join dbo.niveles_acceso n on n.codigo = v.nivel
 join dbo.permisos       p on p.codigo = v.permiso
 where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
+
+--permisos del cajero: ventas, menu, mesas y caja; sin cocina ni recursos humanos
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('cajero', 'ver_menu'),
+    ('cajero', 'ver_mesas'),
+    ('cajero', 'ver_reservas'),
+    ('cajero', 'ver_reservas_disponibles'),
+    ('cajero', 'gestionar_reservas'),
+    ('cajero', 'tomar_pedidos'),
+    ('cajero', 'ver_ventas'),
+    ('cajero', 'operar_caja'),
+    ('cajero', 'ver_mi_ficha'),
+    ('cajero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
+
+--permisos del mesero: toma pedidos y atiende mesas, sin caja ni cocina
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('mesero', 'ver_menu'),
+    ('mesero', 'ver_reservas'),
+    ('mesero', 'ver_reservas_disponibles'),
+    ('mesero', 'gestionar_reservas'),
+    ('mesero', 'ver_mesas'),
+    ('mesero', 'tomar_pedidos'),
+    ('mesero', 'ver_mi_ficha'),
+    ('mesero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
+
+--permisos del cocinero: solo pedidos de cocina y datos laborales propios
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('cocinero', 'ver_menu'),
+    ('cocinero', 'ver_mesas'),
+    ('cocinero', 'ver_reservas'),
+    ('cocinero', 'ver_reservas_disponibles'),
+    ('cocinero', 'tomar_pedidos'),
+    ('cocinero', 'ver_pedidos_cocina'),
+    ('cocinero', 'ver_mi_ficha'),
+    ('cocinero', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos       p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
+
+insert into dbo.nivel_permiso (id_nivel, id_permiso)
+select n.id_nivel, p.id_permiso
+from (values
+    ('barista', 'ver_menu'),
+    ('barista', 'ver_reservas'),
+    ('barista', 'ver_reservas_disponibles'),
+    ('barista', 'ver_mesas'),
+    ('barista', 'tomar_pedidos'),
+    ('barista', 'ver_pedidos_cocina'),
+    ('barista', 'ver_mi_ficha'),
+    ('barista', 'ver_mi_planilla'),
+    ('contabilidad', 'ver_caja'),
+    ('contabilidad', 'ver_planillas'),
+    ('contabilidad', 'ver_mi_ficha'),
+    ('contabilidad', 'ver_mi_planilla'),
+    ('compras', 'ver_menu'),
+    ('compras', 'ver_inventario'),
+    ('compras', 'gestionar_inventario'),
+    ('compras', 'ver_compras'),
+    ('compras', 'registrar_compras'),
+    ('compras', 'ver_proveedores'),
+    ('compras', 'ver_mi_ficha'),
+    ('compras', 'ver_mi_planilla')
+) as v(nivel, permiso)
+join dbo.niveles_acceso n on n.codigo = v.nivel
+join dbo.permisos p on p.codigo = v.permiso
+where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
+go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --permisos del gerente: todo lo del empleado (se hereda) mas las cosas de gerente
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
@@ -761,6 +997,8 @@ join dbo.nivel_permiso  np on np.id_nivel = e.id_nivel
 where g.codigo = 'gerente'
   and not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = g.id_nivel and x.id_permiso = np.id_permiso);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
 select n.id_nivel, p.id_permiso
@@ -784,6 +1022,8 @@ join dbo.niveles_acceso n on n.codigo = v.nivel
 join dbo.permisos       p on p.codigo = v.permiso
 where not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = n.id_nivel and x.id_permiso = p.id_permiso);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --permisos del administrador: todos los permisos del catalogo
 insert into dbo.nivel_permiso (id_nivel, id_permiso)
@@ -793,38 +1033,46 @@ cross join dbo.permisos p
 where a.codigo = 'administrador'
   and not exists (select 1 from dbo.nivel_permiso x where x.id_nivel = a.id_nivel and x.id_permiso = p.id_permiso);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 
---roles nuevos: gerente y cliente (los nombres van en minuscula para coincidir con los roles ya existentes)
+
+--rol nuevo de gerente
 insert into dbo.roles (nombre_rol, descripcion, es_administrativo, pantalla_inicio)
 select v.nombre, v.descripcion, v.es_admin, v.pantalla
 from (values
-    ('gerente', 'gerente de sucursal: operacion, compras, inventario y personal', 1, 'panel_gerente'),
-    ('cliente', 'cliente: consulta el menu y las reservas disponibles',           0, 'menu_reservas')
+    ('gerente', 'gerente de sucursal: operacion, compras, inventario y personal', 1, 'panel_gerente')
 ) as v(nombre, descripcion, es_admin, pantalla)
 where not exists (select 1 from dbo.roles r where r.nombre_rol = v.nombre);
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
 
---a que nivel pertenece cada rol (rrhh queda en el nivel gerente; se puede cambiar con un update)
+
+--a que nivel pertenece cada rol
 update r
 set r.id_nivel = n.id_nivel
 from dbo.roles r
 join (values
     ('administrador', 'administrador'),
     ('gerente',       'gerente'),
-    ('rrhh',          'gerente'),
-    ('cajero',        'empleado'),
-    ('mesero',        'empleado'),
-    ('cocinero',      'empleado'),
-    ('cliente',       'cliente')
+    ('rrhh',          'rrhh'),
+    ('cajero',        'cajero'),
+    ('mesero',        'mesero'),
+    ('cocinero',      'cocinero'),
+    ('barista',       'barista'),
+    ('contabilidad',  'contabilidad'),
+    ('compras',       'compras')
 ) as m(rol, nivel) on m.rol = r.nombre_rol
 join dbo.niveles_acceso n on n.codigo = m.nivel
 where r.id_nivel is null;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --desde ahora todo rol debe tener nivel (solo se aplica si ningun rol quedo sin nivel)
 if not exists (select 1 from dbo.roles where id_nivel is null)
     alter table dbo.roles alter column id_nivel int not null;
 go
+-- FIN CAMBIOS: niveles y permisos separados por funcion y alcance de RR. HH.
 
 --------sentencias para el login y registro de los empleados--------
 --normalizamos el texto que se ingrese:
@@ -1103,103 +1351,6 @@ begin
 end;
 go
 
---registro de un cliente (usuario normal): crea el cliente y su cuenta en una sola transaccion
-create or alter procedure dbo.sp_registrar_cliente_usuario
-    @nombre   nvarchar(150),
-    @correo   varchar(150),
-    @password varchar(100),
-    @telefono varchar(20) = null
-as
-begin
-    set nocount on;
-    set xact_abort on;
-    set @nombre   = ltrim(rtrim(isnull(@nombre, N'')));
-    set @correo   = lower(ltrim(rtrim(isnull(@correo, ''))));
-    set @telefono = nullif(ltrim(rtrim(isnull(@telefono, ''))), '');
-    if @nombre = N''
-        throw 50020, 'el nombre es obligatorio.', 1;
-    if @correo not like '_%@_%._%' or @correo like '% %'
-        throw 50021, 'el correo no tiene un formato valido.', 1;
-    if len(isnull(@password, '')) < 8
-        throw 50022, 'la contrasena debe tener al menos 8 caracteres.', 1;
-
-    --los correos @origene.sv se generan solo para empleados: un cliente no puede usarlos
-    if @correo like '%@origene.sv'
-        throw 50023, 'los correos @origene.sv son solo para empleados.', 1;
-    declare @id_rol int;
-    select @id_rol = id_rol from dbo.roles where nombre_rol = 'cliente';
-    if @id_rol is null
-        throw 50024, 'no existe el rol cliente.', 1;
-    begin try
-        begin tran;
-        if exists (select 1 from dbo.usuarios with (updlock, holdlock) where correo = @correo)
-            throw 50025, 'ese correo ya esta registrado.', 1;
-        insert into dbo.clientes (nombre, telefono, correo)
-        values (@nombre, @telefono, @correo);
-        declare @id_cliente int = scope_identity();
-        declare @salt varchar(32) = convert(varchar(32), crypt_gen_random(16), 2);
-
-        --el cliente elige su propia contrasena, por eso no se exige cambiarla (debe_cambiar_password = 0)
-        insert into dbo.usuarios
-            (id_rol, id_cliente, nombre_completo, correo, password_hash, password_salt, debe_cambiar_password)
-        values
-            (@id_rol, @id_cliente, @nombre, @correo, dbo.fn_hash_password(@password, @salt), @salt, 0);
-        declare @id_usuario int = scope_identity();
-        commit tran;
-        select @id_usuario as id_usuario,
-               @id_cliente as id_cliente,
-               @nombre     as nombre_completo,
-               @correo     as correo,
-               'cliente'   as rol,
-               'cliente'   as nivel_acceso;
-    end try
-    begin catch
-        if xact_state() <> 0 rollback tran;
-        throw;
-    end catch;
-end;
-go
-
---login del cliente: devuelve una fila si el correo y la contrasena son correctos; cero filas si no
-create or alter procedure dbo.sp_login_cliente
-    @correo   varchar(150),
-    @password varchar(100)
-as
-begin
-    set nocount on;
-    declare @id_usuario int, @salt varchar(32), @hash varchar(255), @ok bit = 0;
-    set @correo = lower(ltrim(rtrim(isnull(@correo, ''))));
-
-    --solo cuentas de cliente (id_cliente no nulo): un empleado no entra por aqui
-    select top (1)
-           @id_usuario = u.id_usuario,
-           @salt       = u.password_salt,
-           @hash       = u.password_hash
-    from dbo.usuarios u
-    where u.activo = 1
-      and u.id_cliente is not null
-      and u.correo = @correo;
-    if @id_usuario is not null and @hash = dbo.fn_hash_password(isnull(@password, ''), @salt)
-        set @ok = 1;
-    if @ok = 0
-        return;
-    update dbo.usuarios set ultimo_acceso = getdate() where id_usuario = @id_usuario;
-    select u.id_usuario,
-           c.id_cliente,
-           c.nombre          as nombre_completo,
-           u.correo,
-           r.nombre_rol      as rol,
-           n.codigo          as nivel_acceso,
-           r.pantalla_inicio,
-           u.debe_cambiar_password
-    from dbo.usuarios u
-    join dbo.clientes c       on c.id_cliente = u.id_cliente
-    join dbo.roles r          on r.id_rol = u.id_rol
-    join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
-    where u.id_usuario = @id_usuario;
-end;
-go
-
 --funcion para ver si un usuario tiene un permiso (el administrador siempre tiene todos)
 create or alter function dbo.fn_tiene_permiso (@id_usuario int, @codigo_permiso varchar(50))
 returns bit
@@ -1271,6 +1422,8 @@ return (
       )
 );
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --migracion de datos y limpieza(convierte los codigos viejos que puedan existir esto es solo si hay conflicto de codigo previo)
 declare @id_pendiente int, @codigo_nuevo varchar(6);
@@ -1292,6 +1445,8 @@ begin
     where id_empleado = @id_pendiente;
 end;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 if not exists (
     select 1
@@ -1303,6 +1458,8 @@ if not exists (
         add constraint ck_empleados_codigo_6_digitos
         check (codigo_empleado like '[0-9][0-9][0-9][0-9][0-9][0-9]');
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 if exists (
     select 1
@@ -1314,6 +1471,7 @@ if exists (
 go
 
 --------vistas de consulta--------
+-- INICIO CAMBIOS DE VISTAS: vistas de reportes, ficha de empleados y menu publico.
 --consulta cuando este por debajo de el minimo o en el minimo.
 create or alter view dbo.v_reporte_alertas_stock
 as
@@ -1379,6 +1537,7 @@ as
            e.tipo_planilla,
            e.salario_base,
            e.fecha_ingreso,
+           e.fecha_fin_contrato,
            e.isss_numero,
            e.afp_numero,
            u.correo as correo_login,
@@ -1400,6 +1559,9 @@ as
     from dbo.productos p
     where p.activo = 1;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
+-- FIN CAMBIOS DE VISTAS.
 
 --------datos de prueba utilizados para la bd--------
 set nocount on;
@@ -1488,12 +1650,13 @@ if not exists (select 1 from dbo.empleados where dui = '00000006-6')
 select * from #credenciales order by id_empleado;
 drop table #credenciales;
 
--------- cliente de prueba -> cliente.prueba@correo.com / cliente2026 --------
-if not exists (select 1 from dbo.usuarios where correo = 'cliente.prueba@correo.com')
-    exec dbo.sp_registrar_cliente_usuario
-        @nombre = N'cliente de prueba', @correo = 'cliente.prueba@correo.com',
-        @password = 'cliente2026', @telefono = '7000-0000';
+-------- contacto de prueba (no crea cuenta ni contrasena) --------
+if not exists (select 1 from dbo.clientes where telefono = '7000-0000')
+    insert into dbo.clientes (nombre, telefono)
+    values (N'cliente de prueba', '7000-0000');
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 -- conteo basico para confirmar que la instalacion termino bien.
 select N'origenesv' as base_datos,
@@ -1504,17 +1667,23 @@ select N'origenesv' as base_datos,
        (select count(*) from dbo.insumos)    as insumos,
        (select count(*) from dbo.productos)  as productos;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 -- empleados con su codigo, rol y correo de acceso.
 select codigo_empleado, nombre_completo, rol, correo_login, activo
 from dbo.v_empleados_detalle
 order by codigo_empleado;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 -- comprobacion: no debe haber codigos repetidos ni con formato incorrecto (ambas deben devolver 0 filas).
 select codigo_empleado, count(*) as veces from dbo.empleados group by codigo_empleado having count(*) > 1;
 select codigo_empleado from dbo.empleados where codigo_empleado not like '[0-9][0-9][0-9][0-9][0-9][0-9]';
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 
 --que rol pertenece a que nivel, a que pantalla entra y cuantos permisos tiene su nivel
@@ -1526,11 +1695,15 @@ from dbo.roles r
 join dbo.niveles_acceso n on n.id_nivel = r.id_nivel
 order by n.id_nivel, r.nombre_rol;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 
 -- para ver los usuarios existentes (nunca muestre password_hash en pantallas):
 select id_usuario, correo, activo, debe_cambiar_password, ultimo_acceso from dbo.usuarios;
 go
+IF TRY_CONVERT(bit, SESSION_CONTEXT(N'origenesv_omitir_instalacion')) = 1 RETURN;
+
 
 --------poblacion de la base de datos--------
 -- obtenemos la sucursal principal de empleados
@@ -1634,30 +1807,18 @@ exec dbo.sp_registrar_empleado
     @sucursalid = @sucursalid,
         @codigo_empleado = '100012';
 
---registramos clientes
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'juan perez',
-    @correo = 'juan.perez@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000001';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'lucia ramirez',
-    @correo = 'lucia.ramirez@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000002';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'andres flores',
-    @correo = 'andres.flores@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000003';
-
-exec dbo.sp_registrar_cliente_usuario
-    @nombre = 'sofia castillo',
-    @correo = 'sofia.castillo@gmail.com',
-    @password = 'cliente123',
-    @telefono = '70000004';
+--registramos contactos para reservas, sin crear cuentas de usuario
+insert into dbo.clientes (nombre, telefono)
+select v.nombre, v.telefono
+from (values
+    ('juan', '70000001'),
+    ('lucia', '70000002'),
+    ('andres', '70000003'),
+    ('sofia', '70000004')
+) v(nombre, telefono)
+where not exists (
+    select 1 from dbo.clientes c where c.telefono = v.telefono
+);
 
 --consultamos apra ver el usuario registrado
 select

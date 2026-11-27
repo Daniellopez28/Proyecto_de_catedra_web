@@ -17,7 +17,6 @@ import ProductosPage from './pages/ProductosPage.jsx';
 import UsuariosPage from './pages/UsuariosPage.jsx';
 import AdministracionPage from './pages/AdministracionPage.jsx';
 import ReportesPage from './pages/ReportesPage.jsx';
-import PerfilPage from './pages/PerfilPage.jsx';
 
 const titulos = {
     inicio: 'Inicio',
@@ -31,8 +30,7 @@ const titulos = {
     planillas: 'Planillas',
     usuarios: 'Usuarios',
     administracion: 'Administración',
-    reportes: 'Reportes',
-    perfil: 'Mi perfil'
+    reportes: 'Reportes'
 };
 
 function App() {
@@ -42,10 +40,17 @@ function App() {
     const [validandoSesion, setValidandoSesion] = useState(Boolean(leerSesion()?.token));
     const [errorSesion, setErrorSesion] = useState('');
     const [intentoValidacion, setIntentoValidacion] = useState(0);
+    const [cambioPasswordSolicitado, setCambioPasswordSolicitado] = useState(false);
     const items = useMemo(
         () => modulosPermitidos(sesion?.usuario?.permisos),
         [sesion?.usuario?.permisos]
     );
+
+     const capitalizar = (texto) => {
+        if (!texto) return '';
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    };
+
 
     useEffect(() => {
         function expirarSesion() {
@@ -135,20 +140,26 @@ function App() {
     }
 
     if (!sesion?.usuario) {
-        return <Login onLogin={(nuevaSesion) => {
+        return <Login onLogin={(nuevaSesion, solicitarCambioPassword) => {
+            setCambioPasswordSolicitado(solicitarCambioPassword);
             setValidandoSesion(true);
             setErrorSesion('');
             setSesion(nuevaSesion);
         }} />;
     }
 
-    if (sesion.usuario.debe_cambiar_password) {
+    if (sesion.usuario.debe_cambiar_password || cambioPasswordSolicitado) {
         return (
             <CambiarPasswordPage
-                alCambiar={() => actualizarSesion({
-                    ...sesion,
-                    usuario: { ...sesion.usuario, debe_cambiar_password: false }
-                })}
+                esObligatorio={sesion.usuario.debe_cambiar_password}
+                alCancelar={() => setCambioPasswordSolicitado(false)}
+                alCambiar={() => {
+                    setCambioPasswordSolicitado(false);
+                    actualizarSesion({
+                        ...sesion,
+                        usuario: { ...sesion.usuario, debe_cambiar_password: false }
+                    });
+                }}
             />
         );
     }
@@ -157,7 +168,13 @@ function App() {
         const permisos = sesion.usuario.permisos;
         switch (paginaActual) {
             case 'ventas':
-                return <VentasPage permisos={permisos} />;
+                return (
+                    <VentasPage
+                        permisos={permisos}
+                        usuario={sesion.usuario}
+                        onGestionarMenu={() => setPagina('productos')}
+                    />
+                );
             case 'reservas':
                 return <ReservasPage permisos={permisos} usuario={sesion.usuario} />;
             case 'caja':
@@ -178,8 +195,6 @@ function App() {
                 return <AdministracionPage permisos={permisos} />;
             case 'reportes':
                 return <ReportesPage />;
-            case 'perfil':
-                return <PerfilPage />;
             default:
                 return (
                     <InicioPage
@@ -220,7 +235,7 @@ function App() {
                         <div>
                             <div className="workspace-user-name">{sesion.usuario.nombre_completo}</div>
                             <div className="workspace-user-detail">
-                                {sesion.usuario.rol} · {sesion.usuario.sucursal || 'Acceso general'}
+                                {(sesion.usuario.rol).toUpperCase()} · {capitalizar(sesion.usuario.sucursal || 'Acceso general')}
                             </div>
                         </div>
                         <button className="workspace-logout" type="button" onClick={cerrar}>Cerrar sesión</button>

@@ -2,6 +2,7 @@
 
 
 :root {
+<<<<<<< HEAD
   --brand-sage: #babd92;
   --brand-brown: #53441b;
   --brand-rust: #c53c10;
@@ -10,6 +11,18 @@
   --brand-paper: #fffdf8;
   --brand-border: #ded8c4;
   --brand-muted: #716a55;
+=======
+  --brand-brown: #823b0f;
+  --brand-rust: #c53c10;
+  --brand-cream: #fff8ef;
+  --brand-peach: #f2c399;
+  --brand-sand: #e49d69;
+  --brand-highlight: #ffd9a0;
+  --brand-paper: #fffdf8;
+  --brand-border: rgba(130, 59, 15, 0.18);
+  --brand-muted: #76513b;
+  --font-family: "Quicksand", sans-serif;
+>>>>>>> frontend
   color: var(--brand-brown);
   background: var(--brand-cream);
   font-family: "Quicksand", sans-serif;
@@ -43,8 +56,13 @@ h6,
 }
 
 .workspace-sidebar {
+<<<<<<< HEAD
   border-color: rgba(83, 68, 27, 0.14);
   background: var(--brand-sage);
+=======
+  border-color: rgba(255, 217, 160, 0.2);
+  background: var(--brand-brown);
+>>>>>>> frontend
 }
 
 .workspace-brand {
@@ -55,17 +73,25 @@ h6,
   display: block;
   width: min(190px, 100%);
   height: auto;
+<<<<<<< HEAD
   filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
 }
 
 .workspace-nav button {
   color: var(--brand-brown);
+=======
+}
+
+.workspace-nav button {
+  color: var(--brand-highlight);
+>>>>>>> frontend
   font-size: 13px;
   font-weight: 600;
 }
 
 .workspace-nav button:hover,
 .workspace-nav button.is-active {
+<<<<<<< HEAD
   background: var(--brand-cream);
   color: var(--brand-rust);
 }
@@ -80,6 +106,22 @@ h6,
 
 .workspace-sidebar-note {
   color: rgba(83, 68, 27, 0.78);
+=======
+  background: var(--brand-rust);
+  color: var(--brand-paper);
+}
+
+.workspace-nav-icon {
+  filter: brightness(0) invert(88%);
+}
+
+.workspace-nav button.is-active .workspace-nav-icon {
+  filter: brightness(0) invert(100%);
+}
+
+.workspace-sidebar-note {
+  color: rgba(255, 217, 160, 0.78);
+>>>>>>> frontend
 }
 
 .workspace-main {
@@ -88,7 +130,11 @@ h6,
 
 .workspace-topbar {
   border-color: var(--brand-border);
+<<<<<<< HEAD
   background: rgba(255, 253, 248, 0.92);
+=======
+  background: rgba(255, 253, 248, 0.94);
+>>>>>>> frontend
 }
 
 .workspace-page-title,
@@ -133,7 +179,11 @@ h6,
 .primary-button:focus-visible,
 .secondary-button:focus-visible,
 .danger-button:focus-visible {
+<<<<<<< HEAD
   outline-color: var(--brand-olive);
+=======
+  outline-color: var(--brand-sand);
+>>>>>>> frontend
 }
 
 .workspace-content {
@@ -146,6 +196,7 @@ h6,
 .password-card {
   border-color: var(--brand-border);
   background-color: var(--brand-paper);
+<<<<<<< HEAD
   box-shadow: 0 8px 26px rgba(83, 68, 27, 0.06);
 }
 
@@ -155,6 +206,19 @@ h6,
 
 .dashboard-art {
   filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
+=======
+  box-shadow: 0 8px 26px rgba(130, 59, 15, 0.06);
+}
+
+.dashboard-welcome {
+  background: linear-gradient(110deg, var(--brand-paper) 0%, var(--brand-cream) 68%, rgba(242, 195, 153, 0.45) 100%);
+}
+
+.dashboard-art {
+  padding: 18px;
+  border-radius: 50%;
+  background: var(--brand-brown);
+>>>>>>> frontend
 }
 
 .data-table {
@@ -165,7 +229,11 @@ h6,
 .data-table td,
 .cart-row,
 .sales-total {
+<<<<<<< HEAD
   border-color: rgba(83, 68, 27, 0.12);
+=======
+  border-color: rgba(130, 59, 15, 0.12);
+>>>>>>> frontend
 }
 
 .data-table th {
@@ -173,19 +241,32 @@ h6,
 }
 
 .status-pill {
+<<<<<<< HEAD
   background: rgba(186, 189, 146, 0.35);
+=======
+  background: rgba(242, 195, 153, 0.5);
+>>>>>>> frontend
   color: var(--brand-brown);
 }
 
 .status-pill.is-warning {
+<<<<<<< HEAD
   background: rgba(164, 153, 47, 0.2);
   color: #665c17;
+=======
+  background: rgba(228, 157, 105, 0.24);
+  color: var(--brand-brown);
+>>>>>>> frontend
 }
 
 .status-pill.is-danger,
 .notice.is-error {
   background: rgba(197, 60, 16, 0.1);
+<<<<<<< HEAD
   color: #9c2f0c;
+=======
+  color: var(--brand-brown);
+>>>>>>> frontend
 }
 
 .form-field {
@@ -208,9 +289,15 @@ h6,
 .form-field textarea:focus,
 .form-control:focus,
 .form-select:focus {
+<<<<<<< HEAD
   border-color: var(--brand-olive);
   outline-color: rgba(164, 153, 47, 0.18);
   box-shadow: 0 0 0 0.2rem rgba(164, 153, 47, 0.16);
+=======
+  border-color: var(--brand-sand);
+  outline-color: rgba(228, 157, 105, 0.18);
+  box-shadow: 0 0 0 0.2rem rgba(228, 157, 105, 0.16);
+>>>>>>> frontend
 }
 
 .primary-button,
@@ -241,8 +328,13 @@ h6,
 }
 
 .notice {
+<<<<<<< HEAD
   border-color: rgba(164, 153, 47, 0.28);
   background: rgba(186, 189, 146, 0.2);
+=======
+  border-color: rgba(228, 157, 105, 0.35);
+  background: rgba(242, 195, 153, 0.3);
+>>>>>>> frontend
   color: var(--brand-brown);
 }
 
@@ -253,8 +345,13 @@ h6,
 }
 
 .credential-box {
+<<<<<<< HEAD
   border-color: rgba(164, 153, 47, 0.55);
   background: rgba(186, 189, 146, 0.18);
+=======
+  border-color: rgba(228, 157, 105, 0.55);
+  background: rgba(242, 195, 153, 0.22);
+>>>>>>> frontend
   color: var(--brand-brown);
 }
 
@@ -264,7 +361,11 @@ h6,
 }
 
 .password-screen {
+<<<<<<< HEAD
   background: var(--brand-sage);
+=======
+  background: var(--brand-peach);
+>>>>>>> frontend
 }
 
 .password-card .workspace-brand-mark {
@@ -278,9 +379,15 @@ h6,
 
 .loginSection {
   background:
+<<<<<<< HEAD
     radial-gradient(ellipse at 12% 12%, rgba(248, 235, 216, 0.54), transparent 40%),
     var(--brand-sage);
   color: var(--brand-brown);
+=======
+    radial-gradient(ellipse at 12% 12%, rgba(197, 60, 16, 0.35), transparent 40%),
+    var(--brand-brown);
+  color: var(--brand-paper);
+>>>>>>> frontend
 }
 
 .login-brand-logo {
@@ -288,11 +395,18 @@ h6,
   width: min(300px, 78%);
   height: auto;
   margin: 0 0 34px;
+<<<<<<< HEAD
   filter: brightness(0) saturate(100%) invert(25%) sepia(27%) saturate(1197%) hue-rotate(9deg) brightness(94%) contrast(91%);
 }
 
 .loginSection h1 {
   color: var(--brand-brown);
+=======
+}
+
+.loginSection h1 {
+  color: var(--brand-paper);
+>>>>>>> frontend
   font-family: "Manrope", sans-serif;
   font-size: clamp(2.4rem, 5vw, 4.5rem);
   font-weight: 500;
@@ -300,16 +414,33 @@ h6,
   line-height: 1.08;
 }
 
+<<<<<<< HEAD
 .loginSection h1 span,
 .loginSection p,
+=======
+.loginSection h1 span {
+  color: var(--brand-highlight) !important;
+}
+
+.loginSection .login-intro {
+  color: var(--brand-paper) !important;
+}
+
+>>>>>>> frontend
 .loginSection .form-label {
   color: var(--brand-brown) !important;
 }
 
 .loginSection .card {
+<<<<<<< HEAD
   border: 1px solid rgba(83, 68, 27, 0.12);
   background: var(--brand-paper);
   box-shadow: 0 24px 70px rgba(83, 68, 27, 0.16);
+=======
+  border: 1px solid rgba(130, 59, 15, 0.12);
+  background: var(--brand-paper);
+  box-shadow: 0 24px 70px rgba(130, 59, 15, 0.16);
+>>>>>>> frontend
 }
 
 .loginSection .card h3 {
@@ -317,6 +448,13 @@ h6,
   font-family: "Manrope", sans-serif;
 }
 
+<<<<<<< HEAD
+=======
+.loginSection .card p {
+  color: var(--brand-muted);
+}
+
+>>>>>>> frontend
 .loginSection .card-body > span {
   color: var(--brand-muted) !important;
 }
@@ -341,7 +479,79 @@ h6,
 .loginSection .alert-danger {
   border-color: rgba(197, 60, 16, 0.2);
   background: rgba(197, 60, 16, 0.08);
+<<<<<<< HEAD
   color: #8e2b0d;
+=======
+  color: var(--brand-brown);
+}
+
+.employee-add-button,
+.employee-submit-button,
+.employee-form-actions .employee-submit-button,
+.employee-card-actions button:last-child,
+.success-main-container button {
+  border-color: var(--brand-rust);
+  background: var(--brand-rust);
+  color: var(--brand-paper);
+}
+
+.employee-add-button:hover,
+.employee-submit-button:hover,
+.employee-card-actions button:last-child:hover,
+.success-main-container button:hover {
+  border-color: var(--brand-brown);
+  background: var(--brand-brown);
+}
+
+.employee-status {
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.employee-summary-detail,
+.employee-page-title {
+  color: var(--brand-brown);
+}
+
+.employee-summary {
+  background-color: var(--brand-cream);
+  color: var(--brand-brown);
+}
+
+.employee-status.is-inactive {
+  background: rgba(197, 60, 16, 0.1);
+  color: var(--brand-brown);
+}
+
+.employee-table tbody tr.is-selected td {
+  background: rgba(242, 195, 153, 0.3);
+}
+
+.employee-table tbody tr:focus-visible,
+.employee-add-button:focus-visible {
+  outline-color: var(--brand-sand);
+}
+
+.sales-category:hover,
+.sales-category.is-selected {
+  border-color: var(--brand-rust);
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.sales-product-add {
+  background: rgba(242, 195, 153, 0.45);
+  color: var(--brand-brown);
+}
+
+.sales-modifiers,
+.employee-list td:nth-child(4) {
+  color: var(--brand-brown);
+}
+
+.success-icon {
+  border-color: var(--brand-sand);
+>>>>>>> frontend
 }
 
 @media (max-width: 991px) {

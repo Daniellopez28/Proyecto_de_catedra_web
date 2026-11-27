@@ -3,17 +3,24 @@ import express from 'express';
 import cors from 'cors';
 import prisma from './config/prisma.js';
 import planilla_routes from './routes/planilla.routes.js';
+<<<<<<< HEAD
 import {
     ErrorInventario,
     ejecutarExplosion,
     revertirExplosion,
     normalizarProductosVenta
 } from './servicios/inventarioServicio.js';
+=======
+import ventasRoutes from './routes/ventas.routes.js';
+>>>>>>> frontend
 import empleadosRoutes from './routes/empleados.routes.js';
 import reservasRoutes from './routes/reservas.routes.js';
 import cajaRoutes from './routes/caja.routes.js';
 import productosRoutes from './routes/productos.routes.js';
+<<<<<<< HEAD
 import clientesRoutes from './routes/clientes.routes.js';
+=======
+>>>>>>> frontend
 import comprasRoutes from './routes/compras.routes.js';
 import proveedoresRoutes from './routes/proveedores.routes.js';
 import reportesRoutes from './routes/reportes.routes.js';
@@ -29,15 +36,23 @@ import {
 import {
     cerrarSesion,
     crearSesion,
+<<<<<<< HEAD
     requerirAutenticacion,
     requerirPermiso
+=======
+    requerirAutenticacion
+>>>>>>> frontend
 } from './middleware/autenticacion.js';
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '2mb' }));
 
 app.use('/api/planillas', planilla_routes);
+<<<<<<< HEAD
+=======
+app.use('/api/ventas', requerirAutenticacion, ventasRoutes);
+>>>>>>> frontend
 app.use('/api/empleados', requerirAutenticacion, empleadosRoutes);
 app.use('/api/reservas', requerirAutenticacion, reservasRoutes);
 app.use('/api/caja', requerirAutenticacion, cajaRoutes);
@@ -49,6 +64,7 @@ app.use('/api/usuarios', requerirAutenticacion, usuariosRoutes);
 app.use('/api/mesas', requerirAutenticacion, mesasRoutes);
 app.use('/api/modificadores', requerirAutenticacion, modificadoresRoutes);
 app.use('/api/administracion', requerirAutenticacion, administracionRoutes);
+<<<<<<< HEAD
 
 app.get('/api/health', async (req, res) => {
     try {
@@ -89,12 +105,14 @@ app.get('/api/sucursales', async (_req, res) => {
         return res.status(500).json({ mensaje: 'No se pudieron consultar las sucursales' });
     }
 });
+=======
+>>>>>>> frontend
 
-//Rutas de ventas
-app.get('/', (req, res) =>{
+app.get('/', (_req, res) => {
     res.send('API del Restaurante Orígenes SV - Módulo de Ventas funcionando');
 });
 
+<<<<<<< HEAD
 app.get('/api/ventas', requerirAutenticacion, async (req, res) => {
     const puedeVerVentas = req.auth.permisos.has('ver_ventas');
     const puedeVerCocina = req.auth.permisos.has('ver_pedidos_cocina');
@@ -588,8 +606,50 @@ app.post('/api/ventas', requerirAutenticacion, requerirPermiso('tomar_pedidos'),
         }
         console.error('Error al registrar venta:', error);
         return res.status(500).json({ mensaje: 'Error interno al registrar la venta' });
+=======
+app.get('/api/health', async (req, res) => {
+    try {
+        await prisma.$queryRaw`SELECT 1 AS disponible`;
+        return res.status(200).json({ estado: 'ok', base_datos: 'conectada' });
+    } catch (error) {
+        console.error('No se pudo consultar la base de datos:', error);
+        return res.status(503).json({ estado: 'error', base_datos: 'no disponible' });
+>>>>>>> frontend
     }
 });
+
+app.get('/api/sucursales', async (_req, res) => {
+    try {
+        const sucursales = await prisma.sucursales.findMany({
+            where: {
+                activo: true,
+                nombre: { in: nombresBaseSucursalesEmpleados }
+            },
+            select: { sucursalid: true, nombre: true }
+        });
+        const porNombre = new Map(sucursales.map((sucursal) => [
+            sucursal.nombre.trim().toLocaleLowerCase('es-SV'),
+            sucursal
+        ]));
+        return res.json({
+            sucursales: sucursalesEmpleados.flatMap((sucursal) => {
+                const encontrada = porNombre.get(sucursal.nombreBase);
+                return encontrada
+                    ? [{
+                        sucursalid: encontrada.sucursalid,
+                        nombre: etiquetaSucursalEmpleado(encontrada.nombre)
+                    }]
+                    : [];
+            })
+        });
+    } catch (error) {
+        console.error('Error al consultar sucursales para iniciar sesión:', error);
+        return res.status(500).json({ mensaje: 'No se pudieron consultar las sucursales' });
+    }
+});
+
+// Módulo Inventario y Recetas (Carlos)
+app.use('/api/inventario', requerirAutenticacion, enrutadorInventario);
 
 /*Endpoint para iniciar sesión*/
 app.post('/api/login', async (req,res) => {
@@ -624,6 +684,7 @@ app.post('/api/login', async (req,res) => {
                 @sucursalid = ${sucursalSeleccionada.sucursalid}
         `;
 
+<<<<<<< HEAD
         const cuentaEmpleado = !usuarioEncontrado && correo.includes('@')
             ? await prisma.usuarios.findFirst({
                 where: { correo: correo.trim(), id_empleado: { not: null } },
@@ -636,6 +697,8 @@ app.post('/api/login', async (req,res) => {
             `;
         }
 
+=======
+>>>>>>> frontend
         if(!usuarioEncontrado){
             return res.status(401).json({
                 mensaje: 'Credenciales incorrectas o usuario no registrado en esta sucursal'
@@ -664,6 +727,7 @@ app.post('/api/logout', requerirAutenticacion, (req, res) => {
     return res.json({ mensaje: 'Sesión cerrada' });
 });
 
+<<<<<<< HEAD
 app.post('/api/clientes/registro', async (req, res) => {
     const { nombre, correo, password, telefono } = req.body ?? {};
     if (typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 150 ||
@@ -709,6 +773,8 @@ app.post('/api/clientes/registro', async (req, res) => {
 
 app.use('/api/clientes', requerirAutenticacion, clientesRoutes);
 
+=======
+>>>>>>> frontend
 app.get('/api/session', requerirAutenticacion, (req, res) => {
     return res.json({
         token: req.auth.token,

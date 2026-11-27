@@ -21,6 +21,28 @@ function textoOpcionalValido(valor, maximo) {
     return valor === undefined || valor === null || (typeof valor === 'string' && valor.length <= maximo);
 }
 
+<<<<<<< HEAD
+=======
+function puedeGestionarTodasLasSucursales(req) {
+    return req.auth.permisos.has('gestionar_empleados_todas_sucursales') ||
+        req.auth.permisos.has('gestionar_sucursales');
+}
+
+function validarContrato(tipoContrato, fechaIngreso, fechaFinContrato) {
+    if (!['indefinido', 'definido'].includes(tipoContrato)) return false;
+    if (tipoContrato === 'indefinido') return fechaFinContrato === undefined || fechaFinContrato === null;
+    return fechaValida(fechaFinContrato) && fechaFinContrato > fechaIngreso;
+}
+
+const nivelesEmpleadoAsignables = new Set([
+    'empleado', 'rrhh', 'cajero', 'mesero', 'cocinero', 'barista', 'contabilidad', 'compras'
+]);
+
+function requiereAdministracionDeUsuarios(rol) {
+    return rol.es_administrativo && !nivelesEmpleadoAsignables.has(rol.niveles_acceso.codigo);
+}
+
+>>>>>>> frontend
 router.get('/roles', requerirPermiso('registrar_empleados'), async (req, res) => {
     try {
         const roles = await prisma.roles.findMany({
@@ -29,7 +51,12 @@ router.get('/roles', requerirPermiso('registrar_empleados'), async (req, res) =>
         });
         return res.json(roles
             .filter((rol) => rol.niveles_acceso.codigo !== 'cliente' &&
+<<<<<<< HEAD
                 (req.auth.permisos.has('gestionar_roles_permisos') || rol.niveles_acceso.codigo === 'empleado'))
+=======
+                (req.auth.permisos.has('gestionar_roles_permisos') ||
+                    nivelesEmpleadoAsignables.has(rol.niveles_acceso.codigo)))
+>>>>>>> frontend
             .map(({ id_rol, nombre_rol }) => ({ id_rol, nombre_rol })));
     } catch (error) {
         console.error('Error al listar roles de empleados:', error);
@@ -38,12 +65,24 @@ router.get('/roles', requerirPermiso('registrar_empleados'), async (req, res) =>
 });
 
 router.get('/sucursales', requerirPermiso('registrar_empleados'), async (req, res) => {
+<<<<<<< HEAD
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+>>>>>>> frontend
     try {
         const sucursales = await prisma.sucursales.findMany({
             where: {
                 activo: true,
                 nombre: { in: nombresBaseSucursalesEmpleados },
+<<<<<<< HEAD
                 ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {})
+=======
+                ...(!puedeGestionarTodasLasSucursales(req)
+                    ? { sucursalid: req.auth.usuario.sucursalid }
+                    : {})
+>>>>>>> frontend
             },
             orderBy: { nombre: 'asc' },
             select: { sucursalid: true, nombre: true }
@@ -95,6 +134,12 @@ router.get('/', (req, res, next) => {
         !req.auth.permisos.has('registrar_empleados')) {
         return res.status(403).json({ mensaje: 'No tienes permiso para consultar empleados' });
     }
+<<<<<<< HEAD
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+>>>>>>> frontend
     return next();
 }, async (req, res) => {
     try {
@@ -102,7 +147,13 @@ router.get('/', (req, res, next) => {
             where: {
                 activo: true,
                 sucursales: { is: { activo: true, nombre: { in: nombresBaseSucursalesEmpleados } } },
+<<<<<<< HEAD
                 ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {})
+=======
+                ...(!puedeGestionarTodasLasSucursales(req)
+                    ? { sucursalid: req.auth.usuario.sucursalid }
+                    : {})
+>>>>>>> frontend
             },
             orderBy: { nombre_completo: 'asc' },
             select: {
@@ -113,6 +164,10 @@ router.get('/', (req, res, next) => {
                 tipo_planilla: true,
                 salario_base: true,
                 fecha_ingreso: true,
+<<<<<<< HEAD
+=======
+                fecha_fin_contrato: true,
+>>>>>>> frontend
                 activo: true,
                 roles: { select: { nombre_rol: true } },
                 sucursales: { select: { nombre: true } }
@@ -130,6 +185,12 @@ router.get('/:id', requerirPermiso('registrar_empleados'), async (req, res) => {
     if (!Number.isInteger(idEmpleado) || idEmpleado <= 0) {
         return res.status(400).json({ mensaje: 'El id de empleado no es válido' });
     }
+<<<<<<< HEAD
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+>>>>>>> frontend
 
     try {
         const empleado = await prisma.empleados.findFirst({
@@ -137,7 +198,13 @@ router.get('/:id', requerirPermiso('registrar_empleados'), async (req, res) => {
                 id_empleado: idEmpleado,
                 activo: true,
                 sucursales: { is: { activo: true, nombre: { in: nombresBaseSucursalesEmpleados } } },
+<<<<<<< HEAD
                 ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {})
+=======
+                ...(!puedeGestionarTodasLasSucursales(req)
+                    ? { sucursalid: req.auth.usuario.sucursalid }
+                    : {})
+>>>>>>> frontend
             },
             select: {
                 id_empleado: true,
@@ -150,6 +217,10 @@ router.get('/:id', requerirPermiso('registrar_empleados'), async (req, res) => {
                 tipo_planilla: true,
                 salario_base: true,
                 fecha_ingreso: true,
+<<<<<<< HEAD
+=======
+                fecha_fin_contrato: true,
+>>>>>>> frontend
                 sucursalid: true,
                 isss_numero: true,
                 afp_numero: true,
@@ -157,11 +228,26 @@ router.get('/:id', requerirPermiso('registrar_empleados'), async (req, res) => {
                 jornada: true,
                 forma_pago: true,
                 id_rol: true,
+<<<<<<< HEAD
                 roles: { select: { nombre_rol: true, es_administrativo: true } }
             }
         });
         if (!empleado) return res.status(404).json({ mensaje: 'Empleado no encontrado' });
         if (empleado.roles.es_administrativo && !req.auth.permisos.has('gestionar_usuarios')) {
+=======
+                roles: {
+                    select: {
+                        nombre_rol: true,
+                        es_administrativo: true,
+                        niveles_acceso: { select: { codigo: true } }
+                    }
+                }
+            }
+        });
+        if (!empleado) return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+        if (requiereAdministracionDeUsuarios(empleado.roles) &&
+            !req.auth.permisos.has('gestionar_usuarios')) {
+>>>>>>> frontend
             return res.status(403).json({ mensaje: 'Se requiere permiso de administración de usuarios para editar este rol' });
         }
         return res.json({ empleado });
@@ -188,13 +274,21 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
         isss_numero,
         afp_numero,
         tipo_contrato,
+<<<<<<< HEAD
+=======
+        fecha_fin_contrato,
+>>>>>>> frontend
         jornada,
         forma_pago
     } = req.body ?? {};
     const campos = {
         nombres, apellido_paterno, apellido_materno, dui, fecha_nacimiento, nombre_rol,
         cargo, tipo_planilla, salario_base, fecha_ingreso, sucursalid, isss_numero,
+<<<<<<< HEAD
         afp_numero, tipo_contrato, jornada, forma_pago
+=======
+        afp_numero, tipo_contrato, fecha_fin_contrato, jornada, forma_pago
+>>>>>>> frontend
     };
 
     if (!Number.isInteger(idEmpleado) || idEmpleado <= 0 ||
@@ -218,7 +312,13 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
             (!Number.isInteger(Number(sucursalid)) || Number(sucursalid) <= 0)) ||
         !textoOpcionalValido(isss_numero, 15) ||
         !textoOpcionalValido(afp_numero, 20) ||
+<<<<<<< HEAD
         !textoOpcionalValido(tipo_contrato, 50) ||
+=======
+        (tipo_contrato !== undefined && !['indefinido', 'definido'].includes(tipo_contrato)) ||
+        (fecha_fin_contrato !== undefined && fecha_fin_contrato !== null &&
+            !fechaValida(fecha_fin_contrato)) ||
+>>>>>>> frontend
         !textoOpcionalValido(jornada, 50) ||
         !textoOpcionalValido(forma_pago, 50)) {
         return res.status(400).json({ mensaje: 'Revisa el id, los campos y sus formatos' });
@@ -226,7 +326,14 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
 
     const nuevaSucursal = sucursalid === undefined ? undefined :
         sucursalid === null ? null : Number(sucursalid);
+<<<<<<< HEAD
     if (req.auth.usuario.sucursalid &&
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+    if (req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req) &&
+>>>>>>> frontend
         nuevaSucursal !== undefined && nuevaSucursal !== req.auth.usuario.sucursalid) {
         return res.status(403).json({ mensaje: 'Solo puedes asignar empleados a tu sucursal' });
     }
@@ -243,7 +350,13 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                     id_empleado: idEmpleado,
                     activo: true,
                     sucursales: { is: { activo: true, nombre: { in: nombresBaseSucursalesEmpleados } } },
+<<<<<<< HEAD
                     ...(req.auth.usuario.sucursalid ? { sucursalid: req.auth.usuario.sucursalid } : {})
+=======
+                    ...(!puedeGestionarTodasLasSucursales(req)
+                        ? { sucursalid: req.auth.usuario.sucursalid }
+                        : {})
+>>>>>>> frontend
                 },
                 select: {
                     id_empleado: true,
@@ -251,13 +364,31 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                     apellido_paterno: true,
                     apellido_materno: true,
                     sucursalid: true,
+<<<<<<< HEAD
                     id_rol: true,
                     roles: { select: { es_administrativo: true } },
+=======
+                    fecha_ingreso: true,
+                    fecha_fin_contrato: true,
+                    tipo_contrato: true,
+                    id_rol: true,
+                    roles: {
+                        select: {
+                            es_administrativo: true,
+                            niveles_acceso: { select: { codigo: true } }
+                        }
+                    },
+>>>>>>> frontend
                     usuarios: { select: { id_usuario: true } }
                 }
             });
             if (!empleado) return { error: 404 };
+<<<<<<< HEAD
             if (empleado.roles.es_administrativo && !req.auth.permisos.has('gestionar_usuarios')) {
+=======
+            if (requiereAdministracionDeUsuarios(empleado.roles) &&
+                !req.auth.permisos.has('gestionar_usuarios')) {
+>>>>>>> frontend
                 return { error: 403 };
             }
 
@@ -269,7 +400,11 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                 });
                 if (!rol || rol.niveles_acceso.codigo === 'cliente') return { error: 400 };
                 if (!req.auth.permisos.has('gestionar_roles_permisos') &&
+<<<<<<< HEAD
                     rol.niveles_acceso.codigo !== 'empleado') return { error: 403 };
+=======
+                    !nivelesEmpleadoAsignables.has(rol.niveles_acceso.codigo)) return { error: 403 };
+>>>>>>> frontend
             }
             if (nuevaSucursal !== undefined && nuevaSucursal !== null &&
                 !await tx.sucursales.findFirst({
@@ -282,6 +417,20 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                 })) {
                 return { error: 400 };
             }
+<<<<<<< HEAD
+=======
+            const contratoCambiado = tipo_contrato !== undefined ||
+                fecha_fin_contrato !== undefined || fecha_ingreso !== undefined;
+            const tipoContratoActual = tipo_contrato ?? empleado.tipo_contrato?.toLowerCase();
+            const fechaIngresoActual = fecha_ingreso ?? empleado.fecha_ingreso.toISOString().slice(0, 10);
+            const fechaFinActual = fecha_fin_contrato === undefined
+                ? (empleado.fecha_fin_contrato?.toISOString().slice(0, 10) ?? null)
+                : fecha_fin_contrato;
+            if (contratoCambiado &&
+                !validarContrato(tipoContratoActual, fechaIngresoActual, fechaFinActual)) {
+                return { error: 422 };
+            }
+>>>>>>> frontend
 
             const nombresActualizados = {
                 nombres: nombres === undefined ? empleado.nombres : nombres.trim(),
@@ -322,7 +471,16 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                 ...(nuevaSucursal !== undefined ? { sucursalid: nuevaSucursal } : {}),
                 ...(isss_numero !== undefined ? { isss_numero: isss_numero?.trim() || null } : {}),
                 ...(afp_numero !== undefined ? { afp_numero: afp_numero?.trim() || null } : {}),
+<<<<<<< HEAD
                 ...(tipo_contrato !== undefined ? { tipo_contrato: tipo_contrato?.trim() || null } : {}),
+=======
+                ...(contratoCambiado ? {
+                    tipo_contrato: tipoContratoActual,
+                    fecha_fin_contrato: tipoContratoActual === 'indefinido'
+                        ? null
+                        : new Date(`${fechaFinActual}T00:00:00.000Z`)
+                } : {}),
+>>>>>>> frontend
                 ...(jornada !== undefined ? { jornada: jornada?.trim() || null } : {}),
                 ...(forma_pago !== undefined ? { forma_pago: forma_pago?.trim() || null } : {})
             };
@@ -353,6 +511,11 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
                         tipo_planilla: true,
                         salario_base: true,
                         fecha_ingreso: true,
+<<<<<<< HEAD
+=======
+                        fecha_fin_contrato: true,
+                        tipo_contrato: true,
+>>>>>>> frontend
                         roles: { select: { nombre_rol: true } },
                         sucursales: { select: { nombre: true } }
                     }
@@ -369,6 +532,12 @@ router.patch('/:id', requerirPermiso('registrar_empleados'), async (req, res) =>
 
         if (resultado.error === 404) return res.status(404).json({ mensaje: 'Empleado no encontrado' });
         if (resultado.error === 400) return res.status(400).json({ mensaje: 'Revisa el rol y la sucursal activos' });
+<<<<<<< HEAD
+=======
+        if (resultado.error === 422) {
+            return res.status(400).json({ mensaje: 'Un contrato definido debe finalizar después de la fecha de ingreso' });
+        }
+>>>>>>> frontend
         if (resultado.error === 403) {
             return res.status(403).json({ mensaje: 'No tienes permiso para modificar ese nivel o rol administrativo' });
         }
@@ -401,6 +570,10 @@ router.post('/', requerirPermiso('registrar_empleados'), async (req, res) => {
         isss_numero,
         afp_numero,
         tipo_contrato,
+<<<<<<< HEAD
+=======
+        fecha_fin_contrato,
+>>>>>>> frontend
         jornada,
         forma_pago
     } = req.body ?? {};
@@ -417,13 +590,28 @@ router.post('/', requerirPermiso('registrar_empleados'), async (req, res) => {
         (!Number.isInteger(Number(sucursalid)) || Number(sucursalid) <= 0) ||
         !textoOpcionalValido(isss_numero, 15) ||
         !textoOpcionalValido(afp_numero, 20) ||
+<<<<<<< HEAD
         !textoOpcionalValido(tipo_contrato, 50) ||
+=======
+        !['indefinido', 'definido'].includes(tipo_contrato) ||
+        (tipo_contrato === 'indefinido'
+            ? fecha_fin_contrato !== undefined && fecha_fin_contrato !== null
+            : !fechaValida(fecha_fin_contrato) || fecha_fin_contrato <= fecha_ingreso) ||
+>>>>>>> frontend
         !textoOpcionalValido(jornada, 50) ||
         !textoOpcionalValido(forma_pago, 50)) {
         return res.status(400).json({ mensaje: 'Revisa los campos obligatorios y sus formatos' });
     }
     const sucursalSolicitada = Number(sucursalid);
+<<<<<<< HEAD
     if (req.auth.usuario.sucursalid && sucursalSolicitada !== req.auth.usuario.sucursalid) {
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+    if (req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req) &&
+        sucursalSolicitada !== req.auth.usuario.sucursalid) {
+>>>>>>> frontend
         return res.status(403).json({ mensaje: 'Solo puedes registrar empleados en tu sucursal' });
     }
 
@@ -444,7 +632,12 @@ router.post('/', requerirPermiso('registrar_empleados'), async (req, res) => {
         if (!rol || rol.niveles_acceso.codigo === 'cliente') {
             return res.status(400).json({ mensaje: 'Selecciona un rol válido para empleado' });
         }
+<<<<<<< HEAD
         if (!req.auth.permisos.has('gestionar_roles_permisos') && rol.niveles_acceso.codigo !== 'empleado') {
+=======
+        if (!req.auth.permisos.has('gestionar_roles_permisos') &&
+            !nivelesEmpleadoAsignables.has(rol.niveles_acceso.codigo)) {
+>>>>>>> frontend
             return res.status(403).json({ mensaje: 'No tienes permiso para asignar ese nivel de acceso' });
         }
         if (sucursalid !== undefined && sucursalid !== null &&
@@ -459,29 +652,59 @@ router.post('/', requerirPermiso('registrar_empleados'), async (req, res) => {
             return res.status(400).json({ mensaje: 'Selecciona una sucursal activa' });
         }
 
+<<<<<<< HEAD
         const [creado] = await prisma.$queryRaw`
             EXEC dbo.sp_registrar_empleado
+=======
+        const creado = await prisma.$transaction(async (tx) => {
+            const [empleadoCreado] = await tx.$queryRaw`
+                EXEC dbo.sp_registrar_empleado
+>>>>>>> frontend
                 @nombres = ${nombres.trim()},
                 @apellido_paterno = ${apellido_paterno.trim()},
                 @apellido_materno = ${apellido_materno?.trim() || null},
                 @dui = ${dui.trim()},
+<<<<<<< HEAD
                 @fecha_nacimiento = CONVERT(date, ${fecha_nacimiento}),
+=======
+                @fecha_nacimiento = ${new Date(`${fecha_nacimiento}T00:00:00.000Z`)},
+>>>>>>> frontend
                 @nombre_rol = ${nombre_rol.trim()},
                 @cargo = ${cargo.trim()},
                 @tipo_planilla = ${String(tipo_planilla).toLowerCase()},
                 @salario_base = ${Number(salario_base)},
+<<<<<<< HEAD
                 @fecha_ingreso = CONVERT(date, ${fecha_ingreso}),
+=======
+                @fecha_ingreso = ${new Date(`${fecha_ingreso}T00:00:00.000Z`)},
+>>>>>>> frontend
                 @sucursalid = ${sucursalid ? Number(sucursalid) : null},
                 @isss_numero = ${isss_numero?.trim() || null},
                 @afp_numero = ${afp_numero?.trim() || null},
                 @tipo_contrato = ${tipo_contrato?.trim() || null},
                 @jornada = ${jornada?.trim() || null},
                 @forma_pago = ${forma_pago?.trim() || null}
+<<<<<<< HEAD
         `;
 
         if (!creado) {
             throw new Error('El procedimiento de registro no devolvió el empleado creado');
         }
+=======
+            `;
+
+            if (!empleadoCreado) {
+                throw new Error('El procedimiento de registro no devolvió el empleado creado');
+            }
+            if (fecha_fin_contrato) {
+                await tx.empleados.update({
+                    where: { id_empleado: empleadoCreado.id_empleado },
+                    data: { fecha_fin_contrato: new Date(`${fecha_fin_contrato}T00:00:00.000Z`) }
+                });
+            }
+            return empleadoCreado;
+        });
+>>>>>>> frontend
 
         return res.status(201).json({
             mensaje: 'Empleado registrado. Entrega la contraseña inicial de forma segura.',
@@ -511,6 +734,12 @@ router.patch('/:id/desactivar', requerirPermiso('registrar_empleados'), async (r
     if (!Number.isInteger(idEmpleado) || idEmpleado <= 0) {
         return res.status(400).json({ mensaje: 'El id de empleado no es válido' });
     }
+<<<<<<< HEAD
+=======
+    if (!req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req)) {
+        return res.status(403).json({ mensaje: 'Tu cuenta debe tener una sucursal asignada' });
+    }
+>>>>>>> frontend
 
     try {
         const empleado = await prisma.empleados.findFirst({
@@ -522,16 +751,35 @@ router.patch('/:id/desactivar', requerirPermiso('registrar_empleados'), async (r
                 id_empleado: true,
                 activo: true,
                 sucursalid: true,
+<<<<<<< HEAD
                 roles: { select: { es_administrativo: true } },
+=======
+                roles: {
+                    select: {
+                        es_administrativo: true,
+                        niveles_acceso: { select: { codigo: true } }
+                    }
+                },
+>>>>>>> frontend
                 usuarios: { select: { id_usuario: true } }
             }
         });
         if (!empleado) return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+<<<<<<< HEAD
         if (req.auth.usuario.sucursalid && empleado.sucursalid !== req.auth.usuario.sucursalid) {
             return res.status(404).json({ mensaje: 'Empleado no encontrado' });
         }
         if (!empleado.activo) return res.status(409).json({ mensaje: 'El empleado ya está inactivo' });
         if (empleado.roles.es_administrativo && !req.auth.permisos.has('gestionar_usuarios')) {
+=======
+        if (req.auth.usuario.sucursalid && !puedeGestionarTodasLasSucursales(req) &&
+            empleado.sucursalid !== req.auth.usuario.sucursalid) {
+            return res.status(404).json({ mensaje: 'Empleado no encontrado' });
+        }
+        if (!empleado.activo) return res.status(409).json({ mensaje: 'El empleado ya está inactivo' });
+        if (requiereAdministracionDeUsuarios(empleado.roles) &&
+            !req.auth.permisos.has('gestionar_usuarios')) {
+>>>>>>> frontend
             return res.status(403).json({ mensaje: 'Se requiere permiso de administración de usuarios para dar de baja este rol' });
         }
         if (empleado.usuarios?.id_usuario === req.auth.usuario.id_usuario) {

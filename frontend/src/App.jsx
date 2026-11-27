@@ -17,7 +17,10 @@ import ProductosPage from './pages/ProductosPage.jsx';
 import UsuariosPage from './pages/UsuariosPage.jsx';
 import AdministracionPage from './pages/AdministracionPage.jsx';
 import ReportesPage from './pages/ReportesPage.jsx';
+<<<<<<< HEAD
 import PerfilPage from './pages/PerfilPage.jsx';
+=======
+>>>>>>> frontend
 
 const titulos = {
     inicio: 'Inicio',
@@ -31,8 +34,12 @@ const titulos = {
     planillas: 'Planillas',
     usuarios: 'Usuarios',
     administracion: 'Administración',
+<<<<<<< HEAD
     reportes: 'Reportes',
     perfil: 'Mi perfil'
+=======
+    reportes: 'Reportes'
+>>>>>>> frontend
 };
 
 function App() {
@@ -42,6 +49,10 @@ function App() {
     const [validandoSesion, setValidandoSesion] = useState(Boolean(leerSesion()?.token));
     const [errorSesion, setErrorSesion] = useState('');
     const [intentoValidacion, setIntentoValidacion] = useState(0);
+<<<<<<< HEAD
+=======
+    const [cambioPasswordSolicitado, setCambioPasswordSolicitado] = useState(false);
+>>>>>>> frontend
     const items = useMemo(
         () => modulosPermitidos(sesion?.usuario?.permisos),
         [sesion?.usuario?.permisos]
@@ -135,13 +146,19 @@ function App() {
     }
 
     if (!sesion?.usuario) {
+<<<<<<< HEAD
         return <Login onLogin={(nuevaSesion) => {
+=======
+        return <Login onLogin={(nuevaSesion, solicitarCambioPassword) => {
+            setCambioPasswordSolicitado(solicitarCambioPassword);
+>>>>>>> frontend
             setValidandoSesion(true);
             setErrorSesion('');
             setSesion(nuevaSesion);
         }} />;
     }
 
+<<<<<<< HEAD
     if (sesion.usuario.debe_cambiar_password) {
         return (
             <CambiarPasswordPage
@@ -149,6 +166,20 @@ function App() {
                     ...sesion,
                     usuario: { ...sesion.usuario, debe_cambiar_password: false }
                 })}
+=======
+    if (sesion.usuario.debe_cambiar_password || cambioPasswordSolicitado) {
+        return (
+            <CambiarPasswordPage
+                esObligatorio={sesion.usuario.debe_cambiar_password}
+                alCancelar={() => setCambioPasswordSolicitado(false)}
+                alCambiar={() => {
+                    setCambioPasswordSolicitado(false);
+                    actualizarSesion({
+                        ...sesion,
+                        usuario: { ...sesion.usuario, debe_cambiar_password: false }
+                    });
+                }}
+>>>>>>> frontend
             />
         );
     }
@@ -157,7 +188,17 @@ function App() {
         const permisos = sesion.usuario.permisos;
         switch (paginaActual) {
             case 'ventas':
+<<<<<<< HEAD
                 return <VentasPage permisos={permisos} />;
+=======
+                return (
+                    <VentasPage
+                        permisos={permisos}
+                        usuario={sesion.usuario}
+                        onGestionarMenu={() => setPagina('productos')}
+                    />
+                );
+>>>>>>> frontend
             case 'reservas':
                 return <ReservasPage permisos={permisos} usuario={sesion.usuario} />;
             case 'caja':
@@ -178,8 +219,11 @@ function App() {
                 return <AdministracionPage permisos={permisos} />;
             case 'reportes':
                 return <ReportesPage />;
+<<<<<<< HEAD
             case 'perfil':
                 return <PerfilPage />;
+=======
+>>>>>>> frontend
             default:
                 return (
                     <InicioPage

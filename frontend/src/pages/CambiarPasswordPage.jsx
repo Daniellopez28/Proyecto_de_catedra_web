@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { solicitudApi } from '../api.js';
 
+<<<<<<< HEAD
 function CambiarPasswordPage({ alCambiar }) {
+=======
+function CambiarPasswordPage({ alCambiar, alCancelar, esObligatorio = true }) {
+>>>>>>> frontend
     const [passwordActual, setPasswordActual] = useState('');
     const [passwordNueva, setPasswordNueva] = useState('');
     const [confirmacion, setConfirmacion] = useState('');
@@ -39,7 +43,15 @@ function CambiarPasswordPage({ alCambiar }) {
             <form className="password-card" onSubmit={cambiar}>
                 <img className="workspace-brand-mark" src="/brand/origenes-isotipo.png" alt="" />
                 <h1>Actualiza tu contraseña</h1>
+<<<<<<< HEAD
                 <p>Por seguridad, debes cambiar la contraseña inicial antes de continuar.</p>
+=======
+                <p>
+                    {esObligatorio
+                        ? 'Por seguridad, debes cambiar la contraseña inicial antes de continuar.'
+                        : 'Confirma tu contraseña actual para establecer una nueva.'}
+                </p>
+>>>>>>> frontend
                 {error && <div className="notice is-error" role="alert">{error}</div>}
                 <label className="form-field">
                     Contraseña actual
@@ -53,9 +65,22 @@ function CambiarPasswordPage({ alCambiar }) {
                     Confirma la nueva contraseña
                     <input type="password" autoComplete="new-password" minLength="8" maxLength="100" required value={confirmacion} onChange={(event) => setConfirmacion(event.target.value)} />
                 </label>
+<<<<<<< HEAD
                 <button className="primary-button" type="submit" disabled={cargando}>
                     {cargando ? 'Actualizando…' : 'Actualizar contraseña'}
                 </button>
+=======
+                <div className="page-actions">
+                    {!esObligatorio && (
+                        <button className="secondary-button" type="button" onClick={alCancelar} disabled={cargando}>
+                            Cancelar
+                        </button>
+                    )}
+                    <button className="primary-button" type="submit" disabled={cargando}>
+                        {cargando ? 'Actualizando…' : 'Actualizar contraseña'}
+                    </button>
+                </div>
+>>>>>>> frontend
             </form>
         </main>
     );

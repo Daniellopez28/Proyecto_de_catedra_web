@@ -18,12 +18,31 @@ function mostrarFecha(valor) {
     return new Intl.DateTimeFormat('es-SV', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(valor));
 }
 
+<<<<<<< HEAD
 function PlanillasPage({ permisos = [] }) {
     const puedeVer = permisos.includes('ver_planillas');
     const puedeGenerar = permisos.includes('generar_planillas');
     const puedeVerPropia = permisos.includes('ver_mi_planilla');
     const [planillas, setPlanillas] = useState([]);
     const [miPlanilla, setMiPlanilla] = useState([]);
+=======
+const camposEditables = [
+    { id: 'salario_bruto', etiqueta: 'Salario bruto' },
+    { id: 'descuento_isss', etiqueta: 'ISSS' },
+    { id: 'descuento_afp', etiqueta: 'AFP' },
+    { id: 'descuento_renta', etiqueta: 'Renta' }
+];
+
+function PlanillasPage({ permisos = [] }) {
+    const puedeVer = permisos.includes('ver_planillas');
+    const puedeGenerar = permisos.includes('generar_planillas');
+    const puedeEditar = permisos.includes('editar_planillas');
+    const puedeVerPropia = permisos.includes('ver_mi_planilla');
+    const [planillas, setPlanillas] = useState([]);
+    const [miPlanilla, setMiPlanilla] = useState([]);
+    const [planillaDetalle, setPlanillaDetalle] = useState(null);
+    const [detallesEditables, setDetallesEditables] = useState({});
+>>>>>>> frontend
     const [periodoInicio, setPeriodoInicio] = useState(fechaHoy());
     const [periodoFin, setPeriodoFin] = useState(finDeQuincena());
     const [cargando, setCargando] = useState(true);
@@ -103,6 +122,64 @@ function PlanillasPage({ permisos = [] }) {
         }
     }
 
+<<<<<<< HEAD
+=======
+    async function cargarDetalle(idPlanilla) {
+        const respuesta = await solicitudApi(`/planillas/${idPlanilla}`);
+        setPlanillaDetalle(respuesta);
+        setDetallesEditables(Object.fromEntries(respuesta.planilla_detalle.map((detalle) => [
+            detalle.id_empleado,
+            Object.fromEntries(camposEditables.map(({ id }) => [
+                id,
+                Number(detalle[id]).toFixed(2)
+            ]))
+        ])));
+    }
+
+    async function editarPlanilla(planilla) {
+        if (planillaDetalle?.id_planilla === planilla.id_planilla) {
+            setPlanillaDetalle(null);
+            return;
+        }
+        setError('');
+        setMensaje('');
+        setProcesando(true);
+        try {
+            await cargarDetalle(planilla.id_planilla);
+        } catch (fallo) {
+            setError(fallo.message);
+        } finally {
+            setProcesando(false);
+        }
+    }
+
+    function actualizarDetalle(idEmpleado, campo, valor) {
+        setDetallesEditables((actuales) => ({
+            ...actuales,
+            [idEmpleado]: { ...actuales[idEmpleado], [campo]: valor }
+        }));
+    }
+
+    async function guardarDetalle(idEmpleado) {
+        setError('');
+        setMensaje('');
+        setProcesando(true);
+        try {
+            const respuesta = await solicitudApi(
+                `/planillas/${planillaDetalle.id_planilla}/detalles/${idEmpleado}`,
+                { method: 'PUT', body: detallesEditables[idEmpleado] }
+            );
+            setMensaje(respuesta.mensaje);
+            await cargar();
+            await cargarDetalle(planillaDetalle.id_planilla);
+        } catch (fallo) {
+            setError(fallo.message);
+        } finally {
+            setProcesando(false);
+        }
+    }
+
+>>>>>>> frontend
     return (
         <>
             <header className="page-heading">
@@ -142,7 +219,11 @@ function PlanillasPage({ permisos = [] }) {
                         <div className="data-table-wrap">
                             <table className="data-table">
                                 <thead>
+<<<<<<< HEAD
                                     <tr><th>Período</th><th>Tipo</th><th>Total neto</th><th>Estado</th>{puedeGenerar && <th>Acciones</th>}</tr>
+=======
+                                    <tr><th>Período</th><th>Tipo</th><th>Total neto</th><th>Estado</th>{(puedeGenerar || puedeEditar) && <th>Acciones</th>}</tr>
+>>>>>>> frontend
                                 </thead>
                                 <tbody>
                                     {planillas.map((planilla) => (
@@ -151,8 +232,19 @@ function PlanillasPage({ permisos = [] }) {
                                             <td>{planilla.tipo_planilla}</td>
                                             <td>${Number(planilla.total_pagar).toFixed(2)}</td>
                                             <td><span className="status-pill">{planilla.estado}</span></td>
+<<<<<<< HEAD
                                             {puedeGenerar && <td>{planilla.estado !== 'Pagada' &&
                                                 <button className="secondary-button" type="button" onClick={() => marcarPagada(planilla)} disabled={procesando}>Marcar pagada</button>}</td>}
+=======
+                                            {(puedeGenerar || puedeEditar) && <td>
+                                                {puedeGenerar && planilla.estado !== 'Pagada' &&
+                                                    <button className="secondary-button" type="button" onClick={() => marcarPagada(planilla)} disabled={procesando}>Marcar pagada</button>}
+                                                {puedeEditar && planilla.estado !== 'Pagada' &&
+                                                    <button className="secondary-button" type="button" onClick={() => editarPlanilla(planilla)} disabled={procesando}>
+                                                        {planillaDetalle?.id_planilla === planilla.id_planilla ? 'Cerrar edición' : 'Editar detalles'}
+                                                    </button>}
+                                            </td>}
+>>>>>>> frontend
                                         </tr>
                                     ))}
                                 </tbody>
@@ -162,6 +254,66 @@ function PlanillasPage({ permisos = [] }) {
                 </section>
             )}
 
+<<<<<<< HEAD
+=======
+            {puedeEditar && planillaDetalle && (
+                <section className="surface-card" style={{ marginTop: 16 }}>
+                    <h2>Editar planilla del {mostrarFecha(planillaDetalle.periodo_inicio)} al {mostrarFecha(planillaDetalle.periodo_fin)}</h2>
+                    <p>El salario neto y el total de la planilla se recalculan al guardar cada detalle.</p>
+                    <div className="data-table-wrap">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Empleado</th>
+                                    {camposEditables.map(({ id, etiqueta }) => <th key={id}>{etiqueta}</th>)}
+                                    <th>Neto</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {planillaDetalle.planilla_detalle.map((detalle) => {
+                                    const valores = detallesEditables[detalle.id_empleado] ?? {};
+                                    const neto = Number(valores.salario_bruto) -
+                                        Number(valores.descuento_isss) -
+                                        Number(valores.descuento_afp) -
+                                        Number(valores.descuento_renta);
+                                    return (
+                                        <tr key={detalle.id_empleado}>
+                                            <td>{detalle.empleados.nombre_completo}</td>
+                                            {camposEditables.map(({ id, etiqueta }) => (
+                                                <td key={id}>
+                                                    <input
+                                                        aria-label={`${etiqueta} de ${detalle.empleados.nombre_completo}`}
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        value={valores[id] ?? ''}
+                                                        onChange={(event) => actualizarDetalle(detalle.id_empleado, id, event.target.value)}
+                                                        disabled={procesando}
+                                                    />
+                                                </td>
+                                            ))}
+                                            <td>{Number.isFinite(neto) && neto >= 0 ? `$${neto.toFixed(2)}` : '—'}</td>
+                                            <td>
+                                                <button
+                                                    className="secondary-button"
+                                                    type="button"
+                                                    onClick={() => guardarDetalle(detalle.id_empleado)}
+                                                    disabled={procesando}
+                                                >
+                                                    Guardar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+
+>>>>>>> frontend
             {puedeVerPropia && (
                 <section className="surface-card" style={{ marginTop: 16 }}>
                     <h2>Mis boletas</h2>

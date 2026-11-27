@@ -14,6 +14,8 @@ este creara un contenedor de docker, luego en sql server pondras los siguientes 
 
 luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo con F5.
 
+Si la base de datos ya existía antes de agregar las columnas de imagen de productos, ejecuta una vez `sql/actualizar_productos_imagen.sql` conectado a `OrigeneSV`. El script solo agrega las columnas que falten y conserva los datos existentes.
+
 En el proyecto: 
 Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
 

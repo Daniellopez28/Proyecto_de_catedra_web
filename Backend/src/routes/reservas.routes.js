@@ -27,11 +27,18 @@ router.get('/', requerirPermiso('ver_reservas'), async (req, res) => {
             select: {
                 id_reserva: true,
                 fecha_hora_inicio: true,
+<<<<<<< HEAD
                 duracion_minutos: true,
                 cantidad_personas: true,
                 estado: true,
                 notas: true,
                 clientes: { select: { nombre: true, telefono: true } },
+=======
+                cantidad_personas: true,
+                estado: true,
+                notas: true,
+                clientes: { select: { nombre: true, apellido: true, telefono: true } },
+>>>>>>> frontend
                 mesas: {
                     select: {
                         numero_mesa: true,
@@ -50,6 +57,7 @@ router.get('/', requerirPermiso('ver_reservas'), async (req, res) => {
 router.get('/disponibles', requerirPermiso('ver_reservas_disponibles'), async (req, res) => {
     const fechaHora = fechaValida(req.query.fecha_hora);
     const personas = enteroPositivo(req.query.personas);
+<<<<<<< HEAD
     const duracion = req.query.duracion_minutos === undefined ? 90 : Number(req.query.duracion_minutos);
     const sucursalid = req.auth.usuario.sucursalid ?? enteroPositivo(req.query.sucursalid);
 
@@ -57,6 +65,14 @@ router.get('/disponibles', requerirPermiso('ver_reservas_disponibles'), async (r
         !enteroPositivo(sucursalid)) {
         return res.status(400).json({
             mensaje: 'Indica fecha_hora válida, personas, duración entre 30 y 480 minutos y una sucursal'
+=======
+    const duracion = 90;
+    const sucursalid = req.auth.usuario.sucursalid ?? enteroPositivo(req.query.sucursalid);
+
+    if (!fechaHora || !personas || !enteroPositivo(sucursalid)) {
+        return res.status(400).json({
+            mensaje: 'Indica fecha_hora válida, personas y una sucursal'
+>>>>>>> frontend
         });
     }
 
@@ -83,6 +99,7 @@ router.get('/disponibles', requerirPermiso('ver_reservas_disponibles'), async (r
     }
 });
 
+<<<<<<< HEAD
 router.get('/mis', requerirPermiso('ver_mis_reservas'), async (req, res) => {
     try {
         const reservas = await prisma.reservas.findMany({
@@ -122,6 +139,24 @@ router.post('/', requerirPermiso('gestionar_reservas'), async (req, res) => {
         !Number.isInteger(duracion) || duracion < 30 || duracion > 480 ||
         (notas !== undefined && notas !== null && (typeof notas !== 'string' || notas.length > 255))) {
         return res.status(400).json({ mensaje: 'Revisa la mesa, cliente, fecha, personas y duración' });
+=======
+router.post('/', requerirPermiso('gestionar_reservas'), async (req, res) => {
+    const mesaid = enteroPositivo(req.body?.mesaid);
+    const fechaHora = fechaValida(req.body?.fecha_hora_inicio);
+    const cantidadPersonas = enteroPositivo(req.body?.cantidad_personas);
+    const nombre = req.body?.nombre;
+    const apellido = req.body?.apellido;
+    const telefono = req.body?.telefono;
+    const duracion = 90;
+    const notas = req.body?.notas;
+
+    if (!mesaid || !fechaHora || !cantidadPersonas ||
+        typeof nombre !== 'string' || !nombre.trim() || nombre.trim().length > 150 ||
+        typeof apellido !== 'string' || !apellido.trim() || apellido.trim().length > 100 ||
+        typeof telefono !== 'string' || !telefono.trim() || telefono.trim().length > 20 ||
+        (notas !== undefined && notas !== null && (typeof notas !== 'string' || notas.length > 255))) {
+        return res.status(400).json({ mensaje: 'Revisa la mesa, fecha, personas y datos de contacto del cliente' });
+>>>>>>> frontend
     }
     if (fechaHora <= new Date()) {
         return res.status(400).json({ mensaje: 'La fecha de reserva debe ser futura' });
@@ -139,6 +174,7 @@ router.post('/', requerirPermiso('gestionar_reservas'), async (req, res) => {
                 error.codigoHttp = 404;
                 throw error;
             }
+<<<<<<< HEAD
             const cliente = await tx.clientes.findUnique({
                 where: { id_cliente: idCliente },
                 select: { id_cliente: true }
@@ -148,6 +184,8 @@ router.post('/', requerirPermiso('gestionar_reservas'), async (req, res) => {
                 error.codigoHttp = 404;
                 throw error;
             }
+=======
+>>>>>>> frontend
             const disponibles = await tx.$queryRaw`
                 SELECT mesaid
                 FROM dbo.fn_mesas_disponibles(
@@ -164,17 +202,36 @@ router.post('/', requerirPermiso('gestionar_reservas'), async (req, res) => {
                 throw error;
             }
 
+<<<<<<< HEAD
             return tx.reservas.create({
                 data: {
                     mesaid,
                     id_cliente: idCliente,
+=======
+            const cliente = await tx.clientes.create({
+                data: {
+                    nombre: nombre.trim(),
+                    apellido: apellido.trim(),
+                    telefono: telefono.trim()
+                },
+                select: { id_cliente: true }
+            });
+            return tx.reservas.create({
+                data: {
+                    mesaid,
+                    id_cliente: cliente.id_cliente,
+>>>>>>> frontend
                     fecha_hora_inicio: fechaHora,
                     duracion_minutos: duracion,
                     cantidad_personas: cantidadPersonas,
                     notas: notas?.trim() || null
                 },
                 include: {
+<<<<<<< HEAD
                     clientes: { select: { nombre: true, telefono: true } },
+=======
+                    clientes: { select: { nombre: true, apellido: true, telefono: true } },
+>>>>>>> frontend
                     mesas: { select: { numero_mesa: true } }
                 }
             });
@@ -221,7 +278,11 @@ router.patch('/:id/estado', requerirPermiso('gestionar_reservas'), async (req, r
         const reservaActualizada = await prisma.reservas.findUnique({
             where: { id_reserva: idReserva },
             include: {
+<<<<<<< HEAD
                 clientes: { select: { nombre: true, telefono: true } },
+=======
+                clientes: { select: { nombre: true, apellido: true, telefono: true } },
+>>>>>>> frontend
                 mesas: { select: { numero_mesa: true } }
             }
         });

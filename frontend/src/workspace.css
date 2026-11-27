@@ -2,7 +2,11 @@
 
 
 :root {
+<<<<<<< HEAD
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+=======
+  font-family: "Quicksand", sans-serif;
+>>>>>>> frontend
   color: #242824;
   background: #f7f6f2;
   font-synthesis: none;
@@ -74,7 +78,11 @@ button {
   height: 38px;
   place-items: center;
   border-radius: 12px;
+<<<<<<< HEAD
   background: #b95136;
+=======
+  background: #c53c10;
+>>>>>>> frontend
   color: #fff;
   font-size: 16px;
 }
@@ -106,13 +114,21 @@ button {
 .workspace-nav button:hover,
 .workspace-nav button.is-active {
   background: #f8ebe7;
+<<<<<<< HEAD
   color: #99422d;
+=======
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .workspace-nav button:focus-visible,
 .workspace-logout:focus-visible,
 .workspace-menu-toggle:focus-visible {
+<<<<<<< HEAD
   outline: 2px solid #b95136;
+=======
+  outline: 2px solid #c53c10;
+>>>>>>> frontend
   outline-offset: 2px;
 }
 
@@ -198,8 +214,13 @@ button {
 
 .workspace-logout:hover,
 .workspace-menu-toggle:hover {
+<<<<<<< HEAD
   border-color: #b95136;
   color: #99422d;
+=======
+  border-color: #c53c10;
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .workspace-menu-toggle {
@@ -375,7 +396,11 @@ button {
 
 .status-pill.is-danger {
   background: #f8ebe7;
+<<<<<<< HEAD
   color: #99422d;
+=======
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .form-grid {
@@ -418,8 +443,13 @@ button {
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
+<<<<<<< HEAD
   border-color: #b95136;
   outline: 2px solid rgba(185, 81, 54, 0.12);
+=======
+  border-color: #c53c10;
+  outline: 2px solid rgba(197, 60, 16, 0.12);
+>>>>>>> frontend
 }
 
 .primary-button,
@@ -438,12 +468,20 @@ button {
 }
 
 .primary-button {
+<<<<<<< HEAD
   background: #b95136;
+=======
+  background: #c53c10;
+>>>>>>> frontend
   color: #fff;
 }
 
 .primary-button:hover:not(:disabled) {
+<<<<<<< HEAD
   background: #99422d;
+=======
+  background: #823b0f;
+>>>>>>> frontend
 }
 
 .secondary-button {
@@ -453,14 +491,23 @@ button {
 }
 
 .secondary-button:hover:not(:disabled) {
+<<<<<<< HEAD
   border-color: #b95136;
   color: #99422d;
+=======
+  border-color: #c53c10;
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .danger-button {
   border-color: #f0d7d0;
   background: #fff;
+<<<<<<< HEAD
   color: #99422d;
+=======
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .danger-button:hover:not(:disabled) {
@@ -495,7 +542,11 @@ button {
 .notice.is-error {
   border-color: #efd2ca;
   background: #fcf1ee;
+<<<<<<< HEAD
   color: #99422d;
+=======
+  color: #823b0f;
+>>>>>>> frontend
 }
 
 .notice.is-info {

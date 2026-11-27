@@ -31,6 +31,10 @@ model cajas {
 model clientes {
   id_cliente       Int        @id(map: "pk_clientes") @default(autoincrement())
   nombre           String     @db.VarChar(150)
+<<<<<<< HEAD
+=======
+  apellido         String?    @db.VarChar(100)
+>>>>>>> frontend
   dui              String?    @unique(map: "ux_clientes_dui", where: raw("([dui] IS NOT NULL)")) @db.VarChar(10)
   nit              String?    @unique(map: "ux_clientes_nit", where: raw("([nit] IS NOT NULL)")) @db.VarChar(17)
   nrc              String?    @db.VarChar(15)
@@ -95,6 +99,10 @@ model empleados {
   salario_base     Decimal            @db.Decimal(10, 2)
   activo           Boolean            @default(true, map: "df_empleados_activo")
   fecha_ingreso    DateTime           @db.Date
+<<<<<<< HEAD
+=======
+  fecha_fin_contrato DateTime?        @db.Date
+>>>>>>> frontend
   correo           String?            @db.VarChar(150)
   tipo_contrato    String?            @db.VarChar(50)
   jornada          String?            @db.VarChar(50)
@@ -166,6 +174,11 @@ model productos {
   es_reventa      Boolean?          @default(false, map: "df_productos_es_reventa")
   activo          Boolean?          @default(true, map: "df_productos_activo")
   stock_actual    Decimal?          @default(0.00, map: "df_productos_stock") @db.Decimal(10, 2)
+<<<<<<< HEAD
+=======
+  imagen          Bytes?            @db.VarBinary(Max)
+  imagen_mime     String?           @db.VarChar(50)
+>>>>>>> frontend
   recetas_detalle recetas_detalle[]
   venta_detalle   venta_detalle[]
 }
@@ -248,6 +261,10 @@ model ventas {
   id_usuario      Int
   sucursalid      Int?
   mesaid          Int?
+<<<<<<< HEAD
+=======
+  nombre_cliente  String?         @db.VarChar(150)
+>>>>>>> frontend
   fecha_hora      DateTime?       @default(now(), map: "df_ventas_fecha") @db.DateTime
   tipo_documento  String          @db.VarChar(30)
   correlativo     String          @unique(map: "uq_ventas_correlativo") @db.VarChar(50)

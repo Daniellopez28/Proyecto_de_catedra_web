@@ -3,6 +3,42 @@ import prisma from '../config/prisma.js';
 import { requerirPermiso } from '../middleware/autenticacion.js';
 
 const router = Router();
+<<<<<<< HEAD
+=======
+const maximoImagenBytes = 1024 * 1024;
+
+function validarImagen(valor) {
+    if (valor === undefined) return { presente: false };
+    if (valor === null || valor === '') {
+        return { presente: true, bytes: null, mime: null };
+    }
+    if (typeof valor !== 'string') throw new Error('La imagen debe ser una imagen JPEG, PNG o WebP');
+    const coincidencia = valor.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/);
+    if (!coincidencia) throw new Error('La imagen debe ser JPEG, PNG o WebP');
+    const [, mime, contenido] = coincidencia;
+    const bytes = Buffer.from(contenido, 'base64');
+    if (bytes.length === 0 || bytes.length > maximoImagenBytes) {
+        throw new Error('La imagen no debe superar 1 MB');
+    }
+    const esJpeg = mime === 'image/jpeg' && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+    const esPng = mime === 'image/png' &&
+        bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+    const esWebp = mime === 'image/webp' &&
+        bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+    if (!esJpeg && !esPng && !esWebp) throw new Error('El contenido de la imagen no coincide con su formato');
+    return { presente: true, bytes, mime };
+}
+
+function productoConImagen(producto) {
+    const { imagen, imagen_mime, ...datos } = producto;
+    return {
+        ...datos,
+        imagen: imagen && imagen_mime
+            ? `data:${imagen_mime};base64,${Buffer.from(imagen).toString('base64')}`
+            : null
+    };
+}
+>>>>>>> frontend
 
 router.get('/', requerirPermiso('ver_menu'), async (req, res) => {
     try {
@@ -15,10 +51,19 @@ router.get('/', requerirPermiso('ver_menu'), async (req, res) => {
                 descripcion: true,
                 precio_venta: true,
                 categoria: true,
+<<<<<<< HEAD
                 es_reventa: true
             }
         });
         return res.json({ total: productos.length, productos });
+=======
+                es_reventa: true,
+                imagen: true,
+                imagen_mime: true
+            }
+        });
+        return res.json({ total: productos.length, productos: productos.map(productoConImagen) });
+>>>>>>> frontend
     } catch (error) {
         console.error('Error al consultar productos:', error);
         return res.status(500).json({ mensaje: 'No se pudieron consultar los productos' });
@@ -26,8 +71,19 @@ router.get('/', requerirPermiso('ver_menu'), async (req, res) => {
 });
 
 router.post('/', requerirPermiso('gestionar_productos'), async (req, res) => {
+<<<<<<< HEAD
     const { nombre, descripcion, precio_venta, categoria, es_reventa = false, ingredientes = [] } = req.body ?? {};
     const precio = Number(precio_venta);
+=======
+    const { nombre, descripcion, precio_venta, categoria, es_reventa = false, ingredientes = [], imagen } = req.body ?? {};
+    const precio = Number(precio_venta);
+    let datosImagen;
+    try {
+        datosImagen = validarImagen(imagen);
+    } catch (error) {
+        return res.status(400).json({ mensaje: error.message });
+    }
+>>>>>>> frontend
     if (typeof nombre !== 'string' || !nombre.trim() || nombre.length > 150 ||
         (descripcion !== undefined && descripcion !== null && typeof descripcion !== 'string') ||
         !Number.isFinite(precio) || precio < 0 || precio > 99999999.99 ||
@@ -67,11 +123,20 @@ router.post('/', requerirPermiso('gestionar_productos'), async (req, res) => {
                 precio_venta: precio,
                 categoria: categoria?.trim() || null,
                 es_reventa,
+<<<<<<< HEAD
+=======
+                imagen: datosImagen.bytes ?? null,
+                imagen_mime: datosImagen.mime ?? null,
+>>>>>>> frontend
                 recetas_detalle: { create: detalles }
             },
             include: { recetas_detalle: { include: { insumos: true } } }
         });
+<<<<<<< HEAD
         return res.status(201).json({ mensaje: 'Producto creado', producto });
+=======
+        return res.status(201).json({ mensaje: 'Producto creado', producto: productoConImagen(producto) });
+>>>>>>> frontend
     } catch (error) {
         console.error('Error al crear producto:', error);
         return res.status(500).json({ mensaje: 'No se pudo crear el producto' });
@@ -87,9 +152,22 @@ router.patch('/:id', requerirPermiso('gestionar_productos'), async (req, res) =>
         categoria,
         es_reventa,
         activo,
+<<<<<<< HEAD
         ingredientes
     } = req.body ?? {};
     const campos = { nombre, descripcion, precio_venta, categoria, es_reventa, activo, ingredientes };
+=======
+        ingredientes,
+        imagen
+    } = req.body ?? {};
+    const campos = { nombre, descripcion, precio_venta, categoria, es_reventa, activo, ingredientes, imagen };
+    let datosImagen;
+    try {
+        datosImagen = validarImagen(imagen);
+    } catch (error) {
+        return res.status(400).json({ mensaje: error.message });
+    }
+>>>>>>> frontend
     if (!Number.isInteger(idProducto) || idProducto <= 0 ||
         Object.values(campos).every((valor) => valor === undefined) ||
         (nombre !== undefined && (typeof nombre !== 'string' || !nombre.trim() || nombre.length > 150)) ||
@@ -145,12 +223,23 @@ router.patch('/:id', requerirPermiso('gestionar_productos'), async (req, res) =>
                     ...(categoria !== undefined ? { categoria: categoria?.trim() || null } : {}),
                     ...(es_reventa !== undefined ? { es_reventa } : {}),
                     ...(activo !== undefined ? { activo } : {}),
+<<<<<<< HEAD
+=======
+                    ...(datosImagen.presente ? {
+                        imagen: datosImagen.bytes,
+                        imagen_mime: datosImagen.mime
+                    } : {}),
+>>>>>>> frontend
                     ...(ingredientes !== undefined ? { recetas_detalle: { create: detalles } } : {})
                 },
                 include: { recetas_detalle: { include: { insumos: true } } }
             });
         });
+<<<<<<< HEAD
         return res.json({ mensaje: 'Producto actualizado', producto });
+=======
+        return res.json({ mensaje: 'Producto actualizado', producto: productoConImagen(producto) });
+>>>>>>> frontend
     } catch (error) {
         if (error.codigoHttp) return res.status(error.codigoHttp).json({ mensaje: error.message });
         if (error.code === 'P2025') return res.status(404).json({ mensaje: 'Producto no encontrado' });

@@ -24,10 +24,15 @@ El menú y las acciones se derivan de los permisos entregados por /api/session. 
 Las pantallas consultan la API real, muestran errores y estados vacíos, y no sustituyen los datos por registros ficticios.
 
 La estructuracion del Frontend ha venido con establecinedo esta logica
+
 ![alt text](Estructura-1.png)
+
 ![alt text](Estructura-2.png)
+
 ![alt text](Estructura-3.png)
+
 ![alt text](Estructura-4.png)
+
 ## 1.En el apartado del frontend encontramos el archivo de arranque main.jsx:
 
 Importamos StrictMode y createRoot de React para encender la app, traemos los estilos globales de ./index.css y nuestro componente principal ./App.jsx, y al final montamos todo dentro del elemento root de la página.

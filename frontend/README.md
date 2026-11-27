@@ -205,3 +205,61 @@ Los filtros (Todos, Con saldo, Vencidos) funcionan igual que en la vista de prod
 En el panel derecho se muestra el nombre del proveedor, su estado de cuenta (si tiene un pago parcial o si la factura está vencida) y los detalles de la compra: fecha de vencimiento, clasificación (costo o gasto), base más IVA, total de la factura y el abono que se ha hecho.
 
 Lo que toma para avanzar es que el usuario seleccione un proveedor para ver su estado de cuenta. El botón "Preparar abono" ejecuta la función onPrepararAbono que viene desde el componente padre, para que se abra el formulario de pago. En la parte de abajo hay una tarjeta con el historial de pago y el pie de página con las etiquetas de la operación.
+
+## 15. Página de Ventas y Pedidos (pages/VentasPage.jsx)
+
+En pages/VentasPage.jsx tenemos la vista para tomar pedidos en el salón o consultar los que están abiertos. Traemos useState y useEffect para cargar los productos del menú, los modificadores (como "sin cebolla" o "extra queso") y las mesas. La pantalla tiene dos pestañas arriba: "Tomar pedido" y "Pedidos abiertos".
+
+![alt text](ventas-page-1.png)
+
+En la pestaña de "Tomar pedido", el mesero selecciona una categoría (Bebidas, Platos fuertes, etc.) y hace clic en un producto para agregarlo al carrito. Si el producto tiene modificadores, se abre un panel para elegirlos. El carrito se va llenando y el sistema calcula el total al instante usando useMemo para evitar errores de redondeo con los centavos.
+
+![alt text](ventas-page-2.png)
+
+Cuando el mesero da clic en "Registrar pedido", se envía la información al backend usando solicitudApi('/ventas', { method: 'POST' }). El pedido se guarda con el estado 'abierto' y se envía a la cocina. La pestaña de "Pedidos abiertos" muestra la lista de los pedidos que aún no se han cobrado.
+
+![alt text](ventas-page-3.png)
+
+Lo que toma para avanzar es que haya productos en el menú y que el usuario tenga el permiso 'tomar_pedidos'. Si el backend no tiene mesas configuradas, el pedido se guarda como "Para llevar".
+
+## 16. Página de Caja (pages/CajaPage.jsx)
+
+En pages/CajaPage.jsx tenemos la vista para que el cajero abra su turno, cobre las cuentas pendientes y cierre la caja al final del día. Traemos useState para controlar el monto de apertura, el método de pago, y las observaciones de cierre. También cargamos los pedidos pendientes de cobro.
+
+![alt text](caja-page-1.png)
+
+Si no hay una caja abierta, la pantalla muestra un formulario para abrir el turno ingresando el monto inicial. Cuando ya está abierta, se muestra el saldo actual, un formulario para registrar movimientos (ingresos extra, retiros o pagos) y la tabla de movimientos.
+
+![alt text](caja-page-2.png)
+
+Para cerrar la cuenta de un pedido, el cajero selecciona el pedido de la tabla, elige el método de pago (Efectivo, Tarjeta, Transferencia) y da clic en "Registrar pago y cerrar cuenta". Para cerrar el turno completo, ingresa el efectivo contado y las observaciones, y el sistema hace el cuadre.
+
+Lo que toma para avanzar es que el usuario tenga el permiso 'operar_caja' y que no haya otra caja abierta en la misma sucursal. Si el backend detecta un descuadre en el cierre, lo notifica.
+
+## 17. Página de Inventario (pages/InventarioPage.jsx)
+
+En pages/InventarioPage.jsx tenemos la vista para gestionar los insumos y las existencias. Traemos useState para manejar la lista de insumos, las alertas de stock y los movimientos recientes. Si el usuario es administrador (no tiene sucursal fija), se muestra un selector para elegir qué sucursal revisar.
+
+![alt text](inventario-page-1.png)
+
+La pantalla tiene tres tarjetas arriba con el resumen: Insumos activos, Alertas de stock y Agotados. Más abajo hay una tabla con las alertas (que se pintan de rojo si está agotado o amarillo si está bajo) y otra tabla con el listado completo de insumos.
+
+![alt text](inventario-page-2.png)
+
+Si el usuario tiene permiso de gestión, se muestran dos formularios: uno para crear un nuevo insumo y otro para ajustar las existencias (entrada, salida o definir el stock exacto). 
+
+Lo que toma para avanzar es que el usuario seleccione una sucursal (si es administrador) y que el backend devuelva los insumos y alertas de esa sucursal. Los movimientos recientes se listan al final para llevar la trazabilidad.
+
+## 18. Página de Compras y Proveedores (pages/ComprasPage.jsx)
+
+En pages/ComprasPage.jsx tenemos la vista para registrar las facturas de compra de los proveedores y que el inventario se actualice. Traemos useState para manejar el formulario de la compra (proveedor, número de factura, IVA) y el detalle del insumo comprado.
+
+![alt text](compras-page-1.png)
+
+La pantalla tiene una sección para registrar un nuevo proveedor, otra para registrar la compra y, al final, una tabla con las facturas recientes. Si el usuario es administrador, tiene que elegir primero la sucursal.
+
+![alt text](compras-page-2.png)
+
+Para registrar una compra, el usuario elige el proveedor, escribe el número de factura, selecciona el insumo, pone la cantidad y el costo unitario. También puede registrar si dejó un pago inicial y con qué método. 
+
+Lo que toma para avanzar es que el usuario tenga los permisos de lectura necesarios para cargar los proveedores e insumos. Al guardar, el backend suma la cantidad al inventario y registra la cuenta por pagar si quedó un saldo pendiente.

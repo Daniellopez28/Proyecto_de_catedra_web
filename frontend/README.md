@@ -71,3 +71,5 @@ Lo que toma para avanzar es que el backend reciba la petición correctamente. Si
 
 ## 5. El control de permisos (navigation.js)
 El archivo navigation.js es el encargado de decidir qué opciones ve cada usuario en el menú. Aquí definimos un arreglo con todos los módulos del sistema (Inicio, Ventas, Reservas, Caja, Inventario, Compras, Productos, Empleados, Planillas, Usuarios, Administración y Reportes), y a cada uno le asignamos un ícono y la lista de permisos que necesita para mostrarse.
+
+![alt text](navigation-js.png)

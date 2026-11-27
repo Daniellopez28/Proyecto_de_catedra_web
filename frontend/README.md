@@ -263,3 +263,63 @@ La pantalla tiene una sección para registrar un nuevo proveedor, otra para regi
 Para registrar una compra, el usuario elige el proveedor, escribe el número de factura, selecciona el insumo, pone la cantidad y el costo unitario. También puede registrar si dejó un pago inicial y con qué método. 
 
 Lo que toma para avanzar es que el usuario tenga los permisos de lectura necesarios para cargar los proveedores e insumos. Al guardar, el backend suma la cantidad al inventario y registra la cuenta por pagar si quedó un saldo pendiente.
+
+## 19. Página de Empleados (pages/EmpleadosPage.jsx)
+
+En pages/EmpleadosPage.jsx tenemos la vista para dar de alta al personal y llevar su expediente completo. Traemos useState para manejar los datos del formulario (nombre, apellidos, DUI, fecha de nacimiento, cargo, salario, fecha de ingreso, tipo de contrato y datos de ISSS y AFP) y useEffect para cargar los roles y las sucursales al entrar a la pantalla.
+
+![alt text](empleados-page-1.png)
+
+La pantalla está dividida en tres bloques principales. Arriba está el formulario para registrar un nuevo empleado. En medio se muestra la tabla con el personal activo (nombre, código, cargo, rol, sucursal, salario y tipo de contrato). Y al final aparece un mensaje con las credenciales iniciales (correo y contraseña) cuando se registra a alguien, para entregárselas una sola vez.
+
+![alt text](empleados-page-2.png)
+
+Cuando el administrador hace clic en el botón "Editar" de un empleado de la tabla, el sistema consulta sus datos al backend y llena el formulario de nuevo, pero esta vez en modo edición. Para dar de baja a alguien, se pide una confirmación y el registro no se borra, solo queda inactivo (el historial se conserva).
+
+![alt text](empleados-page-3.png)
+
+Lo que toma para avanzar es que el usuario tenga el permiso 'registrar_empleados' o 'ver_empleados'. Si el contrato es de tipo "definido", el sistema pide la duración en años y meses y calcula automáticamente la fecha de finalización del contrato.
+
+## 20. Página de Planillas (pages/PlanillasPage.jsx)
+
+En pages/PlanillasPage.jsx tenemos la vista para generar y consultar los pagos del personal. Traemos useState para controlar el período de inicio y fin (que por defecto se calcula como la quincena actual) y las planillas generadas.
+
+![alt text](planillas-page-1.png)
+
+La pantalla tiene una sección para generar una nueva planilla indicando las fechas. Más abajo hay una tabla con los períodos ya registrados, donde se muestra el rango de fechas, el tipo de planilla, el total a pagar y su estado (Pendiente o Pagada). Si el usuario tiene permiso de edición, aparece un botón para modificar los detalles de esa planilla.
+
+![alt text](planillas-page-2.png)
+
+Al abrir la edición de una planilla, se muestra una tabla con cada empleado. El administrador puede ajustar el salario bruto y los descuentos de ISSS, AFP y Renta. El sistema recalcula el salario neto en el momento y, al guardar, actualiza el total de la planilla.
+
+![alt text](planillas-page-3.png)
+
+Lo que toma para avanzar es que el usuario tenga el permiso 'ver_planillas' para consultar, y 'generar_planillas' o 'editar_planillas' para crear o modificar. También hay una sección al final llamada "Mis boletas", donde un empleado con el permiso 'ver_mi_planilla' puede ver sus propios pagos.
+
+## 21. Página de Usuarios (pages/UsuariosPage.jsx)
+
+En pages/UsuariosPage.jsx tenemos la vista para administrar las cuentas de acceso al sistema. Traemos useState para manejar el filtro por sucursal y los roles que se le pueden asignar a cada usuario.
+
+![alt text](usuarios-page-1.png)
+
+La tabla muestra a cada usuario con su nombre completo, su rol actual, la sucursal a la que pertenece y una etiqueta que indica si está Activo o Inactivo. Al lado de cada fila hay un menú desplegable para cambiar el rol y un botón para desactivar la cuenta (con confirmación previa).
+
+![alt text](usuarios-page-2.png)
+
+Para evitar errores, el sistema detecta si el usuario que estás viendo es tu propia cuenta. Si lo es, el botón de desactivar y el selector de rol se bloquean, para que no te quites tus propios permisos por accidente.
+
+Lo que toma para avanzar es que el usuario tenga el permiso 'gestionar_usuarios'. Si intentas desactivar a alguien que es el último administrador, el backend rechazará la acción.
+
+## 22. Página de Administración (pages/AdministracionPage.jsx)
+
+En pages/AdministracionPage.jsx tenemos la vista más poderosa del sistema, donde se configuran los roles, los permisos y las sucursales. Traemos useState para manejar los roles, los permisos disponibles, los niveles de acceso y las sucursales.
+
+![alt text](administracion-page-1.png)
+
+La pantalla se divide en tres grandes bloques. El primero permite crear un rol nuevo, asignándole un nombre, un nivel de acceso (por ejemplo, administrador o mesero) y una descripción. El segundo bloque es para editar los permisos de un rol existente, donde se muestran todos los permisos en casillas para marcarlos o desmarcarlos.
+
+![alt text](administracion-page-2.png)
+
+El tercer bloque es para registrar y editar sucursales, donde se piden el nombre, la dirección, el teléfono y el estado (activa o inactiva). 
+
+Lo que toma para avanzar es que el usuario tenga los permisos 'gestionar_roles_permisos' o 'gestionar_sucursales'. Como un cambio en los permisos puede afectar la seguridad, al guardar los permisos de un rol, el sistema cierra la sesión de todos los usuarios activos para que vuelvan a entrar con los permisos actualizados.

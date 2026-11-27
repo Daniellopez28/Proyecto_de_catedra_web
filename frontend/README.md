@@ -105,3 +105,7 @@ En components/side-navbar.jsx tenemos el menú que aparece a la izquierda de la 
 La lógica es sencilla: el componente recibe por propiedades (props) el arreglo de los items permitidos (que ya filtramos en navigation.js), cuál es el seleccionado actualmente, y las funciones para cambiar de página y para cerrar el menú en celulares. 
 
 Lo que toma para avanzar es que el usuario haga clic en un botón. Al hacerlo, se le avisa a App.jsx para que cambie la página que se está mostrando en el área de contenido. Además, en pantallas pequeñas, el menú funciona como una ventana emergente que se puede cerrar tocando fuera de él.
+
+## 8. Encabezado superior (components/top-header.jsx)
+
+En components/top-header.jsx tenemos la barra superior que muestra la ubicación, la fecha actual y los datos del usuario conectado. Traemos useMemo para calcular la fecha una sola vez cuando carga la pantalla, y la formateamos en español (por ejemplo: "lun, 03 nov 2026").

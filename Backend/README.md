@@ -31,7 +31,9 @@ docker run --name origenesv-sqlserver `
 
 Reemplaza la contraseña de ejemplo por una clave propia y utiliza esa misma clave en `DATABASE_URL`. No publiques contraseñas reales en el repositorio.
 
-Abre `Backend/OrigeneSV.sql` en SQL Server Management Studio y ejecútalo contra la instancia. **El script elimina la base `OrigeneSV` si ya existe y la crea de nuevo.** Esto borra sus datos anteriores; haz una copia de seguridad antes de ejecutarlo si necesitas conservarlos.
+Abre `Backend/OrigeneSV.sql` en SQL Server Management Studio y ejecútalo contra la instancia. El script crea `OrigeneSV` si no existe; si ya existe, conserva sus datos y omite la instalación inicial. Por eso, volver a ejecutarlo no actualiza el esquema de una base existente.
+
+Si tu base ya existía antes de agregar el nombre del cliente a las ventas, ejecuta una vez `Backend/sql/migracion_ventas_nombre_cliente.sql` en SQL Server Management Studio. Es una migración aditiva: agrega la columna faltante sin borrar ni modificar las ventas existentes.
 
 Para cargar los datos de ejemplo de recetas e inventario, ejecuta después `Backend/sql/datos_inventario_recetas.sql`.
 

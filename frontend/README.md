@@ -117,3 +117,55 @@ En components/top-header.jsx tenemos la barra superior que muestra la ubicación
 La lógica es tomar el nombre completo del usuario (que viene en las propiedades) y sacar sus iniciales para mostrarlas en un círculo. También mostramos su rol (por ejemplo, Gerente) y el nombre de la sucursal.
 
 Lo que toma para avanzar es que haya un usuario en la sesión. A la derecha hay un botón para "Cerrar sesión", que al darle clic le avisa a App.jsx para que borre la sesión y devuelva a la persona a la pantalla de Login.
+
+## 9. Formulario para agregar empleados (components/employee-add.jsx)
+
+En components/employee-add.jsx tenemos el formulario modal que se abre cuando queremos registrar a un nuevo trabajador en el sistema. Traemos useState para manejar si se está enviando la información (para bloquear el botón) y si ya se completó el registro con éxito. También traemos los íconos en formato SVG (persona, maleta, moneda y tarjeta) que acompañan los títulos de cada sección, y el componente Success que muestra un mensaje de confirmación.
+
+![alt text](employee-add-1.png)
+
+El formulario está dividido en cuatro partes claras: Datos personales (nombre, DUI, fecha de nacimiento, correo y teléfono), Datos de contratación (cargo, sucursal, fecha de ingreso, tipo de contrato y jornada), Detalles salariales (salario y forma de pago) y Afiliaciones laborales (número de ISSS y AFP).
+
+![alt text](employee-add-2.png)
+
+Cuando el usuario da clic en "Registrar Empleado", la función handleSubmit evita que la página se recargue, junta todos los datos escritos y arma un objeto nuevo. Por ahora, en este archivo, se usa un window.setTimeout para simular la respuesta del servidor y se llama a la función onEmployeeAdded que viene desde el componente padre para que lo agregue a la lista. Finalmente se limpia el formulario y se muestra la ventana de <Success />.
+
+![alt text](employee-add-3.png)
+
+Lo que toma para avanzar es que el usuario llene los campos obligatorios. Al darle aceptar en la ventana de éxito, se cierra todo y regresamos a la vista principal de empleados. *(Nota: En la versión conectada al backend, esta parte cambia para usar solicitudApi y guardar los datos directamente en la base de datos, además de generar las credenciales de acceso).*
+
+## 10. Lista y panel de empleados (components/employee-component.jsx)
+
+En components/employee-component.jsx tenemos la vista principal de los empleados. Al inicio del archivo hay un arreglo con datos de prueba (Sergio Perez, Daniel Ricciardo, etc.) para maquetar la pantalla. Traemos useState para controlar el filtro por sucursal, el empleado seleccionado, el texto del buscador y el estado del formulario de registro.
+
+![alt text](employee-component-1.png)
+
+En la parte superior tenemos tres tarjetas de resumen (Personal registrado, Personal activo y Salarios base). Más abajo está la barra de filtros por sucursal y un buscador por nombre. Luego armamos una tabla con los datos básicos de cada empleado.
+
+![alt text](employee-component-2.png)
+
+Cuando el usuario hace clic en una fila de la tabla, se marca como seleccionada y el panel de la derecha (donde está el componente EmployeeInfoComponent) cambia para mostrar los detalles de esa persona. También aquí se manda a llamar al formulario de registro de la Parte 9.
+
+![alt text](employee-component-3.png)
+
+Lo que toma para avanzar es que el usuario seleccione un empleado para ver su información o que use los filtros para encontrar a alguien. La tabla calcula los totales y los salarios en el momento, por lo que cualquier cambio en la lista se refleja de inmediato.
+
+## 11. Ficha de detalles del empleado (components/employee-info-component.jsx)
+
+En components/employee-info-component.jsx tenemos la tarjeta que muestra el expediente del empleado seleccionado. Recibe por propiedades el objeto del empleado y arma un arreglo con los detalles a mostrar: fecha de contratación, tipo de contrato, jornada, salario mensual y forma de pago.
+
+![alt text](employee-info-component.png)
+
+Muestra el nombre grande del empleado, su código de expediente, su puesto y sucursal, además de una etiqueta verde que dice "Activo" o roja si está "Inactivo". Al final, tiene una sección para las afiliaciones de ISSS y AFP, y un botón para editar el expediente (que en el futuro abrirá el formulario con los datos ya cargados).
+
+Lo que toma para avanzar es que haya un empleado seleccionado en la pantalla principal. Si el usuario no tiene seleccionado a nadie, este panel no se muestra. Toda la información se lee de forma automática del objeto del empleado.
+
+## 12. Ventana de éxito reutilizable (components/success.jsx)
+
+En components/success.jsx tenemos un mensaje genérico de confirmación que se usa en distintas partes del sistema (por ejemplo, cuando se registra un empleado). Traemos los estilos de success.css y un ícono de check (una palomita) para indicar que la acción se completó bien.
+
+![alt text](success-jsx.png)
+
+La lógica es muy simple: el componente recibe una propiedad isOpen para saber si debe mostrarse o no, y una propiedad onClose para cerrarlo. Si isOpen es falso, el componente no dibuja nada en pantalla.
+
+Lo que toma para avanzar es que el proceso haya sido exitoso. Al darle clic al botón "Aceptar", se ejecuta onClose, la ventana desaparece y el sistema continúa con su flujo normal.

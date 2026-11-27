@@ -474,6 +474,93 @@ button {
   gap: 14px;
 }
 
+.product-form-card {
+  padding: 18px;
+}
+
+.product-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0 14px;
+}
+
+.product-form-column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-form-grid > .product-form-column {
+  align-self: start;
+}
+
+.product-description-field textarea {
+  min-height: 72px;
+}
+
+.product-checkbox-option {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.product-checkbox-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brand-rust);
+}
+
+.product-photo-field small {
+  color: var(--brand-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.product-form-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-recipe-section {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--brand-border);
+}
+
+.product-recipe-section h3 {
+  margin: 0 0 8px;
+  color: var(--brand-brown);
+  font-size: 18px;
+}
+
+.product-ingredient-row {
+  margin-bottom: 6px;
+  padding: 8px;
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  background: var(--brand-paper);
+}
+
+.product-ingredient-row .form-field {
+  min-width: 0;
+}
+
+.product-form-actions {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--brand-border);
+}
+
 .inventory-form-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 28px;
@@ -884,6 +971,57 @@ button {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .product-form-card {
+    padding: 14px;
+  }
+
+  .product-form-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .product-form-column {
+    display: contents;
+  }
+
+  .product-name-field {
+    order: 1;
+  }
+
+  .product-category-field {
+    order: 2;
+  }
+
+  .product-price-field {
+    order: 3;
+  }
+
+  .product-description-field {
+    order: 4;
+  }
+
+  .product-type-field {
+    order: 5;
+  }
+
+  .product-recipe-section {
+    order: 6;
+  }
+
+  .product-photo-field {
+    order: 7;
+  }
+
+  .product-form-preview {
+    order: 8;
+  }
+
+  .product-form-preview,
+  .product-ingredient-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .inventory-form-grid {

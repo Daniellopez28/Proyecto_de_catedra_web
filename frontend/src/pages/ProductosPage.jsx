@@ -180,44 +180,54 @@ function ProductosPage({ permisos = [] }) {
 
             {puedeGestionar && (
                 <>
-                    <form className="surface-card" onSubmit={enviarProducto}>
+                    <form className="surface-card product-form-card" onSubmit={enviarProducto}>
                         <h2>{productoEditado ? 'Editar producto' : 'Nuevo producto'}</h2>
-                        <div className="form-grid">
-                            <label className="form-field">Nombre<input maxLength="150" required value={producto.nombre} onChange={(event) => setProducto({ ...producto, nombre: event.target.value })} /></label>
-                            <label className="form-field">Categoría<input maxLength="50" value={producto.categoria} onChange={(event) => setProducto({ ...producto, categoria: event.target.value })} /></label>
-                            <label className="form-field">Precio ($)<input type="number" min="0" max="99999999.99" step="0.01" required value={producto.precio_venta} onChange={(event) => setProducto({ ...producto, precio_venta: event.target.value })} /></label>
-                            <label className="form-field">Descripción<textarea value={producto.descripcion} onChange={(event) => setProducto({ ...producto, descripcion: event.target.value })} /></label>
-                            <label className="form-field"><span>Tipo</span><span><input type="checkbox" checked={producto.es_reventa} onChange={(event) => setProducto({ ...producto, es_reventa: event.target.checked })} /> Producto de reventa</span></label>
-                            <label className="form-field">Fotografía del producto
-                                <input type="file" accept="image/jpeg,image/png,image/webp" onChange={seleccionarImagen} />
-                                <small>JPEG, PNG o WebP · máximo 1 MB. Se guarda en la base de datos.</small>
-                            </label>
-                            {producto.imagen && <div className="product-image-preview">
-                                <img
-                                    src={producto.imagen}
-                                    alt={`Vista previa de ${producto.nombre || 'producto'}`}
-                                    style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8 }}
-                                />
-                                <button className="secondary-button" type="button" onClick={() => setProducto({ ...producto, imagen: '' })}>Quitar imagen</button>
-                            </div>}
-                        </div>
-                        {puedeConfigurarRecetas && (
-                            <div style={{ marginTop: 16 }}>
-                                <h3>Receta</h3>
-                                {ingredientes.map((ingrediente, indice) => (
-                                    <div className="inline-form" key={`${ingrediente.id_insumo}-${indice}`} style={{ marginBottom: 10 }}>
-                                        <label className="form-field">Insumo<select required value={ingrediente.id_insumo} onChange={(event) => setIngredientes((actuales) => actuales.map((item, index) => index === indice ? { ...item, id_insumo: event.target.value } : item))}>
-                                            <option value="">Selecciona un insumo</option>
-                                            {insumos.map((insumo) => <option key={insumo.id_insumo} value={insumo.id_insumo}>{insumo.nombre} · {insumo.unidad_medida}</option>)}
-                                        </select></label>
-                                        <label className="form-field">Cantidad requerida<input type="number" min="0.01" step="0.01" required value={ingrediente.cantidad_requerida} onChange={(event) => setIngredientes((actuales) => actuales.map((item, index) => index === indice ? { ...item, cantidad_requerida: event.target.value } : item))} /></label>
-                                        <button className="danger-button" type="button" onClick={() => setIngredientes((actuales) => actuales.filter((_, index) => index !== indice))}>Quitar</button>
+                        <div className="form-grid product-form-grid">
+                            <div className="product-form-column">
+                                <label className="form-field product-name-field">Nombre<input maxLength="150" required value={producto.nombre} onChange={(event) => setProducto({ ...producto, nombre: event.target.value })} /></label>
+                                <label className="form-field product-price-field">Precio ($)<input type="number" min="0" max="99999999.99" step="0.01" required value={producto.precio_venta} onChange={(event) => setProducto({ ...producto, precio_venta: event.target.value })} /></label>
+                                <label className="form-field product-type-field">
+                                    <span>Tipo</span>
+                                    <span className="product-checkbox-option">
+                                        <input type="checkbox" checked={producto.es_reventa} onChange={(event) => setProducto({ ...producto, es_reventa: event.target.checked })} />
+                                        Producto de reventa
+                                    </span>
+                                </label>
+                                {puedeConfigurarRecetas && (
+                                    <div className="product-recipe-section">
+                                        <h3>Receta</h3>
+                                        {ingredientes.map((ingrediente, indice) => (
+                                            <div className="inline-form product-ingredient-row" key={`${ingrediente.id_insumo}-${indice}`}>
+                                                <label className="form-field">Insumo<select required value={ingrediente.id_insumo} onChange={(event) => setIngredientes((actuales) => actuales.map((item, index) => index === indice ? { ...item, id_insumo: event.target.value } : item))}>
+                                                    <option value="">Selecciona un insumo</option>
+                                                    {insumos.map((insumo) => <option key={insumo.id_insumo} value={insumo.id_insumo}>{insumo.nombre} · {insumo.unidad_medida}</option>)}
+                                                </select></label>
+                                                <label className="form-field">Cantidad requerida<input type="number" min="0.01" step="0.01" required value={ingrediente.cantidad_requerida} onChange={(event) => setIngredientes((actuales) => actuales.map((item, index) => index === indice ? { ...item, cantidad_requerida: event.target.value } : item))} /></label>
+                                                <button className="danger-button" type="button" onClick={() => setIngredientes((actuales) => actuales.filter((_, index) => index !== indice))}>Quitar</button>
+                                            </div>
+                                        ))}
+                                        <button className="secondary-button" type="button" onClick={() => setIngredientes((actuales) => [...actuales, { id_insumo: '', cantidad_requerida: '' }])}>Agregar ingrediente</button>
                                     </div>
-                                ))}
-                                <button className="secondary-button" type="button" onClick={() => setIngredientes((actuales) => [...actuales, { id_insumo: '', cantidad_requerida: '' }])}>Agregar ingrediente</button>
+                                )}
                             </div>
-                        )}
-                        <div className="page-actions" style={{ marginTop: 16 }}>
+                            <div className="product-form-column">
+                                <label className="form-field product-category-field">Categoría<input maxLength="50" value={producto.categoria} onChange={(event) => setProducto({ ...producto, categoria: event.target.value })} /></label>
+                                <label className="form-field product-description-field">Descripción<textarea value={producto.descripcion} onChange={(event) => setProducto({ ...producto, descripcion: event.target.value })} /></label>
+                                <label className="form-field product-photo-field">Fotografía del producto
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" onChange={seleccionarImagen} />
+                                    <small>JPEG, PNG o WebP · máximo 1 MB. Se guarda en la base de datos.</small>
+                                </label>
+                                {producto.imagen && <div className="product-image-preview product-form-preview">
+                                    <img
+                                        src={producto.imagen}
+                                        alt={`Vista previa de ${producto.nombre || 'producto'}`}
+                                        style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8 }}
+                                    />
+                                    <button className="secondary-button" type="button" onClick={() => setProducto({ ...producto, imagen: '' })}>Quitar imagen</button>
+                                </div>}
+                            </div>
+                        </div>
+                        <div className="page-actions product-form-actions">
                             <button className="primary-button" type="submit" disabled={procesando || !recetaCargada}>{procesando ? 'Guardando…' : !recetaCargada ? 'Cargando receta…' : productoEditado ? 'Guardar producto' : 'Crear producto'}</button>
                             {productoEditado && <button className="secondary-button" type="button" onClick={() => { setProductoEditado(null); setProducto(productoVacio); setIngredientes([]); setRecetaCargada(true); }}>Cancelar</button>}
                         </div>

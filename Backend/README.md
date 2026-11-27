@@ -16,6 +16,8 @@ luego de eso abrir el archivo .sql de OrigeneSV en este contenedor y ejecutarlo 
 
 Si la base de datos ya existía antes de agregar las columnas de imagen de productos, ejecuta una vez `sql/actualizar_productos_imagen.sql` conectado a `OrigeneSV`. El script solo agrega las columnas que falten y conserva los datos existentes.
 
+Si la base ya existía antes de incorporar los roles de RR. HH. y contratos, revisa y ejecuta `sql/actualizar_rrhh_contratos.sql` conectado a `OrigeneSV`. Este script agrega los roles que faltan (Barista, Contabilidad y Compras), corrige sus niveles de acceso y agrega `fecha_fin_contrato`. También actualiza permisos y desactiva cuentas asociadas a clientes; respalda y revisa esos cambios antes de ejecutarlo.
+
 En el proyecto: 
 Crear un archivo en la carpeta de backend, con el nombre de ".env", dentro de esta pon lo siguiente:
 

@@ -18,7 +18,7 @@ const modulos = [
     { id: 'inventario', name: 'Inventario', icon: boxesIcon, permisos: ['ver_inventario', 'gestionar_inventario'] },
     { id: 'compras', name: 'Compras y proveedores', icon: truckIcon, permisos: ['ver_compras', 'registrar_compras', 'ver_proveedores'] },
     { id: 'productos', name: 'Menú y productos', icon: menuIcon, permisos: ['ver_menu', 'gestionar_productos'] },
-    { id: 'empleados', name: 'Empleados', icon: peopleIcon, permisos: ['ver_empleados', 'registrar_empleados', 'ver_mi_ficha'] },
+    { id: 'empleados', name: 'Empleados', icon: peopleIcon, permisos: ['ver_empleados', 'registrar_empleados'] },
     { id: 'planillas', name: 'Planillas', icon: calculatorIcon, permisos: ['ver_planillas', 'generar_planillas', 'editar_planillas', 'ver_mi_planilla'] },
     { id: 'usuarios', name: 'Usuarios', icon: userIcon, permisos: ['gestionar_usuarios'] },
     { id: 'administracion', name: 'Administración', icon: menuIcon, permisos: ['gestionar_roles_permisos', 'gestionar_sucursales'] },

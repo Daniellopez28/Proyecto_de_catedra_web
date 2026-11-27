@@ -37,6 +37,11 @@
   font-size: 11px;
 }
 
+.sales-catalog-heading .sales-photo-credits {
+  font-size: 9px;
+  line-height: 1.35;
+}
+
 .sales-search {
   width: min(260px, 48%);
 }

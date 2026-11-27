@@ -26,6 +26,11 @@ function fechaCampo(valor) {
     return valor ? new Date(valor).toISOString().slice(0, 10) : '';
 }
 
+function nombreRolVisible(nombre) {
+    const rol = String(nombre ?? '').trim().toLocaleLowerCase('es-SV');
+    return rol ? `${rol.charAt(0).toLocaleUpperCase('es-SV')}${rol.slice(1)}` : '';
+}
+
 function calcularFechaFinContrato(fechaIngreso, anios, meses) {
     if (!fechaIngreso) return '';
     const [anio, mes, dia] = fechaIngreso.split('-').map(Number);
@@ -70,9 +75,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
     const puedeVer = permisos.includes('ver_empleados');
     const puedeRegistrar = permisos.includes('registrar_empleados');
     const puedeListar = puedeVer || puedeRegistrar;
-    const puedeVerFicha = permisos.includes('ver_mi_ficha');
     const [empleados, setEmpleados] = useState([]);
-    const [miFicha, setMiFicha] = useState(null);
     const [roles, setRoles] = useState([]);
     const [sucursales, setSucursales] = useState([]);
     const [formulario, setFormulario] = useState(formularioVacio);
@@ -80,6 +83,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
     const [cargando, setCargando] = useState(true);
     const [procesando, setProcesando] = useState(false);
     const [error, setError] = useState('');
+    const [errorCargaEmpleados, setErrorCargaEmpleados] = useState('');
     const [mensaje, setMensaje] = useState('');
     const [credenciales, setCredenciales] = useState(null);
     const formularioInicial = {
@@ -90,12 +94,12 @@ function EmpleadosPage({ permisos = [], usuario }) {
     const cargarEmpleados = useCallback(async () => {
         if (!puedeListar) return;
         setCargando(true);
+        setErrorCargaEmpleados('');
         try {
             const respuesta = await solicitudApi('/empleados');
             setEmpleados(respuesta.empleados);
-            setError('');
         } catch (fallo) {
-            setError(fallo.message);
+            setErrorCargaEmpleados(fallo.message);
         } finally {
             setCargando(false);
         }
@@ -103,29 +107,38 @@ function EmpleadosPage({ permisos = [], usuario }) {
 
     useEffect(() => {
         let activo = true;
-        Promise.all([
+        Promise.allSettled([
             puedeListar ? solicitudApi('/empleados') : Promise.resolve({ empleados: [] }),
             puedeRegistrar ? solicitudApi('/empleados/roles') : Promise.resolve([]),
-            puedeRegistrar ? solicitudApi('/empleados/sucursales') : Promise.resolve([]),
-            puedeVerFicha ? solicitudApi('/empleados/yo') : Promise.resolve(null)
-        ]).then(([respuesta, listaRoles, listaSucursales, ficha]) => {
+            puedeRegistrar ? solicitudApi('/empleados/sucursales') : Promise.resolve([])
+        ]).then(([resultadoEmpleados, resultadoRoles, resultadoSucursales]) => {
             if (!activo) return;
-            setEmpleados(respuesta.empleados);
+
+            if (resultadoEmpleados.status === 'fulfilled') {
+                setEmpleados(resultadoEmpleados.value.empleados);
+                setErrorCargaEmpleados('');
+            } else {
+                setErrorCargaEmpleados(resultadoEmpleados.reason.message);
+            }
+
+            const listaRoles = resultadoRoles.status === 'fulfilled' ? resultadoRoles.value : [];
+            const listaSucursales = resultadoSucursales.status === 'fulfilled' ? resultadoSucursales.value : [];
             setRoles(listaRoles);
             setSucursales(listaSucursales);
-            setMiFicha(ficha);
+            setError([
+                resultadoRoles.status === 'rejected' ? resultadoRoles.reason.message : '',
+                resultadoSucursales.status === 'rejected' ? resultadoSucursales.reason.message : ''
+            ].filter(Boolean).join(' '));
             setFormulario((actual) => ({
                 ...actual,
                 sucursalid: usuario?.sucursalid ? String(usuario.sucursalid) : actual.sucursalid,
                 nombre_rol: listaRoles.find((rol) => rol.nombre_rol === 'mesero')?.nombre_rol || listaRoles[0]?.nombre_rol || ''
             }));
-        }).catch((fallo) => {
-            if (activo) setError(fallo.message);
         }).finally(() => {
             if (activo) setCargando(false);
         });
         return () => { activo = false; };
-    }, [puedeListar, puedeRegistrar, puedeVerFicha, usuario?.sucursalid]);
+    }, [puedeListar, puedeRegistrar, usuario?.sucursalid]);
 
     function cambiarCampo(event) {
         const { name, value } = event.target;
@@ -263,6 +276,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                 <button className="secondary-button" type="button" onClick={cargarEmpleados} disabled={cargando}>Actualizar</button>
             </header>
             {error && <div className="notice is-error" role="alert">{error}</div>}
+            {errorCargaEmpleados && <div className="notice is-error" role="alert">{errorCargaEmpleados}</div>}
             {mensaje && <div className="notice" role="status">{mensaje}</div>}
             {credenciales && (
                 <div className="credential-box" role="status">
@@ -273,13 +287,6 @@ function EmpleadosPage({ permisos = [], usuario }) {
                         Ocultar credenciales
                     </button>
                 </div>
-            )}
-
-            {miFicha && (
-                <section className="surface-card">
-                    <h2>Mi ficha laboral</h2>
-                    <p>{miFicha.nombre_completo} · {miFicha.cargo} · {miFicha.sucursales?.nombre || 'Sin sucursal'}</p>
-                </section>
             )}
 
             {puedeRegistrar && (
@@ -293,7 +300,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                         <label className="form-field">DUI<input name="dui" maxLength="10" required placeholder="00000000-0" value={formulario.dui} onChange={cambiarCampo} /></label>
                         <label className="form-field">Fecha de nacimiento<input name="fecha_nacimiento" type="date" required value={formulario.fecha_nacimiento} onChange={cambiarCampo} /></label>
                         <label className="form-field">Rol<select name="nombre_rol" required value={formulario.nombre_rol} onChange={cambiarCampo}>
-                            {roles.map((rol) => <option key={rol.id_rol} value={rol.nombre_rol}>{rol.nombre_rol}</option>)}
+                            {roles.map((rol) => <option key={rol.id_rol} value={rol.nombre_rol}>{nombreRolVisible(rol.nombre_rol)}</option>)}
                         </select></label>
                         <label className="form-field">Cargo<input name="cargo" maxLength="50" required value={formulario.cargo} onChange={cambiarCampo} /></label>
                         <label className="form-field">Sucursal<select name="sucursalid" required value={formulario.sucursalid} onChange={cambiarCampo}>
@@ -346,7 +353,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                         <label className="form-field">DUI<input name="dui" maxLength="10" required value={formulario.dui} onChange={cambiarCampo} /></label>
                         <label className="form-field">Fecha de nacimiento<input name="fecha_nacimiento" type="date" required value={formulario.fecha_nacimiento} onChange={cambiarCampo} /></label>
                         <label className="form-field">Rol<select name="nombre_rol" required value={formulario.nombre_rol} onChange={cambiarCampo}>
-                            {roles.map((rol) => <option key={rol.id_rol} value={rol.nombre_rol}>{rol.nombre_rol}</option>)}
+                            {roles.map((rol) => <option key={rol.id_rol} value={rol.nombre_rol}>{nombreRolVisible(rol.nombre_rol)}</option>)}
                         </select></label>
                         <label className="form-field">Cargo<input name="cargo" maxLength="50" required value={formulario.cargo} onChange={cambiarCampo} /></label>
                         <label className="form-field">Sucursal<select name="sucursalid" required value={formulario.sucursalid} onChange={cambiarCampo}>
@@ -384,6 +391,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                 <section className="surface-card" style={{ marginTop: 16 }}>
                     <h2>Personal activo</h2>
                     {cargando ? <p className="loading-state">Cargando empleados…</p> :
+                        errorCargaEmpleados ? null :
                         empleados.length === 0 ? <p className="empty-state">No hay empleados activos.</p> : (
                             <div className="data-table-wrap">
                                 <table className="data-table">
@@ -396,7 +404,7 @@ function EmpleadosPage({ permisos = [], usuario }) {
                                                 <td>{empleado.nombre_completo}</td>
                                                 <td>{empleado.codigo_empleado}</td>
                                                 <td>{empleado.cargo}</td>
-                                                <td>{empleado.roles.nombre_rol}</td>
+                                                <td>{nombreRolVisible(empleado.roles.nombre_rol)}</td>
                                                 <td>{empleado.sucursales?.nombre || '—'}</td>
                                                 <td>${Number(empleado.salario_base).toFixed(2)}</td>
                                                 <td>{empleado.fecha_fin_contrato

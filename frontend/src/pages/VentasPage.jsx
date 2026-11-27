@@ -292,6 +292,7 @@ function VentasPage({ permisos = [], usuario, onGestionarMenu }) {
                             <div>
                                 <h2>¿Qué servimos hoy?</h2>
                                 <p>Busca y agrega productos al pedido.</p>
+                                <p className="sales-photo-credits">Las fotografias utilizadas son unicamente con fines ilustrativos. Creditos a: Zara Anaya, Jeder Iglesias y Elisa Gonzalez, por permitirnos usar sus fotografias </p>
                             </div>
                             <label className="sales-search">
                                 <span className="sales-visually-hidden">Buscar producto</span>

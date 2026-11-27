@@ -36,20 +36,27 @@ function CajaPage({ usuario }) {
 
     const cargar = useCallback(async () => {
         setCargando(true);
-        try {
-            const solicitudes = [solicitudApi('/caja/actual')];
-            if (puedeOperar) {
-                solicitudes.push(solicitudApi('/ventas?pendientes=true&pagina=1&limite=100'));
-            }
-            const [respuestaCaja, respuestaPedidos] = await Promise.all(solicitudes);
-            setCaja(respuestaCaja.caja);
-            if (puedeOperar) setPedidos(respuestaPedidos.ventas);
-            setError('');
-        } catch (fallo) {
-            setError(fallo.message);
-        } finally {
-            setCargando(false);
+        const solicitudes = [solicitudApi('/caja/actual')];
+        if (puedeOperar) solicitudes.push(solicitudApi('/ventas?pendientes=true&pagina=1&limite=100'));
+        const resultados = await Promise.allSettled(solicitudes);
+        const errores = [];
+
+        if (resultados[0].status === 'fulfilled') {
+            setCaja(resultados[0].value.caja);
+        } else {
+            errores.push(resultados[0].reason.message);
         }
+
+        if (puedeOperar) {
+            if (resultados[1].status === 'fulfilled') {
+                setPedidos(resultados[1].value.ventas);
+            } else {
+                errores.push(resultados[1].reason.message);
+            }
+        }
+
+        setError(errores.join(' '));
+        setCargando(false);
     }, [puedeOperar]);
 
     useEffect(() => {
@@ -57,23 +64,39 @@ function CajaPage({ usuario }) {
         const solicitudes = [solicitudApi('/caja/actual')];
         if (puedeOperar) solicitudes.push(solicitudApi('/ventas?pendientes=true&pagina=1&limite=100'));
         if (puedeElegirSucursal) solicitudes.push(solicitudApi('/administracion/sucursales'));
-        Promise.all(solicitudes)
-            .then((respuestas) => {
-                if (!activo) return;
-                let indice = 0;
-                const respuestaCaja = respuestas[indice++];
-                setCaja(respuestaCaja.caja);
-                if (puedeOperar) setPedidos(respuestas[indice++].ventas);
-                if (puedeElegirSucursal) {
-                    setSucursales(respuestas[indice].sucursales.filter((sucursal) => sucursal.activo));
+        Promise.allSettled(solicitudes).then((resultados) => {
+            if (!activo) return;
+            const errores = [];
+            let indice = 0;
+
+            const resultadoCaja = resultados[indice++];
+            if (resultadoCaja.status === 'fulfilled') {
+                setCaja(resultadoCaja.value.caja);
+            } else {
+                errores.push(resultadoCaja.reason.message);
+            }
+
+            if (puedeOperar) {
+                const resultadoPedidos = resultados[indice++];
+                if (resultadoPedidos.status === 'fulfilled') {
+                    setPedidos(resultadoPedidos.value.ventas);
+                } else {
+                    errores.push(resultadoPedidos.reason.message);
                 }
-            })
-            .catch((fallo) => {
-                if (activo) setError(fallo.message);
-            })
-            .finally(() => {
-                if (activo) setCargando(false);
-            });
+            }
+
+            if (puedeElegirSucursal) {
+                const resultadoSucursales = resultados[indice];
+                if (resultadoSucursales.status === 'fulfilled') {
+                    setSucursales(resultadoSucursales.value.sucursales.filter((sucursal) => sucursal.activo));
+                } else {
+                    errores.push(resultadoSucursales.reason.message);
+                }
+            }
+
+            setError(errores.join(' '));
+            setCargando(false);
+        });
         return () => { activo = false; };
     }, [puedeElegirSucursal, puedeOperar]);
 

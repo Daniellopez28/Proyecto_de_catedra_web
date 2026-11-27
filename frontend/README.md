@@ -61,3 +61,5 @@ Lo que toma para avanzar es que el backend esté encendido y validando correctam
 
 ## 4. La conexión con el backend (api.js)
 Para no repetir código en cada pantalla, se creó el archivo api.js. Aquí se centraliza toda la comunicación con el servidor. Traemos las variables de entorno de Vite para saber a qué URL mandar los datos, y definimos una clase de error (ApiError) para manejar mejor los mensajes que nos devuelve el backend.
+
+![alt text](Api-js-1.png)

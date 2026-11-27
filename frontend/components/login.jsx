@@ -1,7 +1,7 @@
 import '../src/login.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useEffect, useState } from 'react';
-import { guardarSesion, solicitudApi } from '../src/api.js';
+import { solicitudApi } from '../src/api.js';
 
 function Login({ onLogin }) {
     const [correo, setCorreo] = useState('');
@@ -39,7 +39,6 @@ function Login({ onLogin }) {
                 method: 'POST',
                 body: { correo: correo.trim(), password, sucursalid: Number(sucursalid) }
             });
-            guardarSesion(sesion);
             onLogin(sesion, solicitarCambioPassword);
         } catch (error) {
             setError(error.message || 'No se pudo iniciar sesión.');

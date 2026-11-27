@@ -2,6 +2,20 @@ import { randomBytes } from 'node:crypto';
 
 const duracionSesionMs = 8 * 60 * 60 * 1000;
 const sesiones = new Map();
+export const nombreCookieSesion = 'origenes-sesion';
+export const opcionesCookieSesion = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: duracionSesionMs
+};
+export const opcionesBorrarCookieSesion = {
+    httpOnly: opcionesCookieSesion.httpOnly,
+    secure: opcionesCookieSesion.secure,
+    sameSite: opcionesCookieSesion.sameSite,
+    path: opcionesCookieSesion.path
+};
 
 export function crearSesion(usuario, permisos) {
     const ahora = Date.now();
@@ -32,14 +46,36 @@ export function invalidarTodasLasSesiones() {
     sesiones.clear();
 }
 
+export function extraerTokenSesion(peticion) {
+    const cookieHeader = peticion.headers?.cookie ?? '';
+    const cookie = cookieHeader.split(';').map((parte) => parte.trim()).find((parte) =>
+        parte.startsWith(`${nombreCookieSesion}=`)
+    );
+    if (cookie) {
+        const valor = cookie.slice(nombreCookieSesion.length + 1);
+        try {
+            return decodeURIComponent(valor);
+        } catch {
+            return null;
+        }
+    }
+
+    const encabezado = peticion.get?.('Authorization') ?? '';
+    return encabezado.match(/^Bearer ([a-f0-9]{64})$/i)?.[1] ?? null;
+}
+
 export function requerirAutenticacion(peticion, respuesta, siguiente) {
-    const encabezado = peticion.get('Authorization') ?? '';
-    const coincidencia = encabezado.match(/^Bearer ([a-f0-9]{64})$/i);
-    const token = coincidencia?.[1];
+    const token = extraerTokenSesion(peticion);
     const sesion = token ? sesiones.get(token) : null;
 
-    if (!sesion || sesion.expiraEn <= Date.now()) {
+    if (!token || !/^[a-f0-9]{64}$/i.test(token) || !sesion || sesion.expiraEn <= Date.now()) {
         if (token) sesiones.delete(token);
+        const tieneCookieSesion = peticion.headers?.cookie?.split(';').some((parte) =>
+            parte.trim().startsWith(`${nombreCookieSesion}=`)
+        );
+        if (tieneCookieSesion) {
+            respuesta.clearCookie(nombreCookieSesion, opcionesBorrarCookieSesion);
+        }
         return respuesta.status(401).json({ mensaje: 'La sesión no es válida o expiró' });
     }
 

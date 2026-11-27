@@ -9,7 +9,11 @@
 
 Vite reenvía `/api` al servidor local en `http://localhost:3000`. Si cambias el puerto del backend, actualiza el destino del proxy en `vite.config.js`. Para producción, configura `VITE_API_BASE_URL` con la URL base de la API (por ejemplo, `https://servidor.example/api`); si no se define, se usa `/api`.
 
-El inicio de sesión usa el correo o código de empleado. La sesión obtiene del backend los permisos asignados en la base de datos; la interfaz oculta las opciones no autorizadas y el backend valida el token y el permiso en cada ruta protegida. Las sesiones de desarrollo viven en memoria y se invalidan al reiniciar el backend: vuelve a iniciar sesión.
+El inicio de sesión usa el correo o código de empleado. El backend guarda la sesión en una cookie `HttpOnly`, `SameSite=Lax` y con `Secure` en producción; el navegador la envía automáticamente y el frontend no almacena el token de sesión. Publica el frontend y la API bajo el mismo sitio para que `SameSite=Lax` funcione. En producción, configura `FRONTEND_ORIGINS` en el backend con los orígenes permitidos separados por comas y usa HTTPS para que el navegador envíe la cookie segura.
+
+La sesión obtiene del backend los permisos asignados en la base de datos; la interfaz oculta las opciones no autorizadas y el backend valida la sesión y el permiso en cada ruta protegida. Las sesiones de desarrollo viven en memoria y se invalidan al reiniciar el backend: vuelve a iniciar sesión.
+
+El aviso de cookies aparece después de iniciar sesión y permite guardar la preferencia para aceptar todas o usar solo las necesarias. Actualmente la cookie de autenticación es la única cookie utilizada; no se cargan cookies de analítica ni publicidad.
 
 ## Módulos conectados
 

@@ -13,7 +13,7 @@ El inicio de sesión usa el correo o código de empleado. El backend guarda la s
 
 La sesión obtiene del backend los permisos asignados en la base de datos; la interfaz oculta las opciones no autorizadas y el backend valida la sesión y el permiso en cada ruta protegida. Las sesiones de desarrollo viven en memoria y se invalidan al reiniciar el backend: vuelve a iniciar sesión.
 
-El aviso de cookies permite guardar la preferencia para aceptar todas o usar solo las necesarias. Actualmente la cookie de autenticación es la única cookie utilizada; no se cargan cookies de analítica ni publicidad.
+El aviso de cookies aparece después de iniciar sesión y permite guardar la preferencia para aceptar todas o usar solo las necesarias. Actualmente la cookie de autenticación es la única cookie utilizada; no se cargan cookies de analítica ni publicidad.
 
 ## Módulos conectados
 

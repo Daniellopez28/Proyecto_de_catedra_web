@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import './workspace.css';
 import Login from '../components/login.jsx';
 import SideNavbar from '../components/side-navbar.jsx';
+import ConsentimientoCookies from './components/ConsentimientoCookies.jsx';
 import { solicitudApi } from './api.js';
 import { modulosPermitidos } from './navigation.js';
 import InicioPage from './pages/InicioPage.jsx';
@@ -231,6 +232,7 @@ function App() {
                     </div>
                 </header>
                 <div className="workspace-content">{contenido()}</div>
+                <ConsentimientoCookies />
             </main>
         </div>
     );

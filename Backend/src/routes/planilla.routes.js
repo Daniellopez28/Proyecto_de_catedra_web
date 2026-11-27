@@ -1,14 +1,10 @@
 import express from 'express';
 import prisma from '../config/prisma.js';
-<<<<<<< HEAD
-import { calcular_planilla_empleado, redondear } from '../services/planilla.service.js';
-=======
 import {
   calcular_planilla_empleado,
   normalizar_detalle_editable,
   redondear
 } from '../services/planilla.service.js';
->>>>>>> frontend
 import { requerirAutenticacion, requerirPermiso } from '../middleware/autenticacion.js';
 
 const router = express.Router();
@@ -158,11 +154,6 @@ router.get('/:id', requerirPermiso('ver_planillas'), async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
-// put /api/planillas/:id/pagar
-router.put('/:id/pagar', requerirPermiso('generar_planillas'), async (req, res) => {
-  try {
-=======
 router.put('/:id/detalles/:id_empleado', requerirPermiso('editar_planillas'), async (req, res) => {
   const id_planilla = Number(req.params.id);
   const id_empleado = Number(req.params.id_empleado);
@@ -228,7 +219,6 @@ router.put('/:id/detalles/:id_empleado', requerirPermiso('editar_planillas'), as
 // put /api/planillas/:id/pagar
 router.put('/:id/pagar', requerirPermiso('generar_planillas'), async (req, res) => {
   try {
->>>>>>> frontend
     const id_planilla = Number(req.params.id);
     if (!Number.isInteger(id_planilla) || id_planilla <= 0) {
       return res.status(400).json({ mensaje: 'id de planilla invalido' });

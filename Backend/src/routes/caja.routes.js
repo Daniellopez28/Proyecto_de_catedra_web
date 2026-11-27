@@ -24,18 +24,6 @@ function enteroPositivo(valor) {
     return Number.isInteger(numero) && numero > 0 ? numero : null;
 }
 
-<<<<<<< HEAD
-router.get('/actual', requerirPermiso('operar_caja'), async (req, res) => {
-    try {
-        const caja = await prisma.cajas.findFirst({
-            where: { id_usuario: req.auth.usuario.id_usuario, estado: 'abierta' },
-            orderBy: { fecha_apertura: 'desc' },
-            include: { movimientos_caja: { orderBy: { fecha: 'desc' } } }
-        });
-        return res.json({
-            caja: caja && {
-                ...caja,
-=======
 async function calcularMontoSistema(db, caja) {
     const [ventasEfectivo] = await db.$queryRaw`
         SELECT COALESCE(SUM(p.monto), 0) AS monto
@@ -82,7 +70,6 @@ router.get('/actual', async (req, res) => {
             caja: caja && {
                 ...caja,
                 monto_sistema: montoSistema,
->>>>>>> frontend
                 movimientos_caja: caja.movimientos_caja.map((movimiento) => ({
                     ...movimiento,
                     movimientocajaid: String(movimiento.movimientocajaid)
@@ -191,26 +178,7 @@ router.post('/:id/cerrar', requerirPermiso('operar_caja'), async (req, res) => {
             });
             if (!caja) return null;
 
-<<<<<<< HEAD
-            const [ventasEfectivo] = await tx.$queryRaw`
-                SELECT COALESCE(SUM(p.monto), 0) AS monto
-                FROM dbo.ventas v
-                INNER JOIN dbo.pagos p ON p.id_venta = v.id_venta
-                WHERE v.id_usuario = ${req.auth.usuario.id_usuario}
-                  AND v.sucursalid = ${caja.sucursalid}
-                  AND p.fecha_pago >= ${caja.fecha_apertura}
-                  AND LOWER(p.metodo_pago) = 'efectivo'
-            `;
-            const movimientos = caja.movimientos_caja.reduce((total, movimiento) => {
-                const monto = Number(movimiento.monto);
-                return total + (movimiento.tipo_movimiento === 'ingreso_extra' ? monto : -monto);
-            }, 0);
-            const montoSistema = Number((
-                Number(caja.monto_apertura) + Number(ventasEfectivo.monto) + movimientos
-            ).toFixed(2));
-=======
             const montoSistema = await calcularMontoSistema(tx, caja);
->>>>>>> frontend
             const actualizada = await tx.cajas.updateMany({
                 where: { id_caja: idCaja, id_usuario: req.auth.usuario.id_usuario, estado: 'abierta' },
                 data: {
@@ -230,11 +198,7 @@ router.post('/:id/cerrar', requerirPermiso('operar_caja'), async (req, res) => {
         return res.json({
             mensaje: 'Caja cerrada',
             caja: resultado,
-<<<<<<< HEAD
-            nota: 'El total del sistema considera ventas en efectivo del usuario y movimientos registrados desde la apertura.'
-=======
             nota: 'El total del sistema considera ventas en efectivo de la sucursal y movimientos registrados desde la apertura.'
->>>>>>> frontend
         });
     } catch (error) {
         console.error('Error al cerrar caja:', error);

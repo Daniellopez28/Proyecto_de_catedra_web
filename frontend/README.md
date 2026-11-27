@@ -83,10 +83,17 @@ En components/login.jsx tenemos el formulario para iniciar sesión contra el bac
 
 ![alt text](login-jsx-1.png)
 
+El formulario tiene un useEffect que se ejecuta al cargar la pantalla. Este se encarga de pedirle al backend la lista de sucursales (usando solicitudApi('/sucursales')) para llenar el menú desplegable, así evitamos tener los datos quemados en el código.
+
 ![alt text](login-jsx-2.png)
 
+Cuando el usuario da clic en el botón "Acceder", se ejecuta la función manejarLogin. Esta evita que la página se recargue, limpia los errores anteriores y hace la petición al servidor usando solicitudApi('/login', { method: 'POST' }) mandando el correo, la contraseña y el ID de la sucursal.
+
 ![alt text](login-jsx-3.png)
+
+Lo que toma para avanzar es que el usuario seleccione una sucursal y llene sus datos. Si el servidor responde que todo está bien, se guarda la sesión con la función guardarSesion() (que guarda el token y los permisos) y se le avisa al App.jsx con la función onLogin para que quite la pantalla de login y muestre el sistema. Si falla, se muestra el mensaje de error en un recuadro rojo.
 
 ![alt text](login-jsx-4.png)
 
 ![alt text](login-jsx-5.png)
+

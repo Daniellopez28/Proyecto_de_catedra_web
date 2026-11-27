@@ -97,3 +97,4 @@ Lo que toma para avanzar es que el usuario seleccione una sucursal y llene sus d
 
 ![alt text](login-jsx-5.png)
 
+## 7. Menú lateral (components/side-navbar.jsx)

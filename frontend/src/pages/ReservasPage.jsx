@@ -283,13 +283,19 @@ function ReservasPage({ permisos = [], usuario }) {
                 <section className="surface-card">
                     <div className="page-heading">
                         <div><h2>Reservas de la sucursal</h2></div>
-                        <input
-                            type="search"
-                            aria-label="Buscar reservas"
-                            placeholder="Buscar por cliente, teléfono o mesa"
-                            value={busquedaReservas}
-                            onChange={(event) => setBusquedaReservas(event.target.value)}
-                        />
+                        <label className="reservation-search">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="m16 16 4 4" />
+                            </svg>
+                            <input
+                                type="search"
+                                aria-label="Buscar reservas"
+                                placeholder="Buscar por cliente, teléfono o mesa"
+                                value={busquedaReservas}
+                                onChange={(event) => setBusquedaReservas(event.target.value)}
+                            />
+                        </label>
                     </div>
                     {cargando ? <p className="loading-state">Cargando reservas…</p> :
                         reservasFiltradas.length === 0 ? <p className="empty-state">No hay reservas que coincidan con la búsqueda.</p> : (

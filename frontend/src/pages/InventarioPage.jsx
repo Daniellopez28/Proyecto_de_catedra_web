@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { solicitudApi } from '../api.js';
 
+function obtenerPresentacionNivelStock(nivel) {
+    const niveles = {
+        NORMAL: { etiqueta: 'Normal', clase: '' },
+        STOCK_BAJO: { etiqueta: 'Stock Bajo', clase: 'is-stock-low' },
+        AGOTADO: { etiqueta: 'Agotado', clase: 'is-stock-out' }
+    };
+
+    return niveles[nivel] ?? {
+        etiqueta: String(nivel ?? '').replaceAll('_', ' '),
+        clase: ''
+    };
+}
+
 function InventarioPage({ permisos = [], usuario }) {
     const puedeVer = permisos.includes('ver_inventario');
     const puedeGestionar = permisos.includes('gestionar_inventario');
@@ -184,8 +197,8 @@ function InventarioPage({ permisos = [], usuario }) {
                 </label>
             )}
             {puedeGestionar && (
-                <div className="form-grid">
-                    <form className="surface-card" onSubmit={crearInsumo}>
+                <div className="form-grid inventory-form-grid">
+                    <form className="surface-card inventory-form-card" onSubmit={crearInsumo}>
                         <h2>Nuevo insumo</h2>
                         <div className="form-grid">
                             <label className="form-field">Nombre<input maxLength="100" required value={nuevoInsumo.nombre} onChange={(event) => setNuevoInsumo({ ...nuevoInsumo, nombre: event.target.value })} /></label>
@@ -193,11 +206,11 @@ function InventarioPage({ permisos = [], usuario }) {
                             <label className="form-field">Stock mínimo<input type="number" min="0" step="0.01" value={nuevoInsumo.stock_minimo} onChange={(event) => setNuevoInsumo({ ...nuevoInsumo, stock_minimo: event.target.value })} /></label>
                             <label className="form-field">Costo promedio ($)<input type="number" min="0" step="0.0001" value={nuevoInsumo.costo_promedio} onChange={(event) => setNuevoInsumo({ ...nuevoInsumo, costo_promedio: event.target.value })} /></label>
                         </div>
-                        <button className="primary-button" type="submit" disabled={procesando} style={{ marginTop: 16 }}>Crear insumo</button>
+                        <button className="primary-button inventory-form-submit" type="submit" disabled={procesando}>Crear insumo</button>
                     </form>
 
                     {puedeVer && (
-                        <form className="surface-card" onSubmit={ajustar}>
+                        <form className="surface-card inventory-form-card" onSubmit={ajustar}>
                             <h2>Ajustar existencias</h2>
                             <div className="form-grid">
                                 <label className="form-field">Insumo<select required value={ajuste.id_insumo} onChange={(event) => setAjuste({ ...ajuste, id_insumo: event.target.value })}>
@@ -211,7 +224,7 @@ function InventarioPage({ permisos = [], usuario }) {
                                     : <label className="form-field">Cantidad<input type="number" min="0.01" step="0.01" required value={ajuste.cantidad} onChange={(event) => setAjuste({ ...ajuste, cantidad: event.target.value })} /></label>}
                                 <label className="form-field">Referencia<input maxLength="100" value={ajuste.referencia} onChange={(event) => setAjuste({ ...ajuste, referencia: event.target.value })} /></label>
                             </div>
-                            <button className="secondary-button" type="submit" disabled={procesando || !insumos.length || (puedeElegirSucursal && !sucursalid)} style={{ marginTop: 16 }}>Aplicar ajuste</button>
+                            <button className="secondary-button inventory-form-submit" type="submit" disabled={procesando || !insumos.length || (puedeElegirSucursal && !sucursalid)}>Aplicar ajuste</button>
                         </form>
                     )}
                 </div>
@@ -224,10 +237,10 @@ function InventarioPage({ permisos = [], usuario }) {
                 </div>
             ) : puedeVer ? (
                 <>
-                    <section className="stats-grid">
-                        <article className="stat-card"><p className="stat-card-label">Insumos activos</p><p className="stat-card-value">{cargando ? '—' : insumos.length}</p></article>
-                        <article className="stat-card"><p className="stat-card-label">Alertas de stock</p><p className="stat-card-value">{cargando ? '—' : alertas.length}</p></article>
-                        <article className="stat-card"><p className="stat-card-label">Agotados</p><p className="stat-card-value">{cargando ? '—' : alertas.filter((alerta) => alerta.nivel === 'AGOTADO').length}</p></article>
+                    <section className="stats-grid inventory-summary-grid">
+                        <article className="stat-card"><p className="stat-card-label">Insumos activos</p><p className="stat-card-value"><h1>{cargando ? '—' : insumos.length}</h1></p></article>
+                        <article className="stat-card"><p className="stat-card-label">Alertas de stock</p><p className="stat-card-value"><h1>{cargando ? '—' : alertas.length}</h1></p></article>
+                        <article className="stat-card"><p className="stat-card-label">Agotados</p><p className="stat-card-value"><h1>{cargando ? '—' : alertas.filter((alerta) => alerta.nivel === 'AGOTADO').length}</h1></p></article>
                     </section>
                     <section className="surface-card">
                         <h2>Alertas de stock</h2>
@@ -235,12 +248,15 @@ function InventarioPage({ permisos = [], usuario }) {
                             <div className="data-table-wrap">
                                 <table className="data-table">
                                     <thead><tr><th>Insumo</th><th>Stock actual</th><th>Mínimo</th><th>Estado</th></tr></thead>
-                                    <tbody>{alertas.map((alerta) => (
-                                        <tr key={alerta.id_insumo}>
-                                            <td>{alerta.nombre}</td><td>{alerta.stock_actual} {alerta.unidad_medida}</td><td>{alerta.stock_minimo} {alerta.unidad_medida}</td>
-                                            <td><span className={`status-pill ${alerta.nivel === 'AGOTADO' ? 'is-danger' : 'is-warning'}`}>{alerta.nivel}</span></td>
-                                        </tr>
-                                    ))}</tbody>
+                                    <tbody>{alertas.map((alerta) => {
+                                        const estado = obtenerPresentacionNivelStock(alerta.nivel);
+                                        return (
+                                            <tr key={alerta.id_insumo}>
+                                                <td>{alerta.nombre}</td><td>{alerta.stock_actual} {alerta.unidad_medida}</td><td>{alerta.stock_minimo} {alerta.unidad_medida}</td>
+                                                <td><span className={`status-pill ${estado.clase}`}>{estado.etiqueta}</span></td>
+                                            </tr>
+                                        );
+                                    })}</tbody>
                                 </table>
                             </div>
                         )}
@@ -251,12 +267,15 @@ function InventarioPage({ permisos = [], usuario }) {
                             <div className="data-table-wrap">
                                 <table className="data-table">
                                     <thead><tr><th>Insumo</th><th>Stock actual</th><th>Stock mínimo</th><th>Costo promedio</th><th>Estado</th></tr></thead>
-                                    <tbody>{insumos.map((insumo) => (
-                                        <tr key={insumo.id_insumo}>
-                                            <td>{insumo.nombre}</td><td>{insumo.stock_actual} {insumo.unidad_medida}</td><td>{insumo.stock_minimo} {insumo.unidad_medida}</td><td>${Number(insumo.costo_promedio).toFixed(4)}</td>
-                                            <td><span className={`status-pill ${insumo.estado === 'AGOTADO' ? 'is-danger' : insumo.estado === 'STOCK_BAJO' ? 'is-warning' : ''}`}>{insumo.estado}</span></td>
-                                        </tr>
-                                    ))}</tbody>
+                                    <tbody>{insumos.map((insumo) => {
+                                        const estado = obtenerPresentacionNivelStock(insumo.estado);
+                                        return (
+                                            <tr key={insumo.id_insumo}>
+                                                <td>{insumo.nombre}</td><td>{insumo.stock_actual} {insumo.unidad_medida}</td><td>{insumo.stock_minimo} {insumo.unidad_medida}</td><td>${Number(insumo.costo_promedio).toFixed(4)}</td>
+                                                <td><span className={`status-pill ${estado.clase}`}>{estado.etiqueta}</span></td>
+                                            </tr>
+                                        );
+                                    })}</tbody>
                                 </table>
                             </div>
                         )}

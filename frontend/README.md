@@ -77,3 +77,5 @@ El archivo navigation.js es el encargado de decidir qué opciones ve cada usuari
 La función modulosPermitidos(permisos) toma los permisos que devolvió el backend al iniciar sesión y filtra el arreglo, dejando solo los módulos a los que el usuario tiene derecho. 
 
 Lo que toma para avanzar es que los permisos que envía el backend coincidan con los nombres que pusimos aquí (por ejemplo, 'ver_empleados' o 'gestionar_productos'). Si un usuario no tiene esos permisos, el módulo simplemente no aparece en su menú.
+
+## 6. Inicio de sesión (components/login.jsx)

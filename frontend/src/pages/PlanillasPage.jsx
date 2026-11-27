@@ -217,12 +217,14 @@ function PlanillasPage({ permisos = [] }) {
                                             <td>${Number(planilla.total_pagar).toFixed(2)}</td>
                                             <td><span className="status-pill">{planilla.estado}</span></td>
                                             {(puedeGenerar || puedeEditar) && <td>
-                                                {puedeGenerar && planilla.estado !== 'Pagada' &&
-                                                    <button className="secondary-button" type="button" onClick={() => marcarPagada(planilla)} disabled={procesando}>Marcar pagada</button>}
-                                                {puedeEditar && planilla.estado !== 'Pagada' &&
-                                                    <button className="secondary-button" type="button" onClick={() => editarPlanilla(planilla)} disabled={procesando}>
-                                                        {planillaDetalle?.id_planilla === planilla.id_planilla ? 'Cerrar edición' : 'Editar detalles'}
-                                                    </button>}
+                                                <div className="payroll-actions">
+                                                    {puedeGenerar && planilla.estado !== 'Pagada' &&
+                                                        <button className="secondary-button" type="button" onClick={() => marcarPagada(planilla)} disabled={procesando}>Marcar pagada</button>}
+                                                    {puedeEditar && planilla.estado !== 'Pagada' &&
+                                                        <button className="secondary-button" type="button" onClick={() => editarPlanilla(planilla)} disabled={procesando}>
+                                                            {planillaDetalle?.id_planilla === planilla.id_planilla ? 'Cerrar edición' : 'Editar detalles'}
+                                                        </button>}
+                                                </div>
                                             </td>}
                                         </tr>
                                     ))}
@@ -260,6 +262,7 @@ function PlanillasPage({ permisos = [] }) {
                                             {camposEditables.map(({ id, etiqueta }) => (
                                                 <td key={id}>
                                                     <input
+                                                        className="payroll-edit-input"
                                                         aria-label={`${etiqueta} de ${detalle.empleados.nombre_completo}`}
                                                         type="number"
                                                         min="0"

@@ -446,6 +446,38 @@ button {
   border-bottom: 0;
 }
 
+.payroll-edit-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 100px;
+  max-width: 150px;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--brand-border);
+  border-radius: 8px;
+  background: var(--brand-paper);
+  color: var(--brand-brown);
+  font: inherit;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.payroll-edit-input:focus {
+  border-color: var(--brand-rust);
+  outline: 2px solid rgba(197, 60, 16, 0.14);
+}
+
+.payroll-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.payroll-actions button {
+  white-space: nowrap;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;

@@ -25,9 +25,7 @@ Las pantallas consultan la API real, muestran errores y estados vacíos, y no su
 
 La estructuracion del Frontend ha venido con establecinedo esta logica
 
-![alt text](Estructura-1.png)
 
-![alt text](Estructura-2.png)
 
 ![alt text](Estructura-3.png)
 

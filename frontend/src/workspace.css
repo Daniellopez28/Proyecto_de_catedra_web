@@ -2,6 +2,8 @@
 
 
 :root {
+  --brand-paper: #fffdf8;
+
   font-family: "Quicksand", sans-serif;
   color: #242824;
   background: #f7f6f2;

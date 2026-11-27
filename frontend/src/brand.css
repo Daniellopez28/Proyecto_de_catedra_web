@@ -45,8 +45,8 @@ h6,
 }
 
 .workspace-sidebar {
-  border-color: rgba(255, 217, 160, 0.2);
-  background: var(--brand-brown);
+  border-color: rgba(63, 55, 43, 0.2);
+  background: var(--brand-paper);
 }
 
 .workspace-brand {
@@ -60,27 +60,27 @@ h6,
 }
 
 .workspace-nav button {
-  color: var(--brand-highlight);
+  color: var(--brand-brown);
   font-size: 13px;
   font-weight: 600;
 }
 
 .workspace-nav button:hover,
 .workspace-nav button.is-active {
-  background: var(--brand-rust);
+  background: var(--brand-brown);
   color: var(--brand-paper);
 }
 
 .workspace-nav-icon {
-  filter: brightness(0) invert(88%);
 }
 
+.workspace-nav button:hover .workspace-nav-icon,
 .workspace-nav button.is-active .workspace-nav-icon {
   filter: brightness(0) invert(100%);
 }
 
 .workspace-sidebar-note {
-  color: rgba(255, 217, 160, 0.78);
+  color: var(--brand-brown);
 }
 
 .workspace-main {

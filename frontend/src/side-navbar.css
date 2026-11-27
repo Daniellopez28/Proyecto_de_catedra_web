@@ -21,7 +21,7 @@ body {
     width: 112px;
     min-height: 100vh;
     padding: 16px 6px;
-    background-color: #fff;
+    background-color: var(--brand-paper);
     border-right: 1px solid #e7e6e4;
     color: #333;
     text-align: left;

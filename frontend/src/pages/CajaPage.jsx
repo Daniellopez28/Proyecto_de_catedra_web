@@ -248,7 +248,7 @@ function CajaPage({ usuario }) {
                 </form> : <section className="surface-card"><p className="empty-state">No hay una caja abierta para consultar en esta sucursal.</p></section>
             ) : (
                 <>
-                    <section className="stats-grid">
+                    <section className="stats-grid cash-summary-grid">
                         <article className="stat-card">
                             <p className="stat-card-label">Estado</p>
                             <p className="stat-card-value"><span className="status-pill">{caja.estado}</span></p>
@@ -257,11 +257,11 @@ function CajaPage({ usuario }) {
                         </article>
                         <article className="stat-card">
                             <p className="stat-card-label">Monto inicial del día</p>
-                            <p className="stat-card-value">${Number(caja.monto_apertura).toFixed(2)}</p>
+                            <p className="stat-card-value cash-summary-amount">${Number(caja.monto_apertura).toFixed(2)}</p>
                         </article>
                         <article className="stat-card">
                             <p className="stat-card-label">Saldo actual en caja</p>
-                            <p className="stat-card-value">${Number(caja.monto_sistema).toFixed(2)}</p>
+                            <p className="stat-card-value cash-summary-amount">${Number(caja.monto_sistema).toFixed(2)}</p>
                         </article>
                     </section>
 

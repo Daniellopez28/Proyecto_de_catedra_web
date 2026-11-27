@@ -172,6 +172,7 @@ function UsuariosPage({ usuarioActual, permisos = [] }) {
                                                 <td>{usuario.correo}</td>
                                                 <td>
                                                     {puedeCambiarRoles ? <select
+                                                        className="form-select user-role-select"
                                                         aria-label={`Rol de ${usuario.nombre_completo}`}
                                                         value={rolesSeleccionados[usuario.id_usuario] ?? usuario.id_rol}
                                                         onChange={(event) => setRolesSeleccionados({

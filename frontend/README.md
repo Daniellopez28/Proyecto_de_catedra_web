@@ -101,3 +101,5 @@ Lo que toma para avanzar es que el usuario seleccione una sucursal y llene sus d
 En components/side-navbar.jsx tenemos el menú que aparece a la izquierda de la pantalla una vez que el usuario ya inició sesión. Traemos los íconos de la carpeta de assets, y mostramos el logo principal de Orígenes SV en la parte de arriba.
 
 ![alt text](side-navbar.png)
+
+La lógica es sencilla: el componente recibe por propiedades (props) el arreglo de los items permitidos (que ya filtramos en navigation.js), cuál es el seleccionado actualmente, y las funciones para cambiar de página y para cerrar el menú en celulares. 
